@@ -19,7 +19,7 @@ Beifong generates high-quality podcasts from news articles and web content you t
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/beifong.git
+git clone https://github.com/arun477/beifong.git
 cd beifong
 
 # Create virtual environment
