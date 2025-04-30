@@ -2,6 +2,8 @@
 
 Beifong generates high-quality podcasts from news articles and web content you trust and curate. It handles the complete pipeline from data collection and analysis to production of scripts, visuals, and audio.
 
+▶️ [Watch the demo video on YouTube](https://www.youtube.com/watch?v=VqsPXzLwRcE)
+
 ## Installation
 
 ### Prerequisites
