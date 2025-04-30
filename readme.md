@@ -100,7 +100,7 @@ To add direct URL crawling, you would only need to update the `url_processor.py`
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/beifong.git
+git clone https://github.com/arun477/beifong.git
 cd beifong
 
 # Create virtual environment
