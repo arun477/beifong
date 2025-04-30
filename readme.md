@@ -266,7 +266,3 @@ Custom TTS engines can be added through the engine interface.
 -   [FastAPI](https://fastapi.tiangolo.com/)
 -   [OpenAI API](https://platform.openai.com/)
 -   [ElevenLabs](https://elevenlabs.io/)
-
-## License
-
-[MIT License](LICENSE)
