@@ -225,7 +225,7 @@ Beifong uses an agent architecture built on the [agno](https://github.com/agno-a
 
 -   **`async_embedding_search.py`**: Finds semantically similar articles using FAISS vector search
 -   **`async_search_articles.py`**: Performs keyword-based article search in the database
--   **`async_web_search.py`**: Conducts browser-use powered web research with live browsing
+-   **`async_web_search.py`**: Conducts browser based infromation crawling using browser-use with live browsing
 -   **`async_generate_podcast_script.py`**: Creates structured podcast scripts with dynamic dialogue
 -   **`async_generate_podcast_banner.py`**: Produces custom artwork using DALL-E
 -   **`async_generate_podcast_audio.py`**: Synthesizes natural-sounding audio with TTS engines
