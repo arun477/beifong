@@ -18,3 +18,4 @@ spacy==3.8.5
 spacy-curated-transformers==0.3.0
 uvicorn==0.34.2
 requests>=2.32.3
+redis==6.0.0

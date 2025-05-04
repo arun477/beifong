@@ -5,7 +5,10 @@ from fastapi.responses import FileResponse, StreamingResponse
 import uvicorn
 import os
 import aiofiles
-from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
+# from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
+from routers import article_router, podcast_router, source_router, task_router, podcast_config_router
+from routers.queued_podcast_agent_router import router as queued_podcast_agent_router
+
 from services.db_init import init_databases
 
 CLIENT_BUILD_PATH = os.environ.get(
@@ -39,7 +42,8 @@ app.include_router(source_router.router, prefix="/api/sources", tags=["sources"]
 app.include_router(podcast_router.router, prefix="/api/podcasts", tags=["podcasts"])
 app.include_router(task_router.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(podcast_config_router.router, prefix="/api/podcast-configs", tags=["podcast-configs"])
-app.include_router(async_podcast_agent_router.router, prefix="/api/podcast-agent", tags=["podcast-agent"])
+# app.include_router(async_podcast_agent_router.router, prefix="/api/podcast-agent", tags=["podcast-agent"])
+app.include_router(queued_podcast_agent_router, prefix="/api/podcast-agent", tags=["podcast-agent"])
 
 
 @app.get("/api")

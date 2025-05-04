@@ -11,6 +11,55 @@ import ActivePodcastPreview from '../components/ActivePodcastPreview';
 import { PodcastAssetsToggle } from '../components/AssetPannelToggle';
 import api from '../services/api';
 
+// Progress indicator component for enhanced status display
+const ProgressIndicator = ({ progress, message, type }) => {
+   return (
+      <div className="mb-4 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-md shadow-lg">
+         <div className="flex flex-col">
+            <div className="flex items-center mb-2">
+               <div className="animate-spin mr-2 h-4 w-4">
+                  <svg
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     xmlns="http://www.w3.org/2000/svg"
+                  >
+                     <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                     ></circle>
+                     <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                     ></path>
+                  </svg>
+               </div>
+               <span>
+                  {type
+                     ? `Processing ${type}...`
+                     : 'Processing request...'}
+               </span>
+            </div>
+            {message && (
+               <p className="text-xs text-emerald-300 ml-6 mb-2">{message}</p>
+            )}
+            {progress > 0 && (
+               <div className="w-full bg-gray-700 rounded-full h-2 ml-6">
+                  <div
+                     className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                     style={{ width: `${progress}%` }}
+                  ></div>
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};
+
 const PodcastSession = () => {
    const { sessionId } = useParams();
    const navigate = useNavigate();
@@ -19,6 +68,8 @@ const PodcastSession = () => {
    const [loading, setLoading] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    const [processingType, setProcessingType] = useState(null);
+   const [processingProgress, setProcessingProgress] = useState(0);
+   const [processingMessage, setProcessingMessage] = useState('');
    const [sessionState, setSessionState] = useState({});
    const [currentStage, setCurrentStage] = useState('welcome');
    const [error, setError] = useState(null);
@@ -145,6 +196,8 @@ const PodcastSession = () => {
                         }
                         setIsProcessing(false);
                         setProcessingType(null);
+                        setProcessingProgress(0);
+                        setProcessingMessage('');
                      } else {
                         console.log('Verified processing is still active, starting polling');
                         setIsProcessing(true);
@@ -152,12 +205,21 @@ const PodcastSession = () => {
                            statusResponse.data.process_type ||
                               parsedState.processing_status.process_type
                         );
+                        
+                        // Set progress information if available
+                        const progress = statusResponse.data.progress || 0;
+                        const message = statusResponse.data.message || '';
+                        setProcessingProgress(progress);
+                        setProcessingMessage(message);
+                        
                         startPollingForCompletion();
                      }
                   } catch (statusError) {
                      console.error('Error checking processing status on init:', statusError);
                      setIsProcessing(false);
                      setProcessingType(null);
+                     setProcessingProgress(0);
+                     setProcessingMessage('');
                   }
                }
             }
@@ -191,6 +253,8 @@ const PodcastSession = () => {
          }
          setIsProcessing(false);
          setProcessingType(null);
+         setProcessingProgress(0);
+         setProcessingMessage('');
          setSelectedSourceIndices([]);
          setIsScriptModalOpen(false);
          setIsFinalScriptModalOpen(false);
@@ -230,6 +294,8 @@ const PodcastSession = () => {
          if (predictedProcessType) {
             setIsProcessing(true);
             setProcessingType(predictedProcessType);
+            setProcessingProgress(0);
+            setProcessingMessage('Starting process...');
          }
          const response = await api.podcastAgent.chat(sessionId, inputMessage);
          if (response.data.isProcessing) {
@@ -251,6 +317,8 @@ const PodcastSession = () => {
             if (response.data.session_state) updateSessionState(response.data.session_state);
             setIsProcessing(false);
             setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -258,6 +326,8 @@ const PodcastSession = () => {
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setProcessingProgress(0);
+         setProcessingMessage('');
       } finally {
          setLoading(false);
       }
@@ -297,6 +367,8 @@ const PodcastSession = () => {
             clearInterval(pollTimerRef.current);
             setIsProcessing(false);
             setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
             setMessages(prev => [
                ...prev,
                { role: 'assistant', content: 'Process timed out. Please refresh.' },
@@ -305,10 +377,23 @@ const PodcastSession = () => {
          }
          try {
             const statusResponse = await api.podcastAgent.checkStatus(sessionId);
+            
+            // Extract enhanced status information
+            const progress = statusResponse.data.progress || 0;
+            const statusMessage = statusResponse.data.message || '';
+            
+            // Update UI with detailed status
+            setProcessingProgress(progress);
+            if (statusMessage) {
+               setProcessingMessage(statusMessage);
+            }
+            
             if (!statusResponse.data.is_processing) {
                clearInterval(pollTimerRef.current);
                setIsProcessing(false);
                setProcessingType(null);
+               setProcessingProgress(0);
+               setProcessingMessage('');
                if (statusResponse.data.session_state)
                   updateSessionState(statusResponse.data.session_state);
             }
@@ -368,6 +453,8 @@ const PodcastSession = () => {
       setLoading(true);
       setIsProcessing(true);
       setProcessingType('script generation');
+      setProcessingProgress(0);
+      setProcessingMessage('Starting script generation...');
       try {
          const response = await api.podcastAgent.chat(sessionId, selectionString);
          if (response.data.response) {
@@ -381,6 +468,8 @@ const PodcastSession = () => {
          } else {
             setIsProcessing(false);
             setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
          }
       } catch (error) {
          console.error('Error confirming sources:', error);
@@ -388,6 +477,8 @@ const PodcastSession = () => {
          setError(`Failed to confirm sources: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setProcessingProgress(0);
+         setProcessingMessage('');
       } finally {
          setLoading(false);
       }
@@ -446,6 +537,8 @@ const PodcastSession = () => {
          if (predictedProcessType) {
             setIsProcessing(true);
             setProcessingType(predictedProcessType);
+            setProcessingProgress(0);
+            setProcessingMessage('Starting process...');
          }
          const response = await api.podcastAgent.chat(sessionId, message);
          if (response.data.isProcessing) {
@@ -467,6 +560,8 @@ const PodcastSession = () => {
             if (response.data.session_state) updateSessionState(response.data.session_state);
             setIsProcessing(false);
             setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -474,6 +569,8 @@ const PodcastSession = () => {
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setProcessingProgress(0);
+         setProcessingMessage('');
       } finally {
          setLoading(false);
       }
@@ -634,7 +731,7 @@ const PodcastSession = () => {
                         ></span>
                         <span>
                            {isProcessing
-                              ? `Processing ${processingType || ''}...`
+                              ? processingMessage || `Processing ${processingType || ''}...${processingProgress > 0 ? ` (${processingProgress}%)` : ''}`
                               : `Stage: ${currentStage}`}
                         </span>
                      </div>
@@ -653,7 +750,7 @@ const PodcastSession = () => {
                      ></span>
                      <span>
                         {isProcessing
-                           ? `Processing ${processingType || ''}...`
+                           ? processingMessage || `Processing ${processingType || ''}...${processingProgress > 0 ? ` (${processingProgress}%)` : ''}`
                            : `Stage: ${currentStage}`}
                      </span>
                   </div>
@@ -690,36 +787,11 @@ const PodcastSession = () => {
                         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
                      >
                         {isProcessing && (
-                           <div className="mb-4 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-md shadow-lg">
-                              <div className="flex items-center">
-                                 <div className="animate-spin mr-2 h-4 w-4">
-                                    <svg
-                                       viewBox="0 0 24 24"
-                                       fill="none"
-                                       xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                       <circle
-                                          className="opacity-25"
-                                          cx="12"
-                                          cy="12"
-                                          r="10"
-                                          stroke="currentColor"
-                                          strokeWidth="4"
-                                       ></circle>
-                                       <path
-                                          className="opacity-75"
-                                          fill="currentColor"
-                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                       ></path>
-                                    </svg>
-                                 </div>
-                                 <span>
-                                    {processingType
-                                       ? `Processing ${processingType}...`
-                                       : 'Processing request...'}
-                                 </span>
-                              </div>
-                           </div>
+                           <ProgressIndicator 
+                              progress={processingProgress} 
+                              message={processingMessage} 
+                              type={processingType} 
+                           />
                         )}
                         <div className="space-y-2">
                            {messages.map((msg, index) => (
