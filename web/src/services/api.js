@@ -64,6 +64,41 @@ const normalizeArticleData = article => {
    return article;
 };
 
+// Helper function to handle polling for chat completion
+const pollForChatCompletion = async (sessionId, maxAttempts = 120, initialDelay = 1000) => {
+   let attempts = 0;
+   let delay = initialDelay;
+   
+   while (attempts < maxAttempts) {
+      try {
+         const statusResponse = await api.post('/api/podcast-agent/status', {
+            session_id: sessionId
+         });
+         
+         // If processing is complete, return the result
+         if (!statusResponse.data.is_processing) {
+            return statusResponse.data;
+         }
+         
+         // Exponential backoff with maximum delay of 5 seconds
+         delay = Math.min(delay * 1.5, 5000);
+         
+         // Wait for the next poll
+         await new Promise(resolve => setTimeout(resolve, delay));
+         attempts++;
+      } catch (error) {
+         console.error('Error polling for chat completion:', error);
+         // Increase delay on error
+         delay = Math.min(delay * 2, 10000);
+         await new Promise(resolve => setTimeout(resolve, delay));
+         attempts++;
+      }
+   }
+   
+   // If we've reached the maximum number of attempts, throw an error
+   throw new Error('Timed out waiting for chat completion');
+};
+
 const endpoints = {
    root: {
       get: () => api.get('/api'),
@@ -154,11 +189,61 @@ const endpoints = {
          api.post('/api/podcast-agent/session', {
             session_id: sessionId,
          }),
-      chat: (sessionId, message) =>
-         api.post('/api/podcast-agent/chat', {
-            session_id: sessionId,
-            message,
-         }),
+      chat: async (sessionId, message) => {
+         try {
+            // Send the chat message
+            const response = await api.post('/api/podcast-agent/chat', {
+               session_id: sessionId,
+               message,
+            });
+            
+            // Check if processing is complete
+            if (response.data.is_processing) {
+               // If still processing, poll for completion
+               const finalResponse = await pollForChatCompletion(sessionId);
+               
+               // Return a response in the format expected by the UI
+               return {
+                  data: {
+                     session_id: sessionId,
+                     response: finalResponse.response || finalResponse.message || "Processing complete.",
+                     stage: finalResponse.stage || "unknown",
+                     session_state: finalResponse.session_state || "{}",
+                     status: finalResponse.status || "COMPLETED"
+                  }
+               };
+            }
+            
+            // If processing was immediate, return the response
+            return response;
+         } catch (error) {
+            // Check if it's a conflict error (409) indicating concurrent processing
+            if (error.response && error.response.status === 409) {
+               console.warn("Session already has a message being processed, polling for completion...");
+               try {
+                  // Poll for completion
+                  const finalResponse = await pollForChatCompletion(sessionId);
+                  
+                  // Return a response in the format expected by the UI
+                  return {
+                     data: {
+                        session_id: sessionId,
+                        response: finalResponse.response || finalResponse.message || "Processing complete.",
+                        stage: finalResponse.stage || "unknown",
+                        session_state: finalResponse.session_state || "{}",
+                        status: finalResponse.status || "COMPLETED"
+                     }
+                  };
+               } catch (pollError) {
+                  console.error("Error polling for completion:", pollError);
+                  throw pollError;
+               }
+            }
+            
+            // For other errors, rethrow
+            throw error;
+         }
+      },
       checkStatus: sessionId =>
          api.post('/api/podcast-agent/status', {
             session_id: sessionId,

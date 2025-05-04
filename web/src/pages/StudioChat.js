@@ -11,21 +11,19 @@ import ActivePodcastPreview from '../components/ActivePodcastPreview';
 import { PodcastAssetsToggle } from '../components/AssetPannelToggle';
 import api from '../services/api';
 
-// Enhanced Progress Indicator component for better status visualization
+// Enhanced Progress Indicator component with smoother animations
 const ProgressIndicator = ({ progress, message, type }) => {
-   // Apply animation to progress transitions
-   const animatedWidth = React.useMemo(() => {
-      return `${progress}%`;
-   }, [progress]);
-
+   const progressWidth = `${progress}%`;
+   
    return (
-      <div className="mb-4 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-md shadow-lg">
+      <div className="mb-4 px-4 py-3 bg-gray-800/80 border border-gray-700 text-gray-200 text-sm rounded-md shadow-md">
          <div className="flex flex-col">
             <div className="flex items-center mb-2">
-               <div className="animate-spin mr-2 h-4 w-4">
-                  <svg
-                     viewBox="0 0 24 24"
-                     fill="none"
+               <div className="mr-2 h-4 w-4 relative">
+                  <svg 
+                     className="animate-spin" 
+                     viewBox="0 0 24 24" 
+                     fill="none" 
                      xmlns="http://www.w3.org/2000/svg"
                   >
                      <circle
@@ -44,28 +42,24 @@ const ProgressIndicator = ({ progress, message, type }) => {
                   </svg>
                </div>
                <span className="font-medium">
-                  {type
-                     ? `Processing ${type}...`
-                     : 'Processing...'}
+                  {type ? `Processing ${type}...` : 'Processing...'}
                </span>
                {progress > 0 && (
-                  <span className="ml-2 text-xs font-mono bg-emerald-900/30 px-2 py-0.5 rounded-full">
+                  <span className="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded-full">
                      {progress}%
                   </span>
                )}
             </div>
             
             {message && message !== `Processing ${type}...` && (
-               <p className="text-xs text-emerald-300 ml-6 mb-2">{message}</p>
+               <p className="text-xs text-gray-300 ml-6 mb-2">{message}</p>
             )}
             
-            <div className="w-full bg-gray-700 rounded-full h-2.5 ml-6 overflow-hidden">
+            <div className="w-full bg-gray-700 rounded-full h-2 ml-6 overflow-hidden">
                <div
-                  className="bg-emerald-500 h-2.5 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: animatedWidth }}
-               >
-                  <div className="absolute inset-0 bg-emerald-400/30 animate-pulse rounded-full"></div>
-               </div>
+                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: progressWidth }}
+               ></div>
             </div>
          </div>
       </div>
@@ -82,7 +76,6 @@ const PodcastSession = () => {
    const [processingType, setProcessingType] = useState(null);
    const [processingProgress, setProcessingProgress] = useState(0);
    const [processingMessage, setProcessingMessage] = useState('');
-   const [operationId, setOperationId] = useState(null);
    const [sessionState, setSessionState] = useState({});
    const [currentStage, setCurrentStage] = useState('welcome');
    const [error, setError] = useState(null);
@@ -106,11 +99,13 @@ const PodcastSession = () => {
       { code: 'pt', name: 'Portuguese' },
       { code: 'id', name: 'Indonesian' },
    ]);
+   
    const chatContainerRef = useRef(null);
    const pollTimerRef = useRef(null);
    const messagesEndRef = useRef(null);
    const inputRef = useRef(null);
 
+   // Init effect
    useEffect(() => {
       if (sessionId) {
          console.log('Session ID available:', sessionId);
@@ -118,42 +113,52 @@ const PodcastSession = () => {
       } else {
          console.error('No sessionId available from URL params!');
       }
+      
       const handleResize = () => {
          setIsPreviewVisible(window.innerWidth >= 1024);
          if (window.innerWidth >= 768) {
             setIsMobileSidebarOpen(false);
          }
       };
+      
       window.addEventListener('resize', handleResize);
+      
       return () => {
          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
          window.removeEventListener('resize', handleResize);
       };
    }, [sessionId]);
 
+   // Scroll to bottom effect
    useEffect(() => {
       if (messagesEndRef.current) {
          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
    }, [messages]);
 
+   // Session state effect
    useEffect(() => {
       if (sessionState.show_sources_for_selection && sessionState.search_results) {
+         // Pre-select all sources by default
          setSelectedSourceIndices(
             Array.from({ length: sessionState.search_results.length }, (_, i) => i)
          );
       }
+      
       if (sessionState.show_recording_player !== undefined) {
          setShowRecordingPlayer(sessionState.show_recording_player);
       }
+      
       if (sessionState.available_languages && sessionState.available_languages.length > 0) {
          setAvailableLanguages(sessionState.available_languages);
       }
+      
       if (sessionState.selected_language && sessionState.selected_language.code) {
          setSelectedLanguageCode(sessionState.selected_language.code);
       }
    }, [sessionState]);
 
+   // Helper to parse session state
    const parseSessionState = stateString => {
       if (!stateString) return null;
       try {
@@ -164,84 +169,55 @@ const PodcastSession = () => {
       }
    };
 
+   // Initialize session
    const initializeSession = async id => {
       try {
          setError(null);
          const sessionResponse = await api.podcastAgent.createSession(id);
-         if (!sessionResponse?.data?.session_id) throw new Error('Failed to activate session');
+         
+         if (!sessionResponse?.data?.session_id) {
+            throw new Error('Failed to activate session');
+         }
+         
          const historyData = await api.podcastAgent.getSessionHistory(id);
-         const uniqueMessages =
-            historyData.data.messages?.filter(
-               (msg, idx, self) =>
-                  msg.content &&
-                  msg.role &&
-                  idx === self.findIndex(m => m.role === msg.role && m.content === msg.content)
-            ) || [];
+         
+         // Process message history
+         const uniqueMessages = historyData.data.messages?.filter(
+            (msg, idx, self) =>
+               msg.content &&
+               msg.role &&
+               idx === self.findIndex(m => m.role === msg.role && m.content === msg.content)
+         ) || [];
+         
+         // Set initial messages
          setMessages(
             uniqueMessages.length
                ? uniqueMessages
                : [
                     {
                        role: 'assistant',
-                       content:
-                          "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
+                       content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
                     },
                  ]
          );
+         
+         // Process session state
          if (historyData.data.state) {
             const parsedState = parseSessionState(historyData.data.state);
             if (parsedState) {
                setSessionState(parsedState);
                setCurrentStage(parsedState.stage || 'welcome');
-               if (parsedState.processing_status?.is_processing) {
-                  try {
-                     const statusResponse = await api.podcastAgent.checkStatus(id);
-                     if (!statusResponse.data.is_processing) {
-                        console.log('Backend reports processing is complete or timed out');
-                        if (statusResponse.data.session_state) {
-                           const updatedState = parseSessionState(
-                              statusResponse.data.session_state
-                           );
-                           if (updatedState) {
-                              setSessionState(updatedState);
-                              setCurrentStage(updatedState.stage || parsedState.stage || 'welcome');
-                           }
-                        }
-                        setIsProcessing(false);
-                        setProcessingType(null);
-                        setProcessingProgress(0);
-                        setProcessingMessage('');
-                        setOperationId(null);
-                     } else {
-                        console.log('Verified processing is still active, starting polling');
-                        setIsProcessing(true);
-                        setProcessingType(
-                           statusResponse.data.process_type ||
-                              statusResponse.data.operation_type ||
-                              parsedState.processing_status.process_type
-                        );
-                        
-                        // Set progress information if available
-                        const progress = statusResponse.data.progress || 0;
-                        const message = statusResponse.data.message || '';
-                        setProcessingProgress(progress);
-                        setProcessingMessage(message);
-                        
-                        // Store operation ID if available
-                        if (statusResponse.data.operation_id) {
-                           setOperationId(statusResponse.data.operation_id);
-                        }
-                        
-                        startPollingForCompletion();
-                     }
-                  } catch (statusError) {
-                     console.error('Error checking processing status on init:', statusError);
-                     setIsProcessing(false);
-                     setProcessingType(null);
-                     setProcessingProgress(0);
-                     setProcessingMessage('');
-                     setOperationId(null);
-                  }
+               
+               // Check for active processing
+               const statusResponse = await api.podcastAgent.checkStatus(id);
+               setIsProcessing(statusResponse.data.is_processing);
+               
+               if (statusResponse.data.is_processing) {
+                  console.log('Active processing detected, starting polling');
+                  setProcessingType(statusResponse.data.process_type || 'operation');
+                  setProcessingProgress(statusResponse.data.progress || 0);
+                  setProcessingMessage(statusResponse.data.message || '');
+                  startPollingForCompletion();
                }
             }
          }
@@ -261,6 +237,7 @@ const PodcastSession = () => {
       }
    };
 
+   // Start a new session
    const startNewSession = async () => {
       try {
          setError(null);
@@ -268,29 +245,31 @@ const PodcastSession = () => {
          setMessages([]);
          setSessionState({});
          setCurrentStage('welcome');
+         
          if (pollTimerRef.current) {
             clearInterval(pollTimerRef.current);
             pollTimerRef.current = null;
          }
+         
          setIsProcessing(false);
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
-         setOperationId(null);
          setSelectedSourceIndices([]);
          setIsScriptModalOpen(false);
          setIsFinalScriptModalOpen(false);
          setShowCompletionModal(false);
          setIsMobileSidebarOpen(false);
          setShowRecordingPlayer(false);
+         
          const response = await api.podcastAgent.createSession(null);
+         
          if (response?.data?.session_id) {
             navigate(`/studio/chat/${response.data.session_id}`, { replace: true });
             setMessages([
                {
                   role: 'assistant',
-                  content:
-                     "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
+                  content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
                },
             ]);
          } else {
@@ -304,126 +283,97 @@ const PodcastSession = () => {
       }
    };
 
+   // Improved polling with adaptive intervals
    const startPollingForCompletion = () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       
-      // Initial poll settings with exponential backoff
       let pollInterval = 1000; // Start with 1 second
       const maxPollInterval = 5000; // Max 5 seconds between polls
-      const backoffFactor = 1.5; // Increase interval by 50% each time
-      const maxPolls = 120; // 10 minutes max at 5s intervals
-      
+      const maxPolls = 180; // 15 minutes max at 5s intervals
       let pollCount = 0;
-      let consecutiveErrors = 0;
       
-      // Define a named polling function instead of using arguments.callee
-      const pollFunction = async () => {
-         pollCount++;
-         if (pollCount > maxPolls) {
-            clearInterval(pollTimerRef.current);
-            setIsProcessing(false);
-            setProcessingType(null);
-            setProcessingProgress(0);
-            setProcessingMessage('');
-            setOperationId(null);
-            setMessages(prev => [
-               ...prev,
-               { role: 'assistant', content: 'Process timed out. Please refresh the page.' },
-            ]);
-            return;
-         }
-         
+      const pollForCompletion = async () => {
          try {
             const statusResponse = await api.podcastAgent.checkStatus(sessionId);
             
-            // Reset consecutive errors on success
-            consecutiveErrors = 0;
-            
-            // Extract enhanced status information
-            const progress = statusResponse.data.progress || 0;
-            const statusMessage = statusResponse.data.message || '';
-            
-            // Update UI with detailed status
-            setProcessingProgress(progress);
-            if (statusMessage) {
-               setProcessingMessage(statusMessage);
+            // Update progress information
+            if (statusResponse.data.progress) {
+               setProcessingProgress(statusResponse.data.progress);
             }
             
-            // Store operation ID if available and not already set
-            if (statusResponse.data.operation_id && !operationId) {
-               setOperationId(statusResponse.data.operation_id);
+            if (statusResponse.data.message) {
+               setProcessingMessage(statusResponse.data.message);
             }
             
-            // If processing is complete
+            // Check if processing is complete
             if (!statusResponse.data.is_processing) {
+               // Processing completed
                clearInterval(pollTimerRef.current);
+               pollTimerRef.current = null;
+               
                setIsProcessing(false);
                setProcessingType(null);
                setProcessingProgress(0);
                setProcessingMessage('');
-               setOperationId(null);
                
-               // Update session state if available
-               if (statusResponse.data.session_state)
+               // Update session state
+               if (statusResponse.data.session_state) {
                   updateSessionState(statusResponse.data.session_state);
-                  
-               // If there's an error message in the response, display it
-               if (statusResponse.data.error && statusResponse.data.message) {
-                  setError(statusResponse.data.message);
                }
                
-               // Handle session expiration
-               if (statusResponse.data.session_expired) {
+               // Check for completion message
+               if (statusResponse.data.response) {
                   setMessages(prev => [
                      ...prev,
-                     { 
-                        role: 'assistant', 
-                        content: 'Your session has expired. Starting a new session...' 
-                     },
+                     { role: 'assistant', content: statusResponse.data.response }
                   ]);
-                  
-                  // Short delay before starting new session
-                  setTimeout(() => {
-                     startNewSession();
-                  }, 2000);
                }
+               return;
             }
             
             // Adjust poll interval based on progress
-            // As we get closer to 100%, we poll more frequently
-            if (progress > 70) {
-               pollInterval = 1000; // Poll every second when close to completion
-            } else if (progress > 0) {
-               // Gradually increase poll interval based on progress
-               // Lower progress = longer interval
-               pollInterval = Math.min(maxPollInterval, 
-                                  1000 + (100 - progress) * 40);
+            if (statusResponse.data.progress > 70) {
+               // Poll more frequently as we near completion
+               pollInterval = 1000;
             } else {
-               // Apply backoff for generic polling
-               pollInterval = Math.min(maxPollInterval, pollInterval * backoffFactor);
+               // Gradual backoff
+               pollInterval = Math.min(maxPollInterval, pollInterval * 1.2);
             }
-         } catch (error) {
-            console.error('Error polling:', error);
-            consecutiveErrors++;
             
-            // Increase backoff on consecutive errors
-            if (consecutiveErrors > 2) {
-               pollInterval = Math.min(maxPollInterval * 2, pollInterval * 2);
-               console.warn(`Increased poll interval to ${pollInterval}ms due to errors`);
+            // Increment poll count
+            pollCount++;
+            
+            // If we've been polling too long, give up
+            if (pollCount > maxPolls) {
+               clearInterval(pollTimerRef.current);
+               pollTimerRef.current = null;
+               
+               setIsProcessing(false);
+               setProcessingType(null);
+               setProcessingProgress(0);
+               setProcessingMessage('');
+               
+               setError("The process is taking longer than expected. Please try again.");
+               return;
             }
+         } catch (err) {
+            console.error("Error during status polling:", err);
+            // On error, back off more aggressively
+            pollInterval = Math.min(10000, pollInterval * 2);
          }
-         
-         // Clear and reset the interval with the new timing
-         clearInterval(pollTimerRef.current);
-         pollTimerRef.current = setInterval(pollFunction, pollInterval);
       };
       
-      // Initial poll
-      pollTimerRef.current = setInterval(pollFunction, pollInterval);
+      // Start polling immediately
+      pollForCompletion();
+      
+      // Then set up interval
+      pollTimerRef.current = setInterval(pollForCompletion, pollInterval);
    };
 
+   // Send a message
    const handleSendMessage = async () => {
       if (!inputMessage.trim() || !sessionId || isProcessing) return;
+      
       setInputMessage('');
       const userMessage = { role: 'user', content: inputMessage };
       setMessages(prev => [...prev, userMessage]);
@@ -431,93 +381,66 @@ const PodcastSession = () => {
       
       try {
          setLoading(true);
-         setError(null); // Clear any previous errors
+         setError(null);
          
-         const predictedProcessType = predictProcessingType(inputMessage, currentStage);
-         if (predictedProcessType) {
+         // Predict what type of processing this might be
+         const predictedType = predictProcessingType(inputMessage, currentStage);
+         if (predictedType) {
             setIsProcessing(true);
-            setProcessingType(predictedProcessType);
+            setProcessingType(predictedType);
             setProcessingProgress(0);
-            setProcessingMessage(`Starting ${predictedProcessType}...`);
+            setProcessingMessage(`Starting ${predictedType}...`);
          }
          
+         // Send message to API
          const response = await api.podcastAgent.chat(sessionId, inputMessage);
          
-         // Check for session expiration
-         if (response.data.session_expired) {
-            setMessages(prev => [
-               ...prev,
-               { 
-                  role: 'assistant', 
-                  content: 'Your session has expired. Starting a new session...' 
-               },
-            ]);
-            
-            // Short delay before starting new session
-            setTimeout(() => {
-               startNewSession();
-            }, 2000);
-            
-            return;
+         // Check for content in the response
+         if (response.data.response) {
+            setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
          }
          
-         // Store operation ID if available
-         if (response.data.operation_id) {
-            setOperationId(response.data.operation_id);
+         // Update session state if provided
+         if (response.data.session_state) {
+            updateSessionState(response.data.session_state);
          }
          
-         // Handle normal processing
-         if (response.data.isProcessing || response.data.status === 'pending') {
+         // If response indicates processing is still ongoing
+         if (response.data.is_processing) {
+            // Make sure we're tracking the processing state
             setIsProcessing(true);
-            setProcessingType(response.data.processingType || response.data.operation_type);
-            setProcessingProgress(response.data.progress || 0);
-            setProcessingMessage(response.data.message || '');
-            
-            if (response.data.response) {
-               setMessages(prev => [
-                  ...prev,
-                  { role: 'assistant', content: response.data.response },
-               ]);
-            }
-            
-            if (response.data.session_state) {
-               updateSessionState(response.data.session_state);
-            }
-            
+            setProcessingType(response.data.process_type || predictedType || 'operation');
+            // Start polling for completion
             startPollingForCompletion();
          } else {
-            // Immediate response
-            if (response.data.response) {
-               setMessages(prev => [
-                  ...prev,
-                  { role: 'assistant', content: response.data.response },
-               ]);
-            }
-            
-            if (response.data.session_state) {
-               updateSessionState(response.data.session_state);
-            }
-            
+            // Processing completed immediately
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
-            setOperationId(null);
          }
       } catch (error) {
          console.error('Error sending message:', error);
-         setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+         
+         setMessages(prev => [
+            ...prev, 
+            { 
+               role: 'assistant', 
+               content: `I'm sorry, there was an error processing your request: ${error.message}. Please try again.` 
+            }
+         ]);
+         
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
-         setOperationId(null);
       } finally {
          setLoading(false);
       }
    };
 
+   // Hide all confirmation UIs
    const hideAllConfirmationUIs = useCallback(() => {
       setSessionState(prevState => ({
          ...prevState,
@@ -529,37 +452,50 @@ const PodcastSession = () => {
       }));
    }, []);
 
+   // Update session state
    const updateSessionState = stateString => {
       const parsedState = parseSessionState(stateString);
       if (parsedState) {
          setSessionState(parsedState);
          setCurrentStage(parsedState.stage || currentStage);
-         if (parsedState.podcast_generated) setShowCompletionModal(true);
+         
+         if (parsedState.podcast_generated) {
+            setShowCompletionModal(true);
+         }
+         
          if (parsedState.show_recording_player !== undefined) {
             setShowRecordingPlayer(parsedState.show_recording_player);
          }
       }
    };
 
+   // Predict processing type based on message content and current stage
    const predictProcessingType = useCallback((message, stage) => {
       const lowerMessage = message.toLowerCase();
-      if (stage === 'source_selection' && /\d/.test(message)) return 'script_generation';
-      if (
-         stage === 'script' &&
-         (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))
-      )
+      
+      if (stage === 'source_selection' && /\d/.test(message)) {
+         return 'script_generation';
+      }
+      
+      if (stage === 'script' && 
+         (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))) {
          return 'banner_generation';
-      if (
-         stage === 'banner' &&
-         (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))
-      )
+      }
+      
+      if (stage === 'banner' && 
+         (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))) {
          return 'audio_generation';
+      }
+      
       if (lowerMessage.includes('search') && 
-         (lowerMessage.includes('web') || lowerMessage.includes('internet')))
+         (lowerMessage.includes('web') || lowerMessage.includes('internet'))) {
          return 'web_search';
+      }
+      
       return 'chat';
    }, []);
 
+   // Source selection handlers
    const handleToggleSourceSelection = useCallback(
       index => {
          if (isProcessing) return;
@@ -572,6 +508,7 @@ const PodcastSession = () => {
 
    const handleToggleSelectAllSources = useCallback(() => {
       if (isProcessing || !sessionState.search_results) return;
+      
       setSelectedSourceIndices(
          selectedSourceIndices.length === sessionState.search_results.length
             ? []
@@ -584,36 +521,31 @@ const PodcastSession = () => {
          setError('Please select at least one source.');
          return;
       }
+      
       const selectedLang = availableLanguages.find(lang => lang.code === selectedLanguageCode);
       const langName = selectedLang ? selectedLang.name : 'English';
+      
+      // Convert to 1-based indices for the message
       const oneBasedIndices = selectedSourceIndices.map(idx => idx + 1);
       const selectionString = `I've selected sources ${oneBasedIndices.join(
          ', '
       )} and I want the podcast in ${langName}.`;
+      
+      // Add user message to chat
       setMessages(prev => [...prev, { role: 'user', content: selectionString }]);
+      
+      // Start processing
       setLoading(true);
       setIsProcessing(true);
       setProcessingType('script_generation');
       setProcessingProgress(0);
       setProcessingMessage('Starting script generation...');
+      
       try {
+         // Send selection to API
          const response = await api.podcastAgent.chat(sessionId, selectionString);
          
-         // Check for session expiration
-         if (response.data.session_expired) {
-            setMessages(prev => [
-               ...prev,
-               { role: 'assistant', content: 'Your session has expired. Starting a new session...' },
-            ]);
-            setTimeout(() => startNewSession(), 2000);
-            return;
-         }
-         
-         // Store operation ID if available
-         if (response.data.operation_id) {
-            setOperationId(response.data.operation_id);
-         }
-         
+         // Handle the response
          if (response.data.response) {
             setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
          }
@@ -622,40 +554,48 @@ const PodcastSession = () => {
             updateSessionState(response.data.session_state);
          }
          
-         if (response.data.isProcessing || response.data.status === 'pending') {
+         // If still processing, start polling
+         if (response.data.is_processing) {
             startPollingForCompletion();
          } else {
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
-            setOperationId(null);
          }
       } catch (error) {
          console.error('Error confirming sources:', error);
-         setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+         
+         setMessages(prev => [
+            ...prev, 
+            { 
+               role: 'assistant', 
+               content: `I'm sorry, there was an error processing your selection: ${error.message}. Please try again.` 
+            }
+         ]);
+         
          setError(`Failed to confirm sources: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
-         setOperationId(null);
       } finally {
          setLoading(false);
       }
    };
 
+   // Language selection
    const handleLanguageSelection = useCallback(languageCode => {
       setSelectedLanguageCode(languageCode);
    }, []);
 
+   // Confirmation handlers
    const handleScriptConfirm = useCallback(() => {
       setSessionState(prevState => ({
          ...prevState,
          show_script_for_confirmation: false,
       }));
-      const message = 'I approve this script. It looks good!';
-      sendDirectMessage(message);
+      sendDirectMessage('I approve this script. It looks good!');
    }, []);
 
    const handleBannerConfirm = useCallback(() => {
@@ -663,8 +603,7 @@ const PodcastSession = () => {
          ...prevState,
          show_banner_for_confirmation: false,
       }));
-      const message = 'I approve this banner. It looks good!';
-      sendDirectMessage(message);
+      sendDirectMessage('I approve this banner. It looks good!');
    }, []);
 
    const handleAudioConfirm = useCallback(() => {
@@ -672,14 +611,12 @@ const PodcastSession = () => {
          ...prevState,
          show_audio_for_confirmation: false,
       }));
-      const message = "The audio sounds great! I'm happy with the final podcast.";
-      sendDirectMessage(message);
+      sendDirectMessage("The audio sounds great! I'm happy with the final podcast.");
    }, []);
 
    const handleCloseRecording = useCallback(() => {
       setShowRecordingPlayer(false);
-      const message = "I've viewed the web search recording. Let's continue with the podcast.";
-      sendDirectMessage(message);
+      sendDirectMessage("I've viewed the web search recording. Let's continue with the podcast.");
    }, []);
 
    const handleViewRecording = useCallback(() => {
@@ -688,97 +625,87 @@ const PodcastSession = () => {
       }
    }, [sessionState.web_search_recording]);
 
+   // Send a message directly (without typing in the input)
    const sendDirectMessage = async message => {
       if (!message.trim() || !sessionId || isProcessing) return;
+      
       setMessages(prev => [...prev, { role: 'user', content: message }]);
       hideAllConfirmationUIs();
-      setLoading(true);
+      
       try {
-         setError(null); // Clear any previous errors
+         setLoading(true);
+         setError(null);
          
-         const predictedProcessType = predictProcessingType(message, currentStage);
-         if (predictedProcessType) {
+         // Predict what type of processing this might be
+         const predictedType = predictProcessingType(message, currentStage);
+         if (predictedType) {
             setIsProcessing(true);
-            setProcessingType(predictedProcessType);
+            setProcessingType(predictedType);
             setProcessingProgress(0);
-            setProcessingMessage(`Starting ${predictedProcessType}...`);
+            setProcessingMessage(`Starting ${predictedType}...`);
          }
          
+         // Send message to API
          const response = await api.podcastAgent.chat(sessionId, message);
          
-         // Check for session expiration
-         if (response.data.session_expired) {
-            setMessages(prev => [
-               ...prev,
-               { role: 'assistant', content: 'Your session has expired. Starting a new session...' },
-            ]);
-            setTimeout(() => startNewSession(), 2000);
-            return;
+         // Check for content in the response
+         if (response.data.response) {
+            setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
          }
          
-         // Store operation ID if available
-         if (response.data.operation_id) {
-            setOperationId(response.data.operation_id);
+         // Update session state if provided
+         if (response.data.session_state) {
+            updateSessionState(response.data.session_state);
          }
          
-         if (response.data.isProcessing || response.data.status === 'pending') {
+         // If response indicates processing is still ongoing
+         if (response.data.is_processing) {
+            // Make sure we're tracking the processing state
             setIsProcessing(true);
-            setProcessingType(response.data.processingType || response.data.operation_type);
-            setProcessingProgress(response.data.progress || 0);
-            setProcessingMessage(response.data.message || '');
-            
-            if (response.data.response) {
-               setMessages(prev => [
-                  ...prev,
-                  { role: 'assistant', content: response.data.response },
-               ]);
-            }
-            
-            if (response.data.session_state) {
-               updateSessionState(response.data.session_state);
-            }
-            
+            setProcessingType(response.data.process_type || predictedType || 'operation');
+            // Start polling for completion
             startPollingForCompletion();
          } else {
-            // Immediate response
-            if (response.data.response) {
-               setMessages(prev => [
-                  ...prev,
-                  { role: 'assistant', content: response.data.response },
-               ]);
-            }
-            
-            if (response.data.session_state) {
-               updateSessionState(response.data.session_state);
-            }
-            
+            // Processing completed immediately
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
-            setOperationId(null);
          }
       } catch (error) {
          console.error('Error sending message:', error);
-         setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
+         
+         setMessages(prev => [
+            ...prev, 
+            { 
+               role: 'assistant', 
+               content: `I'm sorry, there was an error processing your request: ${error.message}. Please try again.` 
+            }
+         ]);
+         
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
-         setOperationId(null);
       } finally {
          setLoading(false);
       }
    };
 
+   // Prepare podcast data
    const podcastInfo = useMemo(() => {
       let title = 'AI Podcast Studio';
       let scriptText = '';
       let bannerUrl = '';
       let audioUrl = '';
-      if (sessionState.generated_script?.title) title = sessionState.generated_script.title;
-      else if (sessionState.podcast_info?.topic) title = sessionState.podcast_info.topic;
+      
+      if (sessionState.generated_script?.title) {
+         title = sessionState.generated_script.title;
+      } else if (sessionState.podcast_info?.topic) {
+         title = sessionState.podcast_info.topic;
+      }
+      
       if (sessionState.generated_script) {
          if (typeof sessionState.generated_script === 'object') {
             try {
@@ -786,6 +713,7 @@ const PodcastSession = () => {
                if (sessionState.generated_script.title) {
                   scriptLines.push(sessionState.generated_script.title);
                }
+               
                sessionState.generated_script.sections?.forEach(section => {
                   scriptLines.push(` ${section.title || section.type}\n`);
                   section.dialog?.forEach(line =>
@@ -793,18 +721,24 @@ const PodcastSession = () => {
                   );
                   scriptLines.push('\n');
                });
+               
                scriptText = scriptLines.join('');
             } catch (error) {
                console.error('Error formatting script:', error);
                scriptText = JSON.stringify(sessionState.generated_script, null, 2);
             }
-         } else scriptText = sessionState.generated_script;
+         } else {
+            scriptText = sessionState.generated_script;
+         }
       }
+      
       if (sessionState.banner_url) bannerUrl = sessionState.banner_url;
       if (sessionState.audio_url) audioUrl = sessionState.audio_url;
+      
       return { title, scriptText, bannerUrl, audioUrl };
    }, [sessionState]);
 
+   // Full URLs for assets
    const bannerUrlFull = useMemo(() => {
       return podcastInfo.bannerUrl
          ? `${api.API_BASE_URL}/podcast_img/${podcastInfo.bannerUrl}`
@@ -815,6 +749,7 @@ const PodcastSession = () => {
       return podcastInfo.audioUrl ? `${api.API_BASE_URL}/audio/${podcastInfo.audioUrl}` : '';
    }, [podcastInfo.audioUrl]);
 
+   // Preview panel handlers
    const handleClosePreview = useCallback(() => {
       setIsPreviewVisible(false);
    }, []);
@@ -823,14 +758,18 @@ const PodcastSession = () => {
       setIsPreviewVisible(prev => !prev);
    }, []);
 
+   // Determine if we should show the final presentation
    const showFinalPresentation = sessionState.podcast_generated === true;
 
+   // Sidebar class based on mobile visibility
    const sidebarClass = isMobileSidebarOpen
       ? 'translate-x-0 shadow-lg'
       : '-translate-x-full md:translate-x-0';
+      
+   // Content class based on preview visibility
    const contentClass = isPreviewVisible ? 'lg:mr-72' : 'lg:mr-0';
 
-   // Status display component for header
+   // Status display for header
    const renderStatusDisplay = () => {
       if (isProcessing) {
          return (
@@ -840,7 +779,7 @@ const PodcastSession = () => {
                   {processingMessage || `Processing ${processingType || ''}...`}
                </span>
                {processingProgress > 0 && (
-                  <span className="text-xs font-mono bg-emerald-900/30 px-1.5 rounded-full">
+                  <span className="text-xs bg-gray-700/80 px-1.5 rounded-full">
                      {processingProgress}%
                   </span>
                )}
@@ -858,6 +797,7 @@ const PodcastSession = () => {
 
    return (
       <div className="min-h-screen flex bg-[#0A0E14]">
+         {/* Mobile sidebar backdrop */}
          {isMobileSidebarOpen && (
             <div
                className="fixed inset-0 bg-black/70 z-20 md:hidden"
@@ -865,6 +805,8 @@ const PodcastSession = () => {
                aria-hidden="true"
             />
          )}
+         
+         {/* Sidebar */}
          <div
             className={`fixed md:sticky top-0 left-0 h-full md:h-screen w-72 bg-gradient-to-b from-gray-800 to-gray-900 border-r border-gray-700 z-30 transform transition-transform duration-300 ease-in-out ${sidebarClass}`}
          >
@@ -873,13 +815,17 @@ const PodcastSession = () => {
                onSessionSelect={() => setIsMobileSidebarOpen(false)}
             />
          </div>
+         
+         {/* Main content */}
          <div
             className={`flex-1 min-h-screen flex flex-col ml-0 md:ml-72 relative ${contentClass} transition-all duration-300`}
             style={{ marginLeft: 0 }}
          >
+            {/* Header */}
             <header className="sticky top-0 z-10 bg-[#0A0E14] border-b border-gray-700 shadow-md">
                <div className="h-16 px-4 flex items-center justify-between">
                   <div className="flex items-center">
+                     {/* Mobile menu button */}
                      <button
                         className="md:hidden mr-3 p-2 text-gray-400 hover:text-white rounded-md hover:bg-gray-700 transition-colors"
                         onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -915,6 +861,8 @@ const PodcastSession = () => {
                            </svg>
                         )}
                      </button>
+                     
+                     {/* Podcast title */}
                      <div className="flex items-center">
                         <div className="w-10 h-10 relative mr-3 flex-shrink-0">
                            <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -936,7 +884,6 @@ const PodcastSession = () => {
                                  <circle cx="16" cy="11" r="1" fill="currentColor" />
                               </svg>
                            </div>
-                           <div className="absolute inset-0 bg-emerald-500 opacity-10 rounded-full blur-md"></div>
                            <div className="absolute inset-0 rounded-full border border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900"></div>
                         </div>
                         <h1 className="text-lg font-semibold text-white truncate max-w-[180px] sm:max-w-xs">
@@ -944,6 +891,8 @@ const PodcastSession = () => {
                         </h1>
                      </div>
                   </div>
+                  
+                  {/* Status and preview toggle */}
                   <div className="flex items-center space-x-2">
                      <div className="hidden sm:flex items-center px-3 py-1 bg-[#121824] rounded-full border border-gray-700 text-xs text-gray-300">
                         {renderStatusDisplay()}
@@ -954,14 +903,19 @@ const PodcastSession = () => {
                      />
                   </div>
                </div>
+               
+               {/* Mobile status display */}
                <div className="sm:hidden px-4 py-1.5 border-t border-gray-700 flex items-center justify-center bg-[#121824]/50">
                   <div className="text-xs text-gray-400 flex items-center">
                      {renderStatusDisplay()}
                   </div>
                </div>
             </header>
+            
+            {/* Main content area */}
             <main className="flex-1 flex flex-col max-h-[calc(100vh-4rem)] overflow-hidden">
                {showFinalPresentation ? (
+                  /* Final presentation view */
                   <div className="flex-1 overflow-y-auto p-4 md:p-6">
                      <FinalPresentation
                         podcastTitle={podcastInfo.title}
@@ -985,11 +939,14 @@ const PodcastSession = () => {
                      />
                   </div>
                ) : (
+                  /* Chat interface */
                   <>
+                     {/* Chat messages */}
                      <div
                         ref={chatContainerRef}
                         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4"
                      >
+                        {/* Processing indicator */}
                         {isProcessing && (
                            <ProgressIndicator 
                               progress={processingProgress} 
@@ -997,11 +954,20 @@ const PodcastSession = () => {
                               type={processingType} 
                            />
                         )}
-                        <div className="space-y-2">
+                        
+                        {/* Messages and UI components */}
+                        <div className="space-y-4">
                            {messages.map((msg, index) => (
-                              <ChatMessage key={index} message={msg.content} role={msg.role} />
+                              <ChatMessage 
+                                 key={index} 
+                                 message={msg.content} 
+                                 role={msg.role} 
+                              />
                            ))}
+                           
                            {loading && <LoadingIndicator />}
+                           
+                           {/* Source selection UI */}
                            {sessionState.show_sources_for_selection &&
                               sessionState.search_results && (
                                  <SourceSelection
@@ -1016,6 +982,8 @@ const PodcastSession = () => {
                                     onSelectLanguage={handleLanguageSelection}
                                  />
                               )}
+                           
+                           {/* Script confirmation UI */}
                            {sessionState.show_script_for_confirmation &&
                               sessionState.generated_script && (
                                  <ScriptConfirmation
@@ -1027,6 +995,8 @@ const PodcastSession = () => {
                                     onToggleModal={() => setIsScriptModalOpen(prev => !prev)}
                                  />
                               )}
+                           
+                           {/* Banner confirmation UI */}
                            {sessionState.show_banner_for_confirmation &&
                               sessionState.banner_url && (
                                  <BannerConfirmation
@@ -1037,15 +1007,20 @@ const PodcastSession = () => {
                                     isProcessing={isProcessing}
                                  />
                               )}
-                           {sessionState.show_audio_for_confirmation && sessionState.audio_url && (
-                              <AudioConfirmation
-                                 audioUrl={audioUrlFull}
-                                 topic={podcastInfo.title}
-                                 onApprove={() => handleAudioConfirm(true)}
-                                 onRequestChanges={() => handleAudioConfirm(false)}
-                                 isProcessing={isProcessing}
-                              />
-                           )}
+                           
+                           {/* Audio confirmation UI */}
+                           {sessionState.show_audio_for_confirmation && 
+                              sessionState.audio_url && (
+                                 <AudioConfirmation
+                                    audioUrl={audioUrlFull}
+                                    topic={podcastInfo.title}
+                                    onApprove={() => handleAudioConfirm(true)}
+                                    onRequestChanges={() => handleAudioConfirm(false)}
+                                    isProcessing={isProcessing}
+                                 />
+                              )}
+                           
+                           {/* Error message */}
                            {error && (
                               <div className="p-3 bg-red-900/30 border border-red-800/50 rounded-md text-red-400 text-sm">
                                  <div className="flex items-center">
@@ -1064,12 +1039,17 @@ const PodcastSession = () => {
                                  </div>
                               </div>
                            )}
+                           
+                           {/* Scroll anchor */}
                            <div ref={messagesEndRef} />
                         </div>
                      </div>
+                     
+                     {/* Input area */}
                      <div className="sticky bottom-0 border-t border-gray-700 bg-[#0A0E14] shadow-lg">
                         <div className="px-4 py-4">
                            <div className="max-w-4xl mx-auto">
+                              {/* Message input */}
                               <div className="relative flex items-center">
                                  <input
                                     ref={inputRef}
@@ -1099,6 +1079,8 @@ const PodcastSession = () => {
                                        loading ? 'opacity-60 cursor-not-allowed bg-gray-800/50' : ''
                                     } shadow-sm`}
                                  />
+                                 
+                                 {/* Send button */}
                                  <button
                                     onClick={handleSendMessage}
                                     disabled={!inputMessage.trim() || isProcessing || loading}
@@ -1146,6 +1128,8 @@ const PodcastSession = () => {
                                     )}
                                  </button>
                               </div>
+                              
+                              {/* Footer text and new podcast button */}
                               <div className="mt-1.5 px-1 flex justify-between items-center">
                                  <span className="text-xs text-gray-500">
                                     {isProcessing
@@ -1171,11 +1155,13 @@ const PodcastSession = () => {
                )}
             </main>
          </div>
+         
+         {/* Preview panel */}
          {isPreviewVisible && (
             <div className="fixed right-0 top-0 bottom-0 w-full sm:w-80 md:w-72 bg-[#0A0E14] border-l border-gray-700 overflow-hidden z-40 shadow-xl transform transition-transform duration-300 ease-in-out">
                <div className="flex items-center justify-between p-4 border-b border-gray-700">
                   <div className="flex items-center">
-                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-2"></div>
+                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
                      <h3 className="text-sm font-semibold text-white">Active Assets</h3>
                   </div>
                   <button
@@ -1202,9 +1188,11 @@ const PodcastSession = () => {
                />
             </div>
          )}
+         
+         {/* Completion modal */}
          {showCompletionModal && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-               <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md max-w-md w-full p-6 text-center shadow-2xl animate-fade-in-up">
+               <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md max-w-md w-full p-6 text-center shadow-2xl">
                   <div className="relative w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                      <svg
                         className="h-8 w-8 text-emerald-500"
@@ -1217,7 +1205,6 @@ const PodcastSession = () => {
                            clipRule="evenodd"
                         />
                      </svg>
-                     <div className="absolute inset-0 rounded-full bg-emerald-500 opacity-10 animate-ping"></div>
                   </div>
                   <h2 className="text-xl font-bold text-white mb-2">Podcast Creation Complete!</h2>
                   <p className="text-gray-400 mb-6">
@@ -1240,33 +1227,6 @@ const PodcastSession = () => {
                </div>
             </div>
          )}
-         <style jsx>{`
-            @keyframes fadeInUp {
-               from {
-                  opacity: 0;
-                  transform: translateY(20px);
-               }
-               to {
-                  opacity: 1;
-                  transform: translateY(0);
-               }
-            }
-
-            @keyframes slideUp {
-               from {
-                  transform: translateY(30px);
-                  opacity: 0;
-               }
-               to {
-                  transform: translateY(0);
-                  opacity: 1;
-               }
-            }
-
-            .animate-fade-in-up {
-               animation: fadeInUp 0.3s ease-out forwards;
-            }
-         `}</style>
       </div>
    );
 };
