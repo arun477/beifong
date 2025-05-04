@@ -11,8 +11,13 @@ import ActivePodcastPreview from '../components/ActivePodcastPreview';
 import { PodcastAssetsToggle } from '../components/AssetPannelToggle';
 import api from '../services/api';
 
-// Progress indicator component for enhanced status display
+// Enhanced Progress Indicator component for better status visualization
 const ProgressIndicator = ({ progress, message, type }) => {
+   // Apply animation to progress transitions
+   const animatedWidth = React.useMemo(() => {
+      return `${progress}%`;
+   }, [progress]);
+
    return (
       <div className="mb-4 px-4 py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-md shadow-lg">
          <div className="flex flex-col">
@@ -38,23 +43,30 @@ const ProgressIndicator = ({ progress, message, type }) => {
                      ></path>
                   </svg>
                </div>
-               <span>
+               <span className="font-medium">
                   {type
                      ? `Processing ${type}...`
-                     : 'Processing request...'}
+                     : 'Processing...'}
                </span>
+               {progress > 0 && (
+                  <span className="ml-2 text-xs font-mono bg-emerald-900/30 px-2 py-0.5 rounded-full">
+                     {progress}%
+                  </span>
+               )}
             </div>
-            {message && (
+            
+            {message && message !== `Processing ${type}...` && (
                <p className="text-xs text-emerald-300 ml-6 mb-2">{message}</p>
             )}
-            {progress > 0 && (
-               <div className="w-full bg-gray-700 rounded-full h-2 ml-6">
-                  <div
-                     className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                     style={{ width: `${progress}%` }}
-                  ></div>
+            
+            <div className="w-full bg-gray-700 rounded-full h-2.5 ml-6 overflow-hidden">
+               <div
+                  className="bg-emerald-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: animatedWidth }}
+               >
+                  <div className="absolute inset-0 bg-emerald-400/30 animate-pulse rounded-full"></div>
                </div>
-            )}
+            </div>
          </div>
       </div>
    );
@@ -70,6 +82,7 @@ const PodcastSession = () => {
    const [processingType, setProcessingType] = useState(null);
    const [processingProgress, setProcessingProgress] = useState(0);
    const [processingMessage, setProcessingMessage] = useState('');
+   const [operationId, setOperationId] = useState(null);
    const [sessionState, setSessionState] = useState({});
    const [currentStage, setCurrentStage] = useState('welcome');
    const [error, setError] = useState(null);
@@ -198,11 +211,13 @@ const PodcastSession = () => {
                         setProcessingType(null);
                         setProcessingProgress(0);
                         setProcessingMessage('');
+                        setOperationId(null);
                      } else {
                         console.log('Verified processing is still active, starting polling');
                         setIsProcessing(true);
                         setProcessingType(
                            statusResponse.data.process_type ||
+                              statusResponse.data.operation_type ||
                               parsedState.processing_status.process_type
                         );
                         
@@ -212,6 +227,11 @@ const PodcastSession = () => {
                         setProcessingProgress(progress);
                         setProcessingMessage(message);
                         
+                        // Store operation ID if available
+                        if (statusResponse.data.operation_id) {
+                           setOperationId(statusResponse.data.operation_id);
+                        }
+                        
                         startPollingForCompletion();
                      }
                   } catch (statusError) {
@@ -220,6 +240,7 @@ const PodcastSession = () => {
                      setProcessingType(null);
                      setProcessingProgress(0);
                      setProcessingMessage('');
+                     setOperationId(null);
                   }
                }
             }
@@ -255,6 +276,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setOperationId(null);
          setSelectedSourceIndices([]);
          setIsScriptModalOpen(false);
          setIsFinalScriptModalOpen(false);
@@ -282,43 +304,205 @@ const PodcastSession = () => {
       }
    };
 
+   const startPollingForCompletion = () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      
+      // Initial poll settings with exponential backoff
+      let pollInterval = 1000; // Start with 1 second
+      const maxPollInterval = 5000; // Max 5 seconds between polls
+      const backoffFactor = 1.5; // Increase interval by 50% each time
+      const maxPolls = 120; // 10 minutes max at 5s intervals
+      
+      let pollCount = 0;
+      let consecutiveErrors = 0;
+      
+      // Define a named polling function instead of using arguments.callee
+      const pollFunction = async () => {
+         pollCount++;
+         if (pollCount > maxPolls) {
+            clearInterval(pollTimerRef.current);
+            setIsProcessing(false);
+            setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
+            setOperationId(null);
+            setMessages(prev => [
+               ...prev,
+               { role: 'assistant', content: 'Process timed out. Please refresh the page.' },
+            ]);
+            return;
+         }
+         
+         try {
+            const statusResponse = await api.podcastAgent.checkStatus(sessionId);
+            
+            // Reset consecutive errors on success
+            consecutiveErrors = 0;
+            
+            // Extract enhanced status information
+            const progress = statusResponse.data.progress || 0;
+            const statusMessage = statusResponse.data.message || '';
+            
+            // Update UI with detailed status
+            setProcessingProgress(progress);
+            if (statusMessage) {
+               setProcessingMessage(statusMessage);
+            }
+            
+            // Store operation ID if available and not already set
+            if (statusResponse.data.operation_id && !operationId) {
+               setOperationId(statusResponse.data.operation_id);
+            }
+            
+            // If processing is complete
+            if (!statusResponse.data.is_processing) {
+               clearInterval(pollTimerRef.current);
+               setIsProcessing(false);
+               setProcessingType(null);
+               setProcessingProgress(0);
+               setProcessingMessage('');
+               setOperationId(null);
+               
+               // Update session state if available
+               if (statusResponse.data.session_state)
+                  updateSessionState(statusResponse.data.session_state);
+                  
+               // If there's an error message in the response, display it
+               if (statusResponse.data.error && statusResponse.data.message) {
+                  setError(statusResponse.data.message);
+               }
+               
+               // Handle session expiration
+               if (statusResponse.data.session_expired) {
+                  setMessages(prev => [
+                     ...prev,
+                     { 
+                        role: 'assistant', 
+                        content: 'Your session has expired. Starting a new session...' 
+                     },
+                  ]);
+                  
+                  // Short delay before starting new session
+                  setTimeout(() => {
+                     startNewSession();
+                  }, 2000);
+               }
+            }
+            
+            // Adjust poll interval based on progress
+            // As we get closer to 100%, we poll more frequently
+            if (progress > 70) {
+               pollInterval = 1000; // Poll every second when close to completion
+            } else if (progress > 0) {
+               // Gradually increase poll interval based on progress
+               // Lower progress = longer interval
+               pollInterval = Math.min(maxPollInterval, 
+                                  1000 + (100 - progress) * 40);
+            } else {
+               // Apply backoff for generic polling
+               pollInterval = Math.min(maxPollInterval, pollInterval * backoffFactor);
+            }
+         } catch (error) {
+            console.error('Error polling:', error);
+            consecutiveErrors++;
+            
+            // Increase backoff on consecutive errors
+            if (consecutiveErrors > 2) {
+               pollInterval = Math.min(maxPollInterval * 2, pollInterval * 2);
+               console.warn(`Increased poll interval to ${pollInterval}ms due to errors`);
+            }
+         }
+         
+         // Clear and reset the interval with the new timing
+         clearInterval(pollTimerRef.current);
+         pollTimerRef.current = setInterval(pollFunction, pollInterval);
+      };
+      
+      // Initial poll
+      pollTimerRef.current = setInterval(pollFunction, pollInterval);
+   };
+
    const handleSendMessage = async () => {
       if (!inputMessage.trim() || !sessionId || isProcessing) return;
       setInputMessage('');
       const userMessage = { role: 'user', content: inputMessage };
       setMessages(prev => [...prev, userMessage]);
       hideAllConfirmationUIs();
+      
       try {
          setLoading(true);
+         setError(null); // Clear any previous errors
+         
          const predictedProcessType = predictProcessingType(inputMessage, currentStage);
          if (predictedProcessType) {
             setIsProcessing(true);
             setProcessingType(predictedProcessType);
             setProcessingProgress(0);
-            setProcessingMessage('Starting process...');
+            setProcessingMessage(`Starting ${predictedProcessType}...`);
          }
+         
          const response = await api.podcastAgent.chat(sessionId, inputMessage);
-         if (response.data.isProcessing) {
+         
+         // Check for session expiration
+         if (response.data.session_expired) {
+            setMessages(prev => [
+               ...prev,
+               { 
+                  role: 'assistant', 
+                  content: 'Your session has expired. Starting a new session...' 
+               },
+            ]);
+            
+            // Short delay before starting new session
+            setTimeout(() => {
+               startNewSession();
+            }, 2000);
+            
+            return;
+         }
+         
+         // Store operation ID if available
+         if (response.data.operation_id) {
+            setOperationId(response.data.operation_id);
+         }
+         
+         // Handle normal processing
+         if (response.data.isProcessing || response.data.status === 'pending') {
             setIsProcessing(true);
-            setProcessingType(response.data.processingType);
-            if (response.data.response)
+            setProcessingType(response.data.processingType || response.data.operation_type);
+            setProcessingProgress(response.data.progress || 0);
+            setProcessingMessage(response.data.message || '');
+            
+            if (response.data.response) {
                setMessages(prev => [
                   ...prev,
                   { role: 'assistant', content: response.data.response },
                ]);
-            if (response.data.session_state) updateSessionState(response.data.session_state);
+            }
+            
+            if (response.data.session_state) {
+               updateSessionState(response.data.session_state);
+            }
+            
             startPollingForCompletion();
          } else {
-            if (response.data.response)
+            // Immediate response
+            if (response.data.response) {
                setMessages(prev => [
                   ...prev,
                   { role: 'assistant', content: response.data.response },
                ]);
-            if (response.data.session_state) updateSessionState(response.data.session_state);
+            }
+            
+            if (response.data.session_state) {
+               updateSessionState(response.data.session_state);
+            }
+            
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
+            setOperationId(null);
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -328,6 +512,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setOperationId(null);
       } finally {
          setLoading(false);
       }
@@ -356,67 +541,23 @@ const PodcastSession = () => {
       }
    };
 
-   const startPollingForCompletion = () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      const pollInterval = 3000;
-      const maxPolls = 100;
-      let pollCount = 0;
-      pollTimerRef.current = setInterval(async () => {
-         pollCount++;
-         if (pollCount > maxPolls) {
-            clearInterval(pollTimerRef.current);
-            setIsProcessing(false);
-            setProcessingType(null);
-            setProcessingProgress(0);
-            setProcessingMessage('');
-            setMessages(prev => [
-               ...prev,
-               { role: 'assistant', content: 'Process timed out. Please refresh.' },
-            ]);
-            return;
-         }
-         try {
-            const statusResponse = await api.podcastAgent.checkStatus(sessionId);
-            
-            // Extract enhanced status information
-            const progress = statusResponse.data.progress || 0;
-            const statusMessage = statusResponse.data.message || '';
-            
-            // Update UI with detailed status
-            setProcessingProgress(progress);
-            if (statusMessage) {
-               setProcessingMessage(statusMessage);
-            }
-            
-            if (!statusResponse.data.is_processing) {
-               clearInterval(pollTimerRef.current);
-               setIsProcessing(false);
-               setProcessingType(null);
-               setProcessingProgress(0);
-               setProcessingMessage('');
-               if (statusResponse.data.session_state)
-                  updateSessionState(statusResponse.data.session_state);
-            }
-         } catch (error) {
-            console.error('Error polling:', error);
-         }
-      }, pollInterval);
-   };
-
    const predictProcessingType = useCallback((message, stage) => {
       const lowerMessage = message.toLowerCase();
-      if (stage === 'source_selection' && /\d/.test(message)) return 'script generation';
+      if (stage === 'source_selection' && /\d/.test(message)) return 'script_generation';
       if (
          stage === 'script' &&
          (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))
       )
-         return 'banner generation';
+         return 'banner_generation';
       if (
          stage === 'banner' &&
          (lowerMessage.includes('approve') || lowerMessage.includes('looks good'))
       )
-         return 'audio generation';
-      return null;
+         return 'audio_generation';
+      if (lowerMessage.includes('search') && 
+         (lowerMessage.includes('web') || lowerMessage.includes('internet')))
+         return 'web_search';
+      return 'chat';
    }, []);
 
    const handleToggleSourceSelection = useCallback(
@@ -452,24 +593,43 @@ const PodcastSession = () => {
       setMessages(prev => [...prev, { role: 'user', content: selectionString }]);
       setLoading(true);
       setIsProcessing(true);
-      setProcessingType('script generation');
+      setProcessingType('script_generation');
       setProcessingProgress(0);
       setProcessingMessage('Starting script generation...');
       try {
          const response = await api.podcastAgent.chat(sessionId, selectionString);
+         
+         // Check for session expiration
+         if (response.data.session_expired) {
+            setMessages(prev => [
+               ...prev,
+               { role: 'assistant', content: 'Your session has expired. Starting a new session...' },
+            ]);
+            setTimeout(() => startNewSession(), 2000);
+            return;
+         }
+         
+         // Store operation ID if available
+         if (response.data.operation_id) {
+            setOperationId(response.data.operation_id);
+         }
+         
          if (response.data.response) {
             setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
          }
+         
          if (response.data.session_state) {
             updateSessionState(response.data.session_state);
          }
-         if (response.data.isProcessing) {
+         
+         if (response.data.isProcessing || response.data.status === 'pending') {
             startPollingForCompletion();
          } else {
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
+            setOperationId(null);
          }
       } catch (error) {
          console.error('Error confirming sources:', error);
@@ -479,6 +639,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setOperationId(null);
       } finally {
          setLoading(false);
       }
@@ -533,35 +694,69 @@ const PodcastSession = () => {
       hideAllConfirmationUIs();
       setLoading(true);
       try {
+         setError(null); // Clear any previous errors
+         
          const predictedProcessType = predictProcessingType(message, currentStage);
          if (predictedProcessType) {
             setIsProcessing(true);
             setProcessingType(predictedProcessType);
             setProcessingProgress(0);
-            setProcessingMessage('Starting process...');
+            setProcessingMessage(`Starting ${predictedProcessType}...`);
          }
+         
          const response = await api.podcastAgent.chat(sessionId, message);
-         if (response.data.isProcessing) {
+         
+         // Check for session expiration
+         if (response.data.session_expired) {
+            setMessages(prev => [
+               ...prev,
+               { role: 'assistant', content: 'Your session has expired. Starting a new session...' },
+            ]);
+            setTimeout(() => startNewSession(), 2000);
+            return;
+         }
+         
+         // Store operation ID if available
+         if (response.data.operation_id) {
+            setOperationId(response.data.operation_id);
+         }
+         
+         if (response.data.isProcessing || response.data.status === 'pending') {
             setIsProcessing(true);
-            setProcessingType(response.data.processingType);
-            if (response.data.response)
+            setProcessingType(response.data.processingType || response.data.operation_type);
+            setProcessingProgress(response.data.progress || 0);
+            setProcessingMessage(response.data.message || '');
+            
+            if (response.data.response) {
                setMessages(prev => [
                   ...prev,
                   { role: 'assistant', content: response.data.response },
                ]);
-            if (response.data.session_state) updateSessionState(response.data.session_state);
+            }
+            
+            if (response.data.session_state) {
+               updateSessionState(response.data.session_state);
+            }
+            
             startPollingForCompletion();
          } else {
-            if (response.data.response)
+            // Immediate response
+            if (response.data.response) {
                setMessages(prev => [
                   ...prev,
                   { role: 'assistant', content: response.data.response },
                ]);
-            if (response.data.session_state) updateSessionState(response.data.session_state);
+            }
+            
+            if (response.data.session_state) {
+               updateSessionState(response.data.session_state);
+            }
+            
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
+            setOperationId(null);
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -571,6 +766,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setOperationId(null);
       } finally {
          setLoading(false);
       }
@@ -633,6 +829,32 @@ const PodcastSession = () => {
       ? 'translate-x-0 shadow-lg'
       : '-translate-x-full md:translate-x-0';
    const contentClass = isPreviewVisible ? 'lg:mr-72' : 'lg:mr-0';
+
+   // Status display component for header
+   const renderStatusDisplay = () => {
+      if (isProcessing) {
+         return (
+            <div className="flex items-center space-x-1">
+               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+               <span className="max-w-xs truncate text-xs">
+                  {processingMessage || `Processing ${processingType || ''}...`}
+               </span>
+               {processingProgress > 0 && (
+                  <span className="text-xs font-mono bg-emerald-900/30 px-1.5 rounded-full">
+                     {processingProgress}%
+                  </span>
+               )}
+            </div>
+         );
+      }
+      
+      return (
+         <div className="flex items-center space-x-1">
+            <span className="w-2 h-2 rounded-full bg-gray-500"></span>
+            <span>{`Stage: ${currentStage}`}</span>
+         </div>
+      );
+   };
 
    return (
       <div className="min-h-screen flex bg-[#0A0E14]">
@@ -724,16 +946,7 @@ const PodcastSession = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                      <div className="hidden sm:flex items-center px-3 py-1 bg-[#121824] rounded-full border border-gray-700 text-xs text-gray-300">
-                        <span
-                           className={`w-2 h-2 rounded-full ${
-                              isProcessing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'
-                           } mr-2`}
-                        ></span>
-                        <span>
-                           {isProcessing
-                              ? processingMessage || `Processing ${processingType || ''}...${processingProgress > 0 ? ` (${processingProgress}%)` : ''}`
-                              : `Stage: ${currentStage}`}
-                        </span>
+                        {renderStatusDisplay()}
                      </div>
                      <PodcastAssetsToggle
                         isVisible={isPreviewVisible}
@@ -743,16 +956,7 @@ const PodcastSession = () => {
                </div>
                <div className="sm:hidden px-4 py-1.5 border-t border-gray-700 flex items-center justify-center bg-[#121824]/50">
                   <div className="text-xs text-gray-400 flex items-center">
-                     <span
-                        className={`w-2 h-2 rounded-full ${
-                           isProcessing ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'
-                        } mr-2`}
-                     ></span>
-                     <span>
-                        {isProcessing
-                           ? processingMessage || `Processing ${processingType || ''}...${processingProgress > 0 ? ` (${processingProgress}%)` : ''}`
-                           : `Stage: ${currentStage}`}
-                     </span>
+                     {renderStatusDisplay()}
                   </div>
                </div>
             </header>

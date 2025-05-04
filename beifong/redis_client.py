@@ -1,338 +1,490 @@
+"""
+Redis Client for Podcast Operations
+
+A clean, focused Redis client for managing podcast operations
+"""
+
 import json
 import redis
-from typing import Dict, List, Any, Optional, Union
 import time
-import os
-from dotenv import load_dotenv
+from typing import Dict, Any, Optional
 
-# Load environment variables
-load_dotenv()
-
-# Redis configuration
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
-
-# Redis key prefixes
-TASK_STATUS_PREFIX = "podcast:task:status:"
-TASK_RESULT_PREFIX = "podcast:task:result:"
-TASK_QUEUE = "podcast:task:queue"
-USER_TASKS_PREFIX = "podcast:session:tasks:"
-SESSION_LOCK_PREFIX = "podcast:session:lock:"
-
-# Result TTL in Redis (seconds)
-RESULT_TTL = 3600 * 24  # 24 hours
-SESSION_LOCK_TTL = 300  # 5 minutes
-
-# Task status constants
-class TaskStatus:
-    PENDING = "PENDING"
-    STARTED = "STARTED"
-    PROCESSING = "PROCESSING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-
-# Create Redis client connection
-try:
-    redis_client = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        db=REDIS_DB,
-        password=REDIS_PASSWORD,
-        decode_responses=True  # Automatically decode responses to strings
-    )
-    redis_client.ping()  # Test connection
-    print(f"Successfully connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
-except Exception as e:
-    print(f"Failed to connect to Redis: {e}")
-    redis_client = None
-
-# Task queue functions
-def enqueue_task(task_id: str, session_id: str, data: Dict[str, Any]) -> bool:
+class RedisClient:
     """
-    Enqueue a new task in Redis.
+    Redis client for tracking podcast operations and their status.
+    Handles queuing, progress tracking, and result storage.
+    """
     
-    Args:
-        task_id: Unique identifier for the task
-        session_id: Session ID for the task
-        data: Task data including message content
+    def __init__(
+        self, 
+        host: str = "localhost", 
+        port: int = 6379,
+        db: int = 0,
+        password: str = None,
+        operation_ttl: int = 86400
+    ):
+        self.redis = redis.Redis(
+            host=host,
+            port=port,
+            db=db,
+            password=password,
+            decode_responses=True
+        )
+        self.operation_ttl = operation_ttl
         
-    Returns:
-        bool: Success status
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
+        self.queue_key = "podcast:operation:queue"
+        self.operation_key_prefix = "podcast:operation:"
+        self.session_operation_key_prefix = "podcast:session:operation:"
+        self.result_key_prefix = "podcast:operation:result:"
+        
+        # Test connection
+        try:
+            self.redis.ping()
+            print("Connected to Redis")
+        except redis.ConnectionError:
+            print("Failed to connect to Redis")
+            self.redis = None
     
-    try:
-        task_data = {
-            "task_id": task_id,
-            "session_id": session_id,
-            "data": data,
-            "enqueued_at": time.time()
-        }
-        # Add to processing queue
-        redis_client.lpush(TASK_QUEUE, json.dumps(task_data))
+    async def register_operation(
+        self, 
+        session_id: str,
+        operation_id: str,
+        operation_type: str,
+        data: Dict[str, Any]
+    ) -> bool:
+        """
+        Register a new operation in Redis.
         
-        # Add to session's active tasks set
-        redis_client.sadd(f"{USER_TASKS_PREFIX}{session_id}", task_id)
+        Args:
+            session_id: The session ID
+            operation_id: Unique identifier for this operation
+            operation_type: Type of operation
+            data: Operation data
+            
+        Returns:
+            bool: Success status
+        """
+        if self.redis is None:
+            return False
         
-        # Set initial status
-        set_task_status(task_id, TaskStatus.PENDING)
+        try:
+            # Create operation data
+            operation_data = {
+                "operation_id": operation_id,
+                "session_id": session_id,
+                "operation_type": operation_type,
+                "status": "pending",
+                "progress": 0,
+                "data": data,
+                "created_at": time.time(),
+                "updated_at": time.time()
+            }
+            
+            # Store operation data
+            operation_key = f"{self.operation_key_prefix}{operation_id}"
+            session_operation_key = f"{self.session_operation_key_prefix}{session_id}"
+            
+            pipe = self.redis.pipeline()
+            pipe.set(
+                operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            pipe.set(
+                session_operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            pipe.execute()
+            
+            print("Registered operation")
+            return True
         
-        return True
-    except Exception as e:
-        print(f"Error enqueueing task: {e}")
-        return False
+        except Exception:
+            print("Error registering operation")
+            return False
+    
+    async def enqueue_operation(
+        self,
+        operation_id: str,
+        session_id: str,
+        operation_type: str,
+        data: Dict[str, Any]
+    ) -> bool:
+        """
+        Enqueue an operation for processing by a worker.
+        
+        Args:
+            operation_id: Unique ID for this operation
+            session_id: The session ID
+            operation_type: Type of operation
+            data: Operation data
+            
+        Returns:
+            bool: Success status
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
+        
+        try:
+            # Create queue item
+            queue_item = {
+                "operation_id": operation_id,
+                "session_id": session_id,
+                "operation_type": operation_type,
+                "data": data,
+                "enqueued_at": time.time()
+            }
+            
+            # Add to queue
+            serialized_data = json.dumps(queue_item)
+            await self.redis.rpush(self.queue_key, serialized_data)
+            print("Enqueued operation")
+            return True
+        
+        except Exception:
+            print("Error enqueuing operation")
+            return False
+    
+    async def dequeue_operation(self) -> Optional[Dict[str, Any]]:
+        """
+        Dequeue an operation for processing.
+        
+        Returns:
+            dict or None: Operation data if available
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return None
+        
+        try:
+            operation_data = await self.redis.lpop(self.queue_key)
 
-def dequeue_task() -> Optional[Dict[str, Any]]:
-    """
-    Dequeue a task from Redis.
-    
-    Returns:
-        dict or None: Task data if available, None otherwise
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return None
-    
-    try:
-        # Block for 1 second waiting for a task, then move on
-        result = redis_client.brpop(TASK_QUEUE, timeout=1)
-        if result:
-            _, task_data_str = result
-            return json.loads(task_data_str)
-        return None
-    except Exception as e:
-        print(f"Error dequeuing task: {e}")
-        return None
+            if not operation_data:
+                return None
 
-# Task status functions
-def set_task_status(task_id: str, status: str, progress: Optional[int] = None, message: Optional[str] = None) -> bool:
-    """
-    Set task status in Redis.
-    
-    Args:
-        task_id: Task identifier
-        status: Task status string
-        progress: Optional progress percentage (0-100)
-        message: Optional status message
-        
-    Returns:
-        bool: Success status
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
-    
-    try:
-        status_data = {
-            "status": status,
-            "updated_at": time.time()
-        }
-        if progress is not None:
-            status_data["progress"] = progress
-        if message is not None:
-            status_data["message"] = message
-        
-        status_key = f"{TASK_STATUS_PREFIX}{task_id}"
-        redis_client.set(status_key, json.dumps(status_data))
-        
-        # Set expiration for completed or failed tasks
-        if status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-            redis_client.expire(status_key, RESULT_TTL)
-        
-        return True
-    except Exception as e:
-        print(f"Error setting task status: {e}")
-        return False
+            operation = json.loads(operation_data)
+            print("Dequeued operation")
 
-def get_task_status(task_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Get task status from Redis.
+            return operation
+        except Exception:
+            print("Error dequeuing operation")
+            return None
     
-    Args:
-        task_id: Task identifier
+    async def update_operation_progress(
+        self,
+        operation_id: str,
+        progress: int,
+        message: Optional[str] = None,
+        session_state: Optional[Dict[str, Any]] = None
+    ) -> bool:
+        """
+        Update the progress of an operation.
         
-    Returns:
-        dict or None: Task status data if available
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return None
-    
-    try:
-        status_data = redis_client.get(f"{TASK_STATUS_PREFIX}{task_id}")
-        return json.loads(status_data) if status_data else None
-    except Exception as e:
-        print(f"Error getting task status: {e}")
-        return None
-
-# Task result functions
-def set_task_result(task_id: str, result: Dict[str, Any]) -> bool:
-    """
-    Store task result in Redis.
-    
-    Args:
-        task_id: Task identifier
-        result: Result data
+        Args:
+            operation_id: Operation identifier
+            progress: Progress percentage (0-100)
+            message: Optional status message
+            session_state: Optional session state
+            
+        Returns:
+            bool: Success status
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
         
-    Returns:
-        bool: Success status
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
+        try:
+            # Get existing operation data
+            operation_key = self.operation_key_prefix + operation_id
+            operation_data_str = self.redis.get(operation_key)
+            
+            if not operation_data_str:
+                print("Operation " + operation_id + " not found")
+                return False
+            
+            operation_data = json.loads(operation_data_str)
+            session_id = operation_data.get("session_id")
+            
+            # Update progress
+            operation_data["progress"] = progress
+            operation_data["status"] = "running"
+            operation_data["updated_at"] = time.time()
+            
+            if message is not None:
+                operation_data["message"] = message
+                
+            if session_state is not None:
+                if isinstance(session_state, dict):
+                    operation_data["session_state"] = json.dumps(session_state)
+                else:
+                    operation_data["session_state"] = session_state
+            
+            # Update both operation records
+            session_operation_key = self.session_operation_key_prefix + session_id
+            
+            pipe = self.redis.pipeline()
+            pipe.set(
+                operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            pipe.set(
+                session_operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            pipe.execute()
+            
+            print("Updated operation progress")
+            return True
+            
+        except Exception:
+            print("Error updating operation progress")
+            return False
     
-    try:
-        result_key = f"{TASK_RESULT_PREFIX}{task_id}"
-        redis_client.set(result_key, json.dumps(result))
-        redis_client.expire(result_key, RESULT_TTL)  # Set TTL
-        return True
-    except Exception as e:
-        print(f"Error setting task result: {e}")
-        return False
-
-def get_task_result(task_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Get task result from Redis.
-    
-    Args:
-        task_id: Task identifier
+    async def complete_operation(
+        self,
+        operation_id: str,
+        result: Dict[str, Any]
+    ) -> bool:
+        """
+        Mark an operation as completed and store its result.
         
-    Returns:
-        dict or None: Task result if available
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return None
-    
-    try:
-        result_data = redis_client.get(f"{TASK_RESULT_PREFIX}{task_id}")
-        return json.loads(result_data) if result_data else None
-    except Exception as e:
-        print(f"Error getting task result: {e}")
-        return None
-
-# Session tasks functions
-def get_session_active_tasks(session_id: str) -> List[str]:
-    """
-    Get all active tasks for a session.
-    
-    Args:
-        session_id: Session identifier
+        Args:
+            operation_id: Operation identifier
+            result: Operation result data
+            
+        Returns:
+            bool: Success status
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
         
-    Returns:
-        list: List of active task IDs
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return []
+        try:
+            # Get existing operation data
+            operation_key = self.operation_key_prefix + operation_id
+            operation_data_str = self.redis.get(operation_key)
+            
+            if not operation_data_str:
+                print("Operation " + operation_id + " not found")
+                return False
+            
+            operation_data = json.loads(operation_data_str)
+            session_id = operation_data.get("session_id")
+            
+            # Update status
+            operation_data["status"] = "completed"
+            operation_data["progress"] = 100
+            operation_data["completed_at"] = time.time()
+            operation_data["updated_at"] = time.time()
+            operation_data["result"] = result
+            
+            # Store result separately
+            result_key = self.result_key_prefix + operation_id
+            
+            # Update operation data and store result
+            pipe = self.redis.pipeline()
+            pipe.set(
+                operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            pipe.set(
+                result_key,
+                json.dumps(result),
+                ex=self.operation_ttl
+            )
+            
+            # Clear the session operation association after completion
+            session_operation_key = self.session_operation_key_prefix + session_id
+            pipe.delete(session_operation_key)
+            
+            pipe.execute()
+            
+            print("Completed operation")
+            return True
+            
+        except Exception:
+            print("Error completing operation")
+            return False
     
-    try:
-        return list(redis_client.smembers(f"{USER_TASKS_PREFIX}{session_id}"))
-    except Exception as e:
-        print(f"Error getting session tasks: {e}")
-        return []
-
-def remove_completed_task(session_id: str, task_id: str) -> bool:
-    """
-    Remove a task from a session's active tasks.
-    
-    Args:
-        session_id: Session identifier
-        task_id: Task identifier
+    async def fail_operation(
+        self,
+        operation_id: str,
+        error: str
+    ) -> bool:
+        """
+        Mark an operation as failed.
         
-    Returns:
-        bool: Success status
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
-    
-    try:
-        redis_client.srem(f"{USER_TASKS_PREFIX}{session_id}", task_id)
-        return True
-    except Exception as e:
-        print(f"Error removing completed task: {e}")
-        return False
-
-# Session locking functions
-def lock_session(session_id: str, lock_ttl: int = SESSION_LOCK_TTL) -> bool:
-    """
-    Lock a session to prevent concurrent processing.
-    
-    Args:
-        session_id: Session identifier
-        lock_ttl: Lock time-to-live in seconds
+        Args:
+            operation_id: Operation identifier
+            error: Error message
+            
+        Returns:
+            bool: Success status
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
         
-    Returns:
-        bool: True if lock was acquired, False if already locked
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
+        try:
+            # Get existing operation data
+            operation_key = self.operation_key_prefix + operation_id
+            operation_data_str = self.redis.get(operation_key)
+            
+            if not operation_data_str:
+                print("Operation " + operation_id + " not found")
+                return False
+            
+            operation_data = json.loads(operation_data_str)
+            session_id = operation_data.get("session_id")
+            
+            # Update status
+            operation_data["status"] = "failed"
+            operation_data["error"] = error
+            operation_data["updated_at"] = time.time()
+            
+            # Update operation data
+            pipe = self.redis.pipeline()
+            pipe.set(
+                operation_key, 
+                json.dumps(operation_data),
+                ex=self.operation_ttl
+            )
+            
+            # Clear the session operation association after failure
+            session_operation_key = self.session_operation_key_prefix + session_id
+            pipe.delete(session_operation_key)
+            
+            pipe.execute()
+            
+            print("Failed operation")
+            return True
+            
+        except Exception:
+            print("Error failing operation")
+            return False
     
-    lock_key = f"{SESSION_LOCK_PREFIX}{session_id}"
-    try:
-        # Try to set the lock only if it doesn't exist (NX option)
-        result = redis_client.set(lock_key, "1", nx=True, ex=lock_ttl)
-        return result is not None and result
-    except Exception as e:
-        print(f"Error locking session: {e}")
-        return False
-
-def unlock_session(session_id: str) -> bool:
-    """
-    Unlock a session after processing is complete.
-    
-    Args:
-        session_id: Session identifier
+    async def get_operation(self, operation_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get operation data by ID.
         
-    Returns:
-        bool: Success status
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
-    
-    lock_key = f"{SESSION_LOCK_PREFIX}{session_id}"
-    try:
-        redis_client.delete(lock_key)
-        return True
-    except Exception as e:
-        print(f"Error unlocking session: {e}")
-        return False
-
-def is_session_locked(session_id: str) -> bool:
-    """
-    Check if a session is currently locked.
-    
-    Args:
-        session_id: Session identifier
+        Args:
+            operation_id: Operation identifier
+            
+        Returns:
+            dict or None: Operation data if found
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return None
         
-    Returns:
-        bool: True if locked, False otherwise
-    """
-    if redis_client is None:
-        print("Redis client not available")
-        return False
+        try:
+            operation_key = self.operation_key_prefix + operation_id
+            operation_data_str = self.redis.get(operation_key)
+            
+            if not operation_data_str:
+                return None
+                
+            return json.loads(operation_data_str)
+            
+        except Exception:
+            print("Error getting operation")
+            return None
     
-    lock_key = f"{SESSION_LOCK_PREFIX}{session_id}"
-    try:
-        return redis_client.exists(lock_key) == 1
-    except Exception as e:
-        print(f"Error checking session lock: {e}")
-        return False
+    async def get_session_operation(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get the current operation for a session.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            dict or None: Operation data if found
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return None
+        
+        try:
+            session_operation_key = self.session_operation_key_prefix + session_id
+            operation_data_str = self.redis.get(session_operation_key)
+            
+            if not operation_data_str:
+                return None
+                
+            return json.loads(operation_data_str)
+            
+        except Exception:
+            print("Error getting session operation")
+            return None
+    
+    async def is_operation_running(self, session_id: str) -> bool:
+        """
+        Check if a session has an operation in progress.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            bool: True if an operation is in progress
+        """
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
+        
+        try:
+            key = self.session_operation_key_prefix + session_id
+            session_operation = await self.redis.hgetall(key)
 
-# Health check function
-def check_redis_connection() -> bool:
-    """Check if Redis connection is active."""
-    if redis_client is None:
-        return False
+            if session_operation and session_operation.get('status') not in ['completed', 'failed']:
+                print("Operation running for session")
+                return True
+
+            return False
+        except Exception:
+            print("Error checking operation status")
+            return False
     
-    try:
-        return redis_client.ping()
-    except Exception:
-        return False
+    async def get_operation_result(self, operation_id: str) -> Optional[Dict[str, Any]]:
+        if self.redis is None:
+            print("Redis connection not available")
+            return None
+        
+        try:
+            result_key = self.result_key_prefix + operation_id
+            result_data_str = self.redis.get(result_key)
+            
+            if not result_data_str:
+                print("No result found for operation")
+                return None
+                
+            result_data = json.loads(result_data_str)
+            print("Retrieved result for operation")
+            return result_data
+            
+        except Exception:
+            print("Error getting operation result")
+            return None
+    
+    async def clear_session_operations(self, session_id: str) -> bool:
+        if self.redis is None:
+            print("Redis connection not available")
+            return False
+        
+        try:
+            session_operation_key = self.session_operation_key_prefix + session_id
+            operation_keys = await self.redis.keys(session_operation_key + "*")
+            
+            if operation_keys:
+                await self.redis.delete(*operation_keys)
+                print("Cleared operations for session")
+            
+            return True
+            
+        except Exception:
+            print("Error clearing session operations")
+            return False
