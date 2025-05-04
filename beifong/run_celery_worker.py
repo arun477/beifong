@@ -40,7 +40,7 @@ def start_worker():
         f"--hostname={worker_name}@%h",
         "--without-gossip",  # Disable event system (optional)
         "--without-mingle",  # Don't synchronize with other workers (optional)
-        # "--pool=solo",       # Use solo pool for simplicity
+        "--pool=solo",       # Use solo pool for simplicity
     ]
     
     # Start the worker process
