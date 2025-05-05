@@ -9,62 +9,8 @@ import AudioConfirmation from '../components/AudioConfirmation';
 import FinalPresentation from '../components/FinalPresentation';
 import ActivePodcastPreview from '../components/ActivePodcastPreview';
 import { PodcastAssetsToggle } from '../components/AssetPannelToggle';
+import ProgressIndicator from '../components/ProgressIndicator';
 import api from '../services/api';
-
-// Enhanced Progress Indicator component with smoother animations
-const ProgressIndicator = ({ progress, message, type }) => {
-   const progressWidth = `${progress}%`;
-   
-   return (
-      <div className="mb-4 px-4 py-3 bg-gray-800/80 border border-gray-700 text-gray-200 text-sm rounded-md shadow-md">
-         <div className="flex flex-col">
-            <div className="flex items-center mb-2">
-               <div className="mr-2 h-4 w-4 relative">
-                  <svg 
-                     className="animate-spin" 
-                     viewBox="0 0 24 24" 
-                     fill="none" 
-                     xmlns="http://www.w3.org/2000/svg"
-                  >
-                     <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                     ></circle>
-                     <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                     ></path>
-                  </svg>
-               </div>
-               <span className="font-medium">
-                  {type ? `Processing ${type}...` : 'Processing...'}
-               </span>
-               {progress > 0 && (
-                  <span className="ml-2 text-xs bg-gray-700 px-2 py-0.5 rounded-full">
-                     {progress}%
-                  </span>
-               )}
-            </div>
-            
-            {message && message !== `Processing ${type}...` && (
-               <p className="text-xs text-gray-300 ml-6 mb-2">{message}</p>
-            )}
-            
-            <div className="w-full bg-gray-700 rounded-full h-2 ml-6 overflow-hidden">
-               <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: progressWidth }}
-               ></div>
-            </div>
-         </div>
-      </div>
-   );
-};
 
 const PodcastSession = () => {
    const { sessionId } = useParams();
@@ -76,6 +22,7 @@ const PodcastSession = () => {
    const [processingType, setProcessingType] = useState(null);
    const [processingProgress, setProcessingProgress] = useState(0);
    const [processingMessage, setProcessingMessage] = useState('');
+   const [processingElapsed, setProcessingElapsed] = useState(0);
    const [sessionState, setSessionState] = useState({});
    const [currentStage, setCurrentStage] = useState('welcome');
    const [error, setError] = useState(null);
@@ -173,43 +120,59 @@ const PodcastSession = () => {
    const initializeSession = async id => {
       try {
          setError(null);
+         setLoading(true);
          const sessionResponse = await api.podcastAgent.createSession(id);
          
          if (!sessionResponse?.data?.session_id) {
             throw new Error('Failed to activate session');
          }
          
-         const historyData = await api.podcastAgent.getSessionHistory(id);
-         
-         // Process message history
-         const uniqueMessages = historyData.data.messages?.filter(
-            (msg, idx, self) =>
-               msg.content &&
-               msg.role &&
-               idx === self.findIndex(m => m.role === msg.role && m.content === msg.content)
-         ) || [];
-         
-         // Set initial messages
-         setMessages(
-            uniqueMessages.length
-               ? uniqueMessages
-               : [
-                    {
-                       role: 'assistant',
-                       content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
-                    },
-                 ]
-         );
-         
-         // Process session state
-         if (historyData.data.state) {
-            const parsedState = parseSessionState(historyData.data.state);
-            if (parsedState) {
-               setSessionState(parsedState);
-               setCurrentStage(parsedState.stage || 'welcome');
+         try {
+            const historyResponse = await api.podcastAgent.getSessionHistory(id);
+            
+            // Process message history
+            if (historyResponse?.data?.history) {
+               const uniqueMessages = historyResponse.data.history.filter(
+                  (msg, idx, self) =>
+                     msg.content &&
+                     msg.role &&
+                     idx === self.findIndex(m => m.role === msg.role && m.content === msg.content)
+               );
                
-               // Check for active processing
-               const statusResponse = await api.podcastAgent.checkStatus(id);
+               setMessages(
+                  uniqueMessages.length
+                     ? uniqueMessages
+                     : [
+                          {
+                             role: 'assistant',
+                             content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
+                          },
+                       ]
+               );
+            } else {
+               setMessages([
+                  {
+                     role: 'assistant',
+                     content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
+                  },
+               ]);
+            }
+            
+            // Process session state from the main session response 
+            if (sessionResponse.data.session_state) {
+               const parsedState = parseSessionState(sessionResponse.data.session_state);
+               if (parsedState) {
+                  setSessionState(parsedState);
+                  setCurrentStage(parsedState.stage || 'welcome');
+               }
+            }
+            
+            // Check for active processing
+            try {
+               const statusResponse = await api.podcastAgent.checkStatus({
+                  session_id: id
+               });
+               
                setIsProcessing(statusResponse.data.is_processing);
                
                if (statusResponse.data.is_processing) {
@@ -217,9 +180,21 @@ const PodcastSession = () => {
                   setProcessingType(statusResponse.data.process_type || 'operation');
                   setProcessingProgress(statusResponse.data.progress || 0);
                   setProcessingMessage(statusResponse.data.message || '');
+                  setProcessingElapsed(statusResponse.data.elapsed_seconds || 0);
                   startPollingForCompletion();
                }
+            } catch (statusError) {
+               console.error('Error checking status:', statusError);
+               // Continue without status information
             }
+         } catch (historyError) {
+            console.error('Error fetching history:', historyError);
+            setMessages([
+               {
+                  role: 'assistant',
+                  content: "Hi there! I'm your podcast creation assistant. What topic would you like to create a podcast about?",
+               },
+            ]);
          }
       } catch (error) {
          console.error('Error initializing session:', error);
@@ -234,6 +209,8 @@ const PodcastSession = () => {
                content: "Let's start a new conversation instead.",
             },
          ]);
+      } finally {
+         setLoading(false);
       }
    };
 
@@ -255,6 +232,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setProcessingElapsed(0);
          setSelectedSourceIndices([]);
          setIsScriptModalOpen(false);
          setIsFinalScriptModalOpen(false);
@@ -283,26 +261,37 @@ const PodcastSession = () => {
       }
    };
 
-   // Improved polling with adaptive intervals
+   // Enhanced polling with better progress tracking
    const startPollingForCompletion = () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       
-      let pollInterval = 1000; // Start with 1 second
-      const maxPollInterval = 5000; // Max 5 seconds between polls
-      const maxPolls = 180; // 15 minutes max at 5s intervals
-      let pollCount = 0;
+      let pollInterval = 2000; // Start with 2 seconds
       
       const pollForCompletion = async () => {
          try {
-            const statusResponse = await api.podcastAgent.checkStatus(sessionId);
+            const statusResponse = await api.podcastAgent.checkStatus({
+               session_id: sessionId
+            });
             
             // Update progress information
-            if (statusResponse.data.progress) {
+            if (statusResponse.data.progress !== undefined) {
                setProcessingProgress(statusResponse.data.progress);
+            } else if (statusResponse.data.elapsed_seconds) {
+               // Estimate progress based on elapsed time if not provided
+               const elapsed = statusResponse.data.elapsed_seconds;
+               const estimatedProgress = Math.min(
+                  Math.round((elapsed / 300) * 100), // Assuming ~5 minutes max processing time
+                  99 // Cap at 99% until complete
+               );
+               setProcessingProgress(estimatedProgress);
             }
             
             if (statusResponse.data.message) {
                setProcessingMessage(statusResponse.data.message);
+            }
+            
+            if (statusResponse.data.elapsed_seconds !== undefined) {
+               setProcessingElapsed(statusResponse.data.elapsed_seconds);
             }
             
             // Check if processing is complete
@@ -315,6 +304,7 @@ const PodcastSession = () => {
                setProcessingType(null);
                setProcessingProgress(0);
                setProcessingMessage('');
+               setProcessingElapsed(0);
                
                // Update session state
                if (statusResponse.data.session_state) {
@@ -331,42 +321,29 @@ const PodcastSession = () => {
                return;
             }
             
-            // Adjust poll interval based on progress
-            if (statusResponse.data.progress > 70) {
-               // Poll more frequently as we near completion
-               pollInterval = 1000;
+            // Adjust poll interval based on progress and elapsed time
+            const elapsed = statusResponse.data.elapsed_seconds || 0;
+            if (elapsed < 30) {
+               // First 30 seconds, poll frequently
+               pollInterval = 2000;
+            } else if (elapsed < 120) {
+               // 30s-2m, poll every 3-4 seconds
+               pollInterval = 3500;
             } else {
-               // Gradual backoff
-               pollInterval = Math.min(maxPollInterval, pollInterval * 1.2);
-            }
-            
-            // Increment poll count
-            pollCount++;
-            
-            // If we've been polling too long, give up
-            if (pollCount > maxPolls) {
-               clearInterval(pollTimerRef.current);
-               pollTimerRef.current = null;
-               
-               setIsProcessing(false);
-               setProcessingType(null);
-               setProcessingProgress(0);
-               setProcessingMessage('');
-               
-               setError("The process is taking longer than expected. Please try again.");
-               return;
+               // After 2 minutes, poll every 5 seconds
+               pollInterval = 5000;
             }
          } catch (err) {
             console.error("Error during status polling:", err);
-            // On error, back off more aggressively
-            pollInterval = Math.min(10000, pollInterval * 2);
+            // Keep the current polling interval on error
          }
       };
       
       // Start polling immediately
       pollForCompletion();
       
-      // Then set up interval
+      // Then set up interval - use a consistent 3-second interval for simplicity
+      // The server-side will handle timeouts and retries
       pollTimerRef.current = setInterval(pollForCompletion, pollInterval);
    };
 
@@ -374,8 +351,9 @@ const PodcastSession = () => {
    const handleSendMessage = async () => {
       if (!inputMessage.trim() || !sessionId || isProcessing) return;
       
+      const message = inputMessage.trim();
       setInputMessage('');
-      const userMessage = { role: 'user', content: inputMessage };
+      const userMessage = { role: 'user', content: message };
       setMessages(prev => [...prev, userMessage]);
       hideAllConfirmationUIs();
       
@@ -383,19 +361,40 @@ const PodcastSession = () => {
          setLoading(true);
          setError(null);
          
+         // Always set processing state immediately
+         setIsProcessing(true);
+         
          // Predict what type of processing this might be
-         const predictedType = predictProcessingType(inputMessage, currentStage);
-         if (predictedType) {
-            setIsProcessing(true);
-            setProcessingType(predictedType);
+         const predictedType = predictProcessingType(message, currentStage);
+         setProcessingType(predictedType);
+         setProcessingProgress(0);
+         setProcessingMessage(`Starting ${predictedType}...`);
+         setProcessingElapsed(0);
+         
+         // Send message to API - this will now ALWAYS be an async operation
+         const response = await api.podcastAgent.chat(sessionId, message);
+         
+         // Check if the API call returned an error (our format, not HTTP error)
+         if (response.data.error) {
+            setMessages(prev => [
+               ...prev, 
+               { 
+                  role: 'assistant', 
+                  content: response.data.response || `I'm sorry, there was an error: ${response.data.error}` 
+               }
+            ]);
+            
+            setError(response.data.error);
+            setIsProcessing(false);
+            setProcessingType(null);
             setProcessingProgress(0);
-            setProcessingMessage(`Starting ${predictedType}...`);
+            setProcessingMessage('');
+            setProcessingElapsed(0);
+            setLoading(false);
+            return;
          }
          
-         // Send message to API
-         const response = await api.podcastAgent.chat(sessionId, inputMessage);
-         
-         // Check for content in the response
+         // Check for content in the response - this could be from polling completion
          if (response.data.response) {
             setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
          }
@@ -405,19 +404,24 @@ const PodcastSession = () => {
             updateSessionState(response.data.session_state);
          }
          
+         // Update stage if provided
+         if (response.data.stage) {
+            setCurrentStage(response.data.stage);
+         }
+         
          // If response indicates processing is still ongoing
          if (response.data.is_processing) {
-            // Make sure we're tracking the processing state
-            setIsProcessing(true);
-            setProcessingType(response.data.process_type || predictedType || 'operation');
+            // Make sure processing type is set correctly
+            setProcessingType(response.data.process_type || predictedType || 'chat');
             // Start polling for completion
             startPollingForCompletion();
          } else {
-            // Processing completed immediately
+            // Processing completed immediately (unlikely with task queue)
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
+            setProcessingElapsed(0);
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -435,6 +439,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setProcessingElapsed(0);
       } finally {
          setLoading(false);
       }
@@ -473,6 +478,11 @@ const PodcastSession = () => {
    const predictProcessingType = useCallback((message, stage) => {
       const lowerMessage = message.toLowerCase();
       
+      if (stage === 'welcome' && lowerMessage.length > 5) {
+         // Initial topic search will trigger web and embedding searches
+         return 'web_search';
+      }
+      
       if (stage === 'source_selection' && /\d/.test(message)) {
          return 'script_generation';
       }
@@ -492,7 +502,7 @@ const PodcastSession = () => {
          return 'web_search';
       }
       
-      return 'chat';
+      return 'chat_processing';
    }, []);
 
    // Source selection handlers
@@ -534,54 +544,9 @@ const PodcastSession = () => {
       // Add user message to chat
       setMessages(prev => [...prev, { role: 'user', content: selectionString }]);
       
-      // Start processing
-      setLoading(true);
-      setIsProcessing(true);
-      setProcessingType('script_generation');
-      setProcessingProgress(0);
-      setProcessingMessage('Starting script generation...');
-      
-      try {
-         // Send selection to API
-         const response = await api.podcastAgent.chat(sessionId, selectionString);
-         
-         // Handle the response
-         if (response.data.response) {
-            setMessages(prev => [...prev, { role: 'assistant', content: response.data.response }]);
-         }
-         
-         if (response.data.session_state) {
-            updateSessionState(response.data.session_state);
-         }
-         
-         // If still processing, start polling
-         if (response.data.is_processing) {
-            startPollingForCompletion();
-         } else {
-            setIsProcessing(false);
-            setProcessingType(null);
-            setProcessingProgress(0);
-            setProcessingMessage('');
-         }
-      } catch (error) {
-         console.error('Error confirming sources:', error);
-         
-         setMessages(prev => [
-            ...prev, 
-            { 
-               role: 'assistant', 
-               content: `I'm sorry, there was an error processing your selection: ${error.message}. Please try again.` 
-            }
-         ]);
-         
-         setError(`Failed to confirm sources: ${error.message}`);
-         setIsProcessing(false);
-         setProcessingType(null);
-         setProcessingProgress(0);
-         setProcessingMessage('');
-      } finally {
-         setLoading(false);
-      }
+      // Send using the normal send flow - no need for duplicate code
+      // Since we set the input field, we need to use a different approach
+      sendDirectMessage(selectionString);
    };
 
    // Language selection
@@ -629,24 +594,44 @@ const PodcastSession = () => {
    const sendDirectMessage = async message => {
       if (!message.trim() || !sessionId || isProcessing) return;
       
-      setMessages(prev => [...prev, { role: 'user', content: message }]);
       hideAllConfirmationUIs();
       
       try {
          setLoading(true);
          setError(null);
          
+         // Always set processing state immediately
+         setIsProcessing(true);
+         
          // Predict what type of processing this might be
          const predictedType = predictProcessingType(message, currentStage);
-         if (predictedType) {
-            setIsProcessing(true);
-            setProcessingType(predictedType);
-            setProcessingProgress(0);
-            setProcessingMessage(`Starting ${predictedType}...`);
-         }
+         setProcessingType(predictedType);
+         setProcessingProgress(0);
+         setProcessingMessage(`Starting ${predictedType}...`);
+         setProcessingElapsed(0);
          
          // Send message to API
          const response = await api.podcastAgent.chat(sessionId, message);
+         
+         // Check if the API call returned an error (our format, not HTTP error)
+         if (response.data.error) {
+            setMessages(prev => [
+               ...prev, 
+               { 
+                  role: 'assistant', 
+                  content: response.data.response || `I'm sorry, there was an error: ${response.data.error}` 
+               }
+            ]);
+            
+            setError(response.data.error);
+            setIsProcessing(false);
+            setProcessingType(null);
+            setProcessingProgress(0);
+            setProcessingMessage('');
+            setProcessingElapsed(0);
+            setLoading(false);
+            return;
+         }
          
          // Check for content in the response
          if (response.data.response) {
@@ -658,19 +643,24 @@ const PodcastSession = () => {
             updateSessionState(response.data.session_state);
          }
          
+         // Update stage if provided
+         if (response.data.stage) {
+            setCurrentStage(response.data.stage);
+         }
+         
          // If response indicates processing is still ongoing
          if (response.data.is_processing) {
-            // Make sure we're tracking the processing state
-            setIsProcessing(true);
-            setProcessingType(response.data.process_type || predictedType || 'operation');
+            // Make sure processing type is set correctly
+            setProcessingType(response.data.process_type || predictedType || 'chat');
             // Start polling for completion
             startPollingForCompletion();
          } else {
-            // Processing completed immediately
+            // Processing completed immediately (unlikely with task queue)
             setIsProcessing(false);
             setProcessingType(null);
             setProcessingProgress(0);
             setProcessingMessage('');
+            setProcessingElapsed(0);
          }
       } catch (error) {
          console.error('Error sending message:', error);
@@ -688,6 +678,7 @@ const PodcastSession = () => {
          setProcessingType(null);
          setProcessingProgress(0);
          setProcessingMessage('');
+         setProcessingElapsed(0);
       } finally {
          setLoading(false);
       }
@@ -952,6 +943,7 @@ const PodcastSession = () => {
                               progress={processingProgress} 
                               message={processingMessage} 
                               type={processingType} 
+                              elapsed={processingElapsed}
                            />
                         )}
                         

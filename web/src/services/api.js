@@ -64,37 +64,75 @@ const normalizeArticleData = article => {
    return article;
 };
 
-// Helper function to handle polling for chat completion
-const pollForChatCompletion = async (sessionId, maxAttempts = 120, initialDelay = 1000) => {
+// Enhanced polling function with exponential backoff and better error handling
+const pollForChatCompletion = async (sessionId, maxAttempts = 180, initialDelay = 1000) => {
    let attempts = 0;
    let delay = initialDelay;
-   
+   let consecutiveErrors = 0;
+   const maxConsecutiveErrors = 5;
+
    while (attempts < maxAttempts) {
       try {
          const statusResponse = await api.post('/api/podcast-agent/status', {
-            session_id: sessionId
+            session_id: sessionId,
          });
-         
+
+         // Reset consecutive error counter on successful request
+         consecutiveErrors = 0;
+
+         // Calculate estimated progress based on elapsed time
+         const elapsedSeconds = statusResponse.data.elapsed_seconds || 0;
+         const estimatedProgress = Math.min(
+            Math.round((elapsedSeconds / 300) * 100), // Assuming ~5 minutes max processing time
+            99 // Cap at 99% until complete
+         );
+
+         // Enhance the response with progress estimate if not provided
+         if (!statusResponse.data.progress && statusResponse.data.is_processing) {
+            statusResponse.data.progress = estimatedProgress;
+         }
+
          // If processing is complete, return the result
          if (!statusResponse.data.is_processing) {
             return statusResponse.data;
          }
-         
-         // Exponential backoff with maximum delay of 5 seconds
-         delay = Math.min(delay * 1.5, 5000);
-         
+
+         // Get more granular with polling timing
+         if (elapsedSeconds < 10) {
+            // Poll more frequently at start
+            delay = 1000;
+         } else if (elapsedSeconds < 60) {
+            // Poll every 2-3 seconds in the first minute
+            delay = 2000;
+         } else if (elapsedSeconds < 180) {
+            // Poll every 3-5 seconds in the 1-3 minute range
+            delay = Math.min(delay * 1.2, 5000);
+         } else {
+            // Poll every 5-10 seconds after 3 minutes
+            delay = Math.min(delay * 1.1, 10000);
+         }
+
          // Wait for the next poll
          await new Promise(resolve => setTimeout(resolve, delay));
          attempts++;
       } catch (error) {
          console.error('Error polling for chat completion:', error);
-         // Increase delay on error
-         delay = Math.min(delay * 2, 10000);
+         
+         // Increment consecutive error counter
+         consecutiveErrors++;
+         
+         // If we've had too many consecutive errors, break and return error
+         if (consecutiveErrors >= maxConsecutiveErrors) {
+            throw new Error('Too many consecutive errors while polling for status');
+         }
+         
+         // Increase delay on error with a more aggressive backoff
+         delay = Math.min(delay * 2, 15000);
          await new Promise(resolve => setTimeout(resolve, delay));
          attempts++;
       }
    }
-   
+
    // If we've reached the maximum number of attempts, throw an error
    throw new Error('Timed out waiting for chat completion');
 };
@@ -191,35 +229,20 @@ const endpoints = {
          }),
       chat: async (sessionId, message) => {
          try {
-            // Send the chat message
+            // Send the chat message - this will now ALWAYS be an async operation
             const response = await api.post('/api/podcast-agent/chat', {
                session_id: sessionId,
                message,
             });
-            
-            // Check if processing is complete
+
+            // With our new task queue system, all requests will return is_processing=true
+            // so we'll always need to poll for completion
             if (response.data.is_processing) {
-               // If still processing, poll for completion
-               const finalResponse = await pollForChatCompletion(sessionId);
+               console.log('Chat processing started, polling for completion...');
                
-               // Return a response in the format expected by the UI
-               return {
-                  data: {
-                     session_id: sessionId,
-                     response: finalResponse.response || finalResponse.message || "Processing complete.",
-                     stage: finalResponse.stage || "unknown",
-                     session_state: finalResponse.session_state || "{}",
-                     status: finalResponse.status || "COMPLETED"
-                  }
-               };
-            }
-            
-            // If processing was immediate, return the response
-            return response;
-         } catch (error) {
-            // Check if it's a conflict error (409) indicating concurrent processing
-            if (error.response && error.response.status === 409) {
-               console.warn("Session already has a message being processed, polling for completion...");
+               // Extract process info for progress updates
+               const processType = response.data.process_type || 'chat';
+               
                try {
                   // Poll for completion
                   const finalResponse = await pollForChatCompletion(sessionId);
@@ -228,20 +251,45 @@ const endpoints = {
                   return {
                      data: {
                         session_id: sessionId,
-                        response: finalResponse.response || finalResponse.message || "Processing complete.",
-                        stage: finalResponse.stage || "unknown",
-                        session_state: finalResponse.session_state || "{}",
-                        status: finalResponse.status || "COMPLETED"
-                     }
+                        response: finalResponse.response || '',
+                        stage: finalResponse.stage || response.data.stage || 'unknown',
+                        session_state: finalResponse.session_state || response.data.session_state || '{}',
+                        process_type: processType,
+                     },
                   };
                } catch (pollError) {
-                  console.error("Error polling for completion:", pollError);
-                  throw pollError;
+                  console.error('Error polling for completion:', pollError);
+                  
+                  // Even on error, send back a structured response to avoid breaking the UI
+                  return {
+                     data: {
+                        session_id: sessionId,
+                        response: `I encountered an error while processing your request: ${pollError.message}. Please try again.`,
+                        stage: response.data.stage || 'error',
+                        session_state: response.data.session_state || '{}',
+                        error: pollError.message,
+                     },
+                  };
                }
             }
+
+            // This branch is unlikely to be reached with our new task queue system,
+            // but we'll keep it for completeness and backward compatibility
+            return response;
+         } catch (error) {
+            console.error('Error sending chat message:', error);
             
-            // For other errors, rethrow
-            throw error;
+            // Handle the case where the request itself fails
+            // We'll create a response format that matches what the UI expects
+            return {
+               data: {
+                  session_id: sessionId,
+                  response: `I'm sorry, I encountered an error: ${error.message}. Please try again.`,
+                  stage: 'error',
+                  session_state: '{}',
+                  error: error.message,
+               },
+            };
          }
       },
       checkStatus: sessionId =>
