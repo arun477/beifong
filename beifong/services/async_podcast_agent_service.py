@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import time
+import redis
 from datetime import datetime
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
@@ -92,7 +93,8 @@ class PodcastAgentService:
     def __init__(self):
         """Initialize the podcast agent service."""
         self.active_sessions = {}
-        self.session_locks = {}
+        # Replace session_locks dictionary with Redis connection
+        self.redis = redis.Redis(host='localhost', port=6379, db=0)
         os.makedirs(PODCAST_DIR, exist_ok=True)
         os.makedirs(PODCAST_AUIDO_DIR, exist_ok=True)
         os.makedirs(PODCAST_IMG_DIR, exist_ok=True)
@@ -439,22 +441,41 @@ class PodcastAgentService:
         """Send a message to the podcast agent and get a response"""
         if request.session_id not in self.active_sessions:
             raise HTTPException(status_code=404, detail="Session not found")
+        
         agent = self.active_sessions[request.session_id]
-        operation_info = self.session_locks.get(request.session_id)
+        
+        # Create Redis lock key for this session
+        lock_key = f"podcast:lock:{request.session_id}"
+        
+        # Check if there's an existing lock in Redis
+        lock_data = self.redis.get(lock_key)
         current_time = time.time()
-        if operation_info and current_time - operation_info["started_at"] < 300:
-            return {
-                "session_id": request.session_id,
-                "response": "An operation is in progress. Please wait a moment before sending another message.",
-                "stage": agent.session_state.get("stage", "processing"),
-                "session_state": json.dumps(agent.session_state),
-                "is_processing": True,
-                "process_type": operation_info["operation_type"],
-            }
-        self.session_locks[request.session_id] = {"operation_type": "chat", "started_at": current_time}
+        
+        if lock_data:
+            # Deserialize the lock data from Redis
+            operation_info = json.loads(lock_data)
+            
+            # Check if the lock is still valid (less than 300 seconds old)
+            if current_time - operation_info["started_at"] < 300:
+                return {
+                    "session_id": request.session_id,
+                    "response": "An operation is in progress. Please wait a moment before sending another message.",
+                    "stage": agent.session_state.get("stage", "processing"),
+                    "session_state": json.dumps(agent.session_state),
+                    "is_processing": True,
+                    "process_type": operation_info["operation_type"],
+                }
+        
+        # Set a new lock in Redis with 300 second expiration
+        lock_info = {"operation_type": "chat", "started_at": current_time}
+        self.redis.setex(lock_key, 300, json.dumps(lock_info))
+        
         try:
             response = await agent.arun(request.message)
-            self.session_locks.pop(request.session_id, None)
+            
+            # Release the lock when done
+            self.redis.delete(lock_key)
+            
             return {
                 "session_id": request.session_id,
                 "response": response.content,
@@ -463,7 +484,9 @@ class PodcastAgentService:
                 "is_processing": False,
             }
         except Exception as e:
-            self.session_locks.pop(request.session_id, None)
+            # Make sure to release the lock on error
+            self.redis.delete(lock_key)
+            
             print(f"Error processing request: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -480,25 +503,75 @@ class PodcastAgentService:
         """Check if a session has a running process and automatically reset if stalled"""
         if request.session_id not in self.active_sessions:
             raise HTTPException(status_code=404, detail="Session not found")
+        
         agent = self.active_sessions[request.session_id]
         processing_status = agent.session_state.get("processing_status", {})
+        
+        # Check for Redis lock instead of relying only on session state
+        lock_key = f"podcast:lock:{request.session_id}"
+        lock_data = self.redis.get(lock_key)
+        
         if not processing_status or not processing_status.get("is_processing", False):
-            return {
-                "session_id": request.session_id,
-                "is_processing": False,
-                "stage": agent.session_state.get("stage", "unknown"),
-                "session_state": json.dumps(agent.session_state),
-            }
+            # No processing status in session state
+            if not lock_data:
+                # No lock in Redis either, definitely not processing
+                return {
+                    "session_id": request.session_id,
+                    "is_processing": False,
+                    "stage": agent.session_state.get("stage", "unknown"),
+                    "session_state": json.dumps(agent.session_state),
+                }
+            else:
+                # Lock exists but session state doesn't match - use Redis as source of truth
+                lock_info = json.loads(lock_data)
+                started_at = lock_info.get("started_at", time.time())
+                elapsed_time = time.time() - started_at
+                
+                if elapsed_time > 300:
+                    # Lock is stale, remove it
+                    self.redis.delete(lock_key)
+                    agent.session_state["processing_status"] = {
+                        "is_processing": False,
+                        "process_type": None,
+                        "started_at": None,
+                        "message": "Process timed out and was reset",
+                    }
+                    return {
+                        "session_id": request.session_id,
+                        "is_processing": False,
+                        "process_type": lock_info.get("operation_type", "unknown"),
+                        "elapsed_seconds": round(elapsed_time),
+                        "message": "Process appears to have stalled and was reset",
+                        "stage": agent.session_state.get("stage", "unknown"),
+                        "session_state": json.dumps(agent.session_state),
+                    }
+                else:
+                    # Lock is valid - session is processing based on Redis
+                    return {
+                        "session_id": request.session_id,
+                        "is_processing": True,
+                        "process_type": lock_info.get("operation_type", "unknown"),
+                        "elapsed_seconds": round(elapsed_time),
+                        "message": processing_status.get("message", "Processing..."),
+                        "stage": agent.session_state.get("stage", "unknown"),
+                        "session_state": json.dumps(agent.session_state),
+                    }
+        
+        # Processing status exists in session state
         started_at = processing_status.get("started_at", time.time())
         elapsed_time = time.time() - started_at
+        
         if elapsed_time > 300:
-            print(f"Process in session {request.session_id} timed out after {elapsed_time} seconds")
+            # Reset both session state and Redis lock
             agent.session_state["processing_status"] = {
                 "is_processing": False,
                 "process_type": None,
                 "started_at": None,
                 "message": "Process timed out and was reset",
             }
+            if lock_data:
+                self.redis.delete(lock_key)
+                
             return {
                 "session_id": request.session_id,
                 "is_processing": False,
@@ -508,9 +581,10 @@ class PodcastAgentService:
                 "stage": agent.session_state.get("stage", "unknown"),
                 "session_state": json.dumps(agent.session_state),
             }
+            
         return {
             "session_id": request.session_id,
-            "is_processing": False,
+            "is_processing": True if lock_data else False,  # Use Redis as source of truth
             "process_type": processing_status.get("process_type", "unknown"),
             "elapsed_seconds": round(elapsed_time),
             "message": processing_status.get("message", "Processing..."),
@@ -576,6 +650,10 @@ class PodcastAgentService:
     async def delete_session(self, session_id: str):
         """Delete a podcast session and optionally its associated data"""
         try:
+            # Clear any Redis locks for this session
+            lock_key = f"podcast:lock:{session_id}"
+            self.redis.delete(lock_key)
+            
             db_path = get_agent_session_db_path()
             async with aiosqlite.connect(db_path) as conn:
                 conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
