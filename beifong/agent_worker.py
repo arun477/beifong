@@ -76,6 +76,7 @@ class AgentWorker:
             storage=STORAGE,
             markdown=True,
             session_id=session_id,
+            num_history_runs=60
         )
 
     async def process_message(self, message_data):
