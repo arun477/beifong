@@ -2,10 +2,9 @@ import os
 import json
 import uuid
 import time
-import asyncio
 import subprocess
 from redis.asyncio import Redis
-from fastapi import HTTPException, status
+from fastapi import status
 from fastapi.responses import JSONResponse
 import aiosqlite
 import sys
@@ -27,13 +26,10 @@ class PodcastAgentService:
         os.makedirs(PODCAST_AUIDO_DIR, exist_ok=True)
         os.makedirs(PODCAST_IMG_DIR, exist_ok=True)
         os.makedirs(PODCAST_RECORDINGS_DIR, exist_ok=True)
-
-        # Define Redis queue keys
         self.request_queue_key = "podcast:request_queue"
         self.result_key_prefix = "podcast:result:"
 
     async def init_redis(self):
-        """Initialize Redis connection"""
         self.redis = Redis(host="localhost", port=6379, db=0)
         print("Redis connection established")
 
@@ -64,12 +60,11 @@ class PodcastAgentService:
                 content={"error": "Redis connection not initialized"},
             )
 
-        ALLOWED_TIME_SEC = 300
+        ALLOWED_TIME_SEC = 600
         lock_key = f"podcast:lock:{request.session_id}"
         lock_data = await self.redis.get(lock_key)
         current_time = time.time()
 
-        # Check if session is already processing a request
         if lock_data:
             operation_info = json.loads(lock_data.decode("utf-8"))
             if current_time - operation_info["started_at"] < ALLOWED_TIME_SEC:
@@ -81,17 +76,11 @@ class PodcastAgentService:
                     "is_processing": True,
                     "process_type": operation_info["operation_type"],
                 }
-
-        # Set lock for this session
         lock_info = {"operation_type": "chat", "started_at": current_time}
         await self.redis.setex(lock_key, ALLOWED_TIME_SEC, json.dumps(lock_info))
-
         try:
-            # Push request to the Redis queue
             request_data = {"session_id": request.session_id, "message": request.message, "timestamp": current_time}
             await self.redis.rpush(self.request_queue_key, json.dumps(request_data))
-
-            # Return immediate response indicating processing has started
             return {
                 "session_id": request.session_id,
                 "response": "Your request is being processed.",
@@ -101,7 +90,6 @@ class PodcastAgentService:
                 "process_type": "chat",
             }
         except Exception as e:
-            # Release the lock in case of errors
             await self.redis.delete(lock_key)
             print(f"Error queuing request: {str(e)}")
             return JSONResponse(
@@ -117,32 +105,24 @@ class PodcastAgentService:
             )
 
     async def check_result_status(self, request):
-        """Check if a result is available for the session with strict session validation"""
         try:
             if not self.redis:
                 return JSONResponse(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={"error": "Redis connection not initialized"},
                 )
-
             if not request.session_id:
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={"error": "Session ID is required"},
                 )
-
-            # Check if there's a result for this session
             result_key = f"{self.result_key_prefix}{request.session_id}"
             result_data = await self.redis.get(result_key)
-
             if not result_data:
-                # Check if there's an active lock indicating processing
                 lock_key = f"podcast:lock:{request.session_id}"
                 lock_data = await self.redis.get(lock_key)
-
                 if lock_data:
                     operation_info = json.loads(lock_data.decode("utf-8"))
-                    # Return a response with consistent fields
                     return {
                         "session_id": request.session_id,
                         "response": "Your request is still being processed.",
@@ -152,7 +132,6 @@ class PodcastAgentService:
                         "process_type": operation_info["operation_type"],
                     }
                 else:
-                    # Return a response with consistent fields
                     return {
                         "session_id": request.session_id,
                         "response": "No active request found for this session.",
@@ -161,13 +140,9 @@ class PodcastAgentService:
                         "is_processing": False,
                     }
 
-            # Parse the result data
             result = json.loads(result_data.decode("utf-8"))
-
-            # CRITICAL: Verify session ID in result matches requested session ID
             if result.get("session_id") != request.session_id:
                 print(f"ERROR: Session ID mismatch! Expected {request.session_id}, got {result.get('session_id')}")
-                # Do not delete the result since it belongs to another session
                 return {
                     "session_id": request.session_id,
                     "response": "Error: Received result for wrong session.",
@@ -175,14 +150,9 @@ class PodcastAgentService:
                     "session_state": "{}",
                     "is_processing": False,
                 }
-
-            # Only delete the result after confirming it belongs to this session
             await self.redis.delete(result_key)
-
-            # Ensure the result has the expected fields
             if "is_processing" not in result:
                 result["is_processing"] = False
-
             return result
         except Exception as e:
             print(f"Error checking result status: {str(e)}")
@@ -259,15 +229,10 @@ class PodcastAgentService:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={"error": "Redis connection not initialized"},
                 )
-
-            # Clear any Redis locks for this session
             lock_key = f"podcast:lock:{session_id}"
             await self.redis.delete(lock_key)
-
-            # Also clear any pending results
             result_key = f"{self.result_key_prefix}{session_id}"
             await self.redis.delete(result_key)
-
             db_path = get_agent_session_db_path()
             async with aiosqlite.connect(db_path) as conn:
                 conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
@@ -334,22 +299,15 @@ class PodcastAgentService:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     content={"error": "Redis connection not initialized"},
                 )
-
-            # First check if there's an active processing lock for this session
             lock_key = f"podcast:lock:{session_id}"
             lock_data = await self.redis.get(lock_key)
-
             is_processing = False
             process_type = None
-
             if lock_data:
-                # Session has active processing
                 operation_info = json.loads(lock_data.decode("utf-8"))
                 is_processing = True
                 process_type = operation_info.get("operation_type", "unknown")
                 print(f"Session {session_id} has active processing: {process_type}")
-
-            # Then get history from database
             db_path = get_agent_session_db_path()
             async with aiosqlite.connect(db_path) as conn:
                 conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
@@ -399,20 +357,14 @@ class PodcastAgentService:
                         seen_contents.add(key)
                         deduplicated_messages.append(msg)
 
-            # Also check if there's a pending result for this session
             result_key = f"{self.result_key_prefix}{session_id}"
             result_data = await self.redis.get(result_key)
-
             if result_data:
                 try:
                     result = json.loads(result_data.decode("utf-8"))
-                    # If there's a pending result but no active lock, this means processing is complete
-                    # but the result hasn't been delivered yet
                     if not is_processing:
-                        is_processing = False  # Still mark as not processing since it's complete
+                        is_processing = False
                         process_type = "completed"
-
-                    # If the result contains updated session state, prefer it over the database version
                     if "session_state" in result and result["session_state"]:
                         try:
                             updated_state = json.loads(result["session_state"])
@@ -423,8 +375,6 @@ class PodcastAgentService:
                             pass
                 except:
                     pass
-
-            print(f"Retrieved history for session {session_id}: {len(deduplicated_messages)} messages, processing: {is_processing}")
             return {
                 "session_id": session_id,
                 "messages": deduplicated_messages,
@@ -437,12 +387,10 @@ class PodcastAgentService:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Error retrieving session history: {str(e)}"})
 
 
-# Create the service instance
 podcast_agent_service = PodcastAgentService()
 
 
 async def start_worker_pool(num_workers=4):
-    """Start the worker pool as a separate process"""
     try:
         worker_process = subprocess.Popen(
             [sys.executable, "worker_manager.py", "--workers", str(num_workers)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -454,10 +402,8 @@ async def start_worker_pool(num_workers=4):
         return None
 
 
-# This function will be called when your FastAPI app starts
 async def startup_worker_event():
-    """Initialize async components on application startup"""
-    await podcast_agent_service.init_redis()  # Initialize Redis connection
+    await podcast_agent_service.init_redis()
     worker_process = await start_worker_pool(num_workers=4)
     if not worker_process:
         print("WARNING: Failed to start worker pool, system will not process requests")

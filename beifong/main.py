@@ -44,7 +44,7 @@ worker_processes = []
 async def shutdown_event():
     """Cleanup resources on application shutdown."""
     print("Shutting down application...")
-
+    
     # Terminate any worker processes
     for process in worker_processes:
         if process and process.poll() is None:  # If process is still running
@@ -55,12 +55,15 @@ async def shutdown_event():
             except subprocess.TimeoutExpired:
                 print(f"Worker process {process.pid} didn't terminate gracefully, killing")
                 process.kill()
-
-    # Close Redis connections
-    if hasattr(podcast_agent_service, "redis") and podcast_agent_service.redis:
-        podcast_agent_service.redis.close()
-        await podcast_agent_service.redis.wait_closed()
-
+                
+    # Close Redis connections with proper method for redis.asyncio
+    if hasattr(podcast_agent_service, 'redis') and podcast_agent_service.redis:
+        try:
+            await podcast_agent_service.redis.close()
+            print("Redis connection closed")
+        except Exception as e:
+            print(f"Error closing Redis connection: {e}")
+    
     print("Shutdown complete")
 
 
