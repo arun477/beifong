@@ -20,12 +20,11 @@ class ChatResponse(BaseModel):
     response: str
     stage: str
     session_state: str
-    is_processing: Optional[bool] = False
+    is_processing: bool = False
     process_type: Optional[str] = None
-    elapsed_seconds: Optional[int] = None
 
 
-class ProcessStatusRequest(BaseModel):
+class StatusRequest(BaseModel):
     session_id: str
 
 
@@ -38,13 +37,15 @@ async def create_session(request: SessionRequest = None):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Send a message to the podcast agent and get a response"""
+    # This will queue the message and return immediately with processing status
     return await podcast_agent_service.chat(request)
 
 
-@router.post("/status")
-async def check_processing_status(request: ProcessStatusRequest):
-    """Check if a session has a running process and automatically reset if stalled"""
-    return await podcast_agent_service.check_processing_status(request)
+@router.post("/status", response_model=ChatResponse)
+async def check_status(request: StatusRequest):
+    """Check if a result is available for the session"""
+    # This will check Redis for results and return them when available
+    return await podcast_agent_service.check_result_status(request)
 
 
 @router.get("/sessions")

@@ -19,3 +19,4 @@ spacy-curated-transformers==0.3.0
 uvicorn==0.34.2
 requests>=2.32.3
 redis==6.0.0
+aioredis==2.0.1

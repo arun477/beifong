@@ -7,6 +7,8 @@ import os
 import aiofiles
 from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
 from services.db_init import init_databases
+from services.async_podcast_agent_service import startup_worker_event, podcast_agent_service
+import subprocess
 
 CLIENT_BUILD_PATH = os.environ.get(
     "CLIENT_BUILD_PATH",
@@ -32,6 +34,34 @@ async def startup_event():
     await init_databases()
     if not os.path.exists(CLIENT_BUILD_PATH):
         print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
+    await startup_worker_event()
+
+
+worker_processes = []
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup resources on application shutdown."""
+    print("Shutting down application...")
+
+    # Terminate any worker processes
+    for process in worker_processes:
+        if process and process.poll() is None:  # If process is still running
+            print(f"Terminating worker process with PID {process.pid}")
+            process.terminate()
+            try:
+                process.wait(timeout=5)  # Wait up to 5 seconds for graceful shutdown
+            except subprocess.TimeoutExpired:
+                print(f"Worker process {process.pid} didn't terminate gracefully, killing")
+                process.kill()
+
+    # Close Redis connections
+    if hasattr(podcast_agent_service, "redis") and podcast_agent_service.redis:
+        podcast_agent_service.redis.close()
+        await podcast_agent_service.redis.wait_closed()
+
+    print("Shutdown complete")
 
 
 app.include_router(article_router.router, prefix="/api/articles", tags=["articles"])
