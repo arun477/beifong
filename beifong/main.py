@@ -154,14 +154,14 @@ async def stream_recording(session_id: str, filename: str, request: Request):
         "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Content-Length": str(content_length),
         "Content-Disposition": f"inline; filename={filename}",
-        "Content-Type": "video/webm",  # BrowserUse recordings are typically webm format
+        "Content-Type": "video/webm",
     }
 
     async def file_streamer():
         async with aiofiles.open(recording_path, "rb") as f:
             await f.seek(start)
             remaining = content_length
-            chunk_size = 64 * 1024  # 64KB chunks
+            chunk_size = 64 * 1024
             while remaining > 0:
                 chunk = await f.read(min(chunk_size, remaining))
                 if not chunk:
@@ -216,4 +216,4 @@ async def serve_react(full_path: str, request: Request):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, timeout_keep_alive=120, timeout_graceful_shutdown=120)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True, timeout_keep_alive=120, timeout_graceful_shutdown=120)
