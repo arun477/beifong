@@ -7,8 +7,7 @@ import os
 import aiofiles
 from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
 from services.db_init import init_databases
-from services.async_podcast_agent_service import startup_worker_event, podcast_agent_service
-import subprocess
+from services.async_podcast_agent_service import podcast_agent_service, startup_worker_event, shutdown_worker_event
 
 CLIENT_BUILD_PATH = os.environ.get(
     "CLIENT_BUILD_PATH",
@@ -34,36 +33,27 @@ async def startup_event():
     await init_databases()
     if not os.path.exists(CLIENT_BUILD_PATH):
         print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
+
+    # Start the worker service instead of spawning worker processes
     await startup_worker_event()
-
-
-worker_processes = []
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup resources on application shutdown."""
     print("Shutting down application...")
-    
-    # Terminate any worker processes
-    for process in worker_processes:
-        if process and process.poll() is None:  # If process is still running
-            print(f"Terminating worker process with PID {process.pid}")
-            process.terminate()
-            try:
-                process.wait(timeout=5)  # Wait up to 5 seconds for graceful shutdown
-            except subprocess.TimeoutExpired:
-                print(f"Worker process {process.pid} didn't terminate gracefully, killing")
-                process.kill()
-                
-    # Close Redis connections with proper method for redis.asyncio
-    if hasattr(podcast_agent_service, 'redis') and podcast_agent_service.redis:
+
+    # Shutdown worker service
+    await shutdown_worker_event()
+
+    # Close Redis connections
+    if hasattr(podcast_agent_service, "redis") and podcast_agent_service.redis:
         try:
             await podcast_agent_service.redis.close()
             print("Redis connection closed")
         except Exception as e:
             print(f"Error closing Redis connection: {e}")
-    
+
     print("Shutdown complete")
 
 

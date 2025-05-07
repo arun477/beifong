@@ -2,7 +2,6 @@ import os
 import json
 import uuid
 import time
-import subprocess
 from redis.asyncio import Redis
 from fastapi import status
 from fastapi.responses import JSONResponse
@@ -16,12 +15,14 @@ from db.agent_config import (
     PODCAST_IMG_DIR,
     PODCAST_RECORDINGS_DIR,
 )
+from redis_stream_service import RedisStreamService
+from worker_service import worker_service
 
 
 class PodcastAgentService:
     def __init__(self):
-        self.active_sessions = {}
         self.redis = None
+        self.stream_service = RedisStreamService()  # New stream service
         os.makedirs(PODCAST_DIR, exist_ok=True)
         os.makedirs(PODCAST_AUIDO_DIR, exist_ok=True)
         os.makedirs(PODCAST_IMG_DIR, exist_ok=True)
@@ -30,7 +31,7 @@ class PodcastAgentService:
         self.result_key_prefix = "podcast:result:"
 
     async def init_redis(self):
-        self.redis = Redis(host="localhost", port=6379, db=0)
+        self.redis = await self.stream_service.init_redis()
         print("Redis connection established")
 
     async def create_session(self, request=None):
@@ -60,27 +61,22 @@ class PodcastAgentService:
                 content={"error": "Redis connection not initialized"},
             )
 
-        ALLOWED_TIME_SEC = 600
-        lock_key = f"podcast:lock:{request.session_id}"
-        lock_data = await self.redis.get(lock_key)
-        current_time = time.time()
-
-        if lock_data:
-            operation_info = json.loads(lock_data.decode("utf-8"))
-            if current_time - operation_info["started_at"] < ALLOWED_TIME_SEC:
+        try:
+            # Use the stream service to enqueue the message
+            result = await self.stream_service.enqueue_message(request.session_id, request.message)
+            
+            if not result["success"]:
+                # Message couldn't be enqueued, return the error
                 return {
                     "session_id": request.session_id,
-                    "response": "An operation is in progress. Please wait a moment before sending another message.",
-                    "stage": "processing",
+                    "response": result["message"],
+                    "stage": "processing" if result["is_processing"] else "error",
                     "session_state": "{}",
-                    "is_processing": True,
-                    "process_type": operation_info["operation_type"],
+                    "is_processing": result["is_processing"],
+                    "process_type": result.get("process_type", "unknown"),
                 }
-        lock_info = {"operation_type": "chat", "started_at": current_time}
-        await self.redis.setex(lock_key, ALLOWED_TIME_SEC, json.dumps(lock_info))
-        try:
-            request_data = {"session_id": request.session_id, "message": request.message, "timestamp": current_time}
-            await self.redis.rpush(self.request_queue_key, json.dumps(request_data))
+            
+            # Message was enqueued successfully
             return {
                 "session_id": request.session_id,
                 "response": "Your request is being processed.",
@@ -90,7 +86,6 @@ class PodcastAgentService:
                 "process_type": "chat",
             }
         except Exception as e:
-            await self.redis.delete(lock_key)
             print(f"Error queuing request: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -116,31 +111,20 @@ class PodcastAgentService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={"error": "Session ID is required"},
                 )
-            result_key = f"{self.result_key_prefix}{request.session_id}"
-            result_data = await self.redis.get(result_key)
-            if not result_data:
-                lock_key = f"podcast:lock:{request.session_id}"
-                lock_data = await self.redis.get(lock_key)
-                if lock_data:
-                    operation_info = json.loads(lock_data.decode("utf-8"))
-                    return {
-                        "session_id": request.session_id,
-                        "response": "Your request is still being processed.",
-                        "stage": "processing",
-                        "session_state": "{}",
-                        "is_processing": True,
-                        "process_type": operation_info["operation_type"],
-                    }
-                else:
-                    return {
-                        "session_id": request.session_id,
-                        "response": "No active request found for this session.",
-                        "stage": "idle",
-                        "session_state": "{}",
-                        "is_processing": False,
-                    }
-
-            result = json.loads(result_data.decode("utf-8"))
+            
+            # Use the stream service to get the result
+            result = await self.stream_service.get_result(request.session_id)
+            
+            if not result:
+                return {
+                    "session_id": request.session_id,
+                    "response": "No active request found for this session.",
+                    "stage": "idle",
+                    "session_state": "{}",
+                    "is_processing": False,
+                }
+            
+            # Check session ID match (keeping your original check)
             if result.get("session_id") != request.session_id:
                 print(f"ERROR: Session ID mismatch! Expected {request.session_id}, got {result.get('session_id')}")
                 return {
@@ -150,9 +134,10 @@ class PodcastAgentService:
                     "session_state": "{}",
                     "is_processing": False,
                 }
-            await self.redis.delete(result_key)
+                
             if "is_processing" not in result:
                 result["is_processing"] = False
+                
             return result
         except Exception as e:
             print(f"Error checking result status: {str(e)}")
@@ -278,9 +263,6 @@ class PodcastAgentService:
                                     print(f"Deleted recordings directory: {recording_dir}")
                                 except Exception as e:
                                     print(f"Error deleting recordings directory: {e}")
-                    if session_id in self.active_sessions:
-                        del self.active_sessions[session_id]
-                        print(f"Removed session {session_id} from active sessions")
                     if is_completed:
                         return {"success": True, "message": f"Session {session_id} deleted, but assets preserved"}
                     else:
@@ -356,25 +338,6 @@ class PodcastAgentService:
                     if key not in seen_contents:
                         seen_contents.add(key)
                         deduplicated_messages.append(msg)
-
-            result_key = f"{self.result_key_prefix}{session_id}"
-            result_data = await self.redis.get(result_key)
-            if result_data:
-                try:
-                    result = json.loads(result_data.decode("utf-8"))
-                    if not is_processing:
-                        is_processing = False
-                        process_type = "completed"
-                    if "session_state" in result and result["session_state"]:
-                        try:
-                            updated_state = json.loads(result["session_state"])
-                            if updated_state:
-                                session_state = updated_state
-                                print(f"Using updated session state from result for {session_id}")
-                        except:
-                            pass
-                except:
-                    pass
             return {
                 "session_id": session_id,
                 "messages": deduplicated_messages,
@@ -387,23 +350,16 @@ class PodcastAgentService:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Error retrieving session history: {str(e)}"})
 
 
+# Create the singleton instance
 podcast_agent_service = PodcastAgentService()
 
 
-async def start_worker_pool(num_workers=4):
-    try:
-        worker_process = subprocess.Popen(
-            [sys.executable, "worker_manager.py", "--workers", str(num_workers)], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        print(f"Started worker pool manager with PID {worker_process.pid}")
-        return worker_process
-    except Exception as e:
-        print(f"Error starting worker pool: {e}")
-        return None
-
-
 async def startup_worker_event():
+    """Initialize the worker service on application startup."""
     await podcast_agent_service.init_redis()
-    worker_process = await start_worker_pool(num_workers=4)
-    if not worker_process:
-        print("WARNING: Failed to start worker pool, system will not process requests")
+    await worker_service.start()
+
+
+async def shutdown_worker_event():
+    """Shutdown the worker service on application shutdown."""
+    await worker_service.stop()
