@@ -17,6 +17,12 @@ from tools.generate_podcast_banner import generate_banner
 from tools.generate_podcast_audio import generate_audio
 from tools.embedding_search import embedding_search
 from tools.search_articles import search_articles
+from tools.wikipedia_search import wikipedia_search
+from tools.wikidata_search import wikidata_search
+from tools.arxiv_search import arxiv_search
+from tools.world_bank_search import worldbank_search
+from tools.openlibrary_search import openlibrary_search
+from tools.jikan_search import jikan_search
 from tools.session_state_manager import (
     toggle_banner_confirm,
     toggle_audio_confirm,
@@ -64,6 +70,12 @@ def agent_chat(self, session_id, message):
                 generate_audio,
                 embedding_search,
                 search_articles,
+                wikipedia_search,
+                wikidata_search,
+                arxiv_search,
+                worldbank_search,
+                openlibrary_search,
+                jikan_search,
             ],
         )
         response = agent.run(message)
