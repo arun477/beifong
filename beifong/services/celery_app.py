@@ -1,66 +1,54 @@
 from celery import Celery, Task
 import redis
 import os
-import json
 import time
+import json
 
-# Use environment variables or defaults for Redis configuration
 REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
 REDIS_DB = int(os.environ.get("REDIS_DB", 0))
+REDIS_LOCK_EXP_TIME_SEC = 60 * 10
+REDIS_LOCK_INFO_EXP_TIME_SEC = 60 * 15
+STALE_LOCK_THRESHOLD_SEC = 60 * 15
 
-# Redis client for session locking
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB+1)
+redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB + 1)
 
-# Create Celery app with Redis as broker and backend
-app = Celery(
-    "beifong_tasks", 
-    broker=f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
-    backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-)
+app = Celery("beifong_tasks", broker=f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}", backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
 
-# Celery configuration
 app.conf.update(
-    result_expires=3600,
+    result_expires=60 * 2,
     task_track_started=True,
-    worker_concurrency=2,  # Reduced from 4 to lower resource contention
+    worker_concurrency=2,
     task_acks_late=True,
-    task_time_limit=600,   # 10-minute time limit for tasks
-    task_soft_time_limit=540,  # 9-minute soft time limit (allows for cleanup)
+    task_time_limit=600,
+    task_soft_time_limit=540,
 )
 
-# Session locking mechanism to prevent concurrent processing of the same session
+
 class SessionLockedTask(Task):
     def __call__(self, *args, **kwargs):
         session_id = args[0] if args else kwargs.get("session_id")
-
         if not session_id:
-            print("No session_id provided for task")
             return super().__call__(*args, **kwargs)
 
         lock_key = f"lock:{session_id}"
-        
-        # Check for stale locks (locks older than 15 minutes)
         lock_info = redis_client.get(f"lock_info:{session_id}")
         if lock_info:
             try:
-                lock_time = float(lock_info.decode('utf-8'))
-                if time.time() - lock_time > 900:  # 15 minutes
-                    print(f"Found stale lock for session {session_id}, removing")
+                lock_data = json.loads(lock_info.decode("utf-8"))
+                lock_time = lock_data.get("timestamp", 0)
+                if time.time() - lock_time > STALE_LOCK_THRESHOLD_SEC:
                     redis_client.delete(lock_key)
                     redis_client.delete(f"lock_info:{session_id}")
             except (ValueError, TypeError) as e:
                 print(f"Error checking lock time: {e}")
-        
-        # Try to acquire lock with 10-minute expiration
-        acquired = redis_client.set(lock_key, "1", nx=True, ex=60 * 10)  
-        
-        # Store lock timestamp for stale lock detection
+
+        acquired = redis_client.set(lock_key, "1", nx=True, ex=REDIS_LOCK_EXP_TIME_SEC)
         if acquired:
-            redis_client.set(f"lock_info:{session_id}", str(time.time()), ex=60 * 15)
+            lock_data = {"timestamp": time.time(), "task_id": self.request.id if hasattr(self, "request") else None}
+            redis_client.set(f"lock_info:{session_id}", json.dumps(lock_data), ex=REDIS_LOCK_INFO_EXP_TIME_SEC)
 
         if not acquired:
-            print(f"Session {session_id} is already being processed")
             return {
                 "error": "Session busy",
                 "response": "This session is already processing a message. Please wait.",
@@ -68,14 +56,11 @@ class SessionLockedTask(Task):
                 "stage": "busy",
                 "session_state": "{}",
                 "is_processing": True,
-                "process_type": "chat"
+                "process_type": "chat",
             }
 
         try:
-            print(f"Acquired lock for session {session_id}")
             return super().__call__(*args, **kwargs)
         finally:
-            # Clean up lock and lock info
             redis_client.delete(lock_key)
             redis_client.delete(f"lock_info:{session_id}")
-            print(f"Released lock for session {session_id}")

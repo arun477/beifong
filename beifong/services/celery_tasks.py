@@ -34,12 +34,9 @@ from tools.session_state_manager import (
 def agent_chat(self, session_id, message):
     try:
         print(f"Processing message for session {session_id}: {message[:50]}...")
-
         db_file = get_agent_session_db_path()
         os.makedirs(os.path.dirname(db_file), exist_ok=True)
-
         session_state_format = "[current session states: " + ", ".join([f"{key}: {{{key}}}" for key in INITIAL_SESSION_STATE.keys()]) + "]"
-
         agent = Agent(
             model=OpenAIChat(id=AGENT_MODEL, api_key=os.getenv("OPENAI_API_KEY")),
             session_id=session_id,
@@ -69,10 +66,8 @@ def agent_chat(self, session_id, message):
                 search_articles,
             ],
         )
-
         response = agent.run(message)
         print(f"Response generated for session {session_id}")
-
         return {
             "session_id": session_id,
             "response": response.content,
@@ -81,7 +76,6 @@ def agent_chat(self, session_id, message):
             "is_processing": False,
             "process_type": None,
         }
-
     except Exception as e:
         print(f"Error in agent_chat for session {session_id}: {str(e)}")
         return {

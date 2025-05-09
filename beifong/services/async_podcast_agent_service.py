@@ -4,7 +4,7 @@ import uuid
 from fastapi import status
 from fastapi.responses import JSONResponse
 import aiosqlite
-
+from redis.asyncio import ConnectionPool, Redis
 from db.config import get_agent_session_db_path
 from db.agent_config import (
     PODCAST_DIR,
@@ -13,14 +13,39 @@ from db.agent_config import (
     PODCAST_RECORDINGS_DIR,
 )
 from services.celery_tasks import agent_chat
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class PodcastAgentService:
     def __init__(self):
-        # Create necessary directories
         os.makedirs(PODCAST_DIR, exist_ok=True)
         os.makedirs(PODCAST_AUIDO_DIR, exist_ok=True)
         os.makedirs(PODCAST_IMG_DIR, exist_ok=True)
         os.makedirs(PODCAST_RECORDINGS_DIR, exist_ok=True)
+
+        self.redis_host = os.environ.get("REDIS_HOST", "localhost")
+        self.redis_port = int(os.environ.get("REDIS_PORT", 6379))
+        self.redis_db = int(os.environ.get("REDIS_DB", 0))
+        self.redis_pool = ConnectionPool.from_url(f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db + 1}", max_connections=10)
+        self.redis = Redis(connection_pool=self.redis_pool)
+
+    async def get_active_task(self, session_id):
+        try:
+            lock_info = await self.redis.get(f"lock_info:{session_id}")
+            if lock_info:
+                try:
+                    lock_data = json.loads(lock_info.decode("utf-8"))
+                    task_id = lock_data.get("task_id")
+                    if task_id:
+                        return task_id
+                except (json.JSONDecodeError, AttributeError) as e:
+                    print(f"Error parsing lock info: {e}")
+            return None
+        except Exception as e:
+            print(f"Error checking active task: {e}")
+            return None
 
     async def create_session(self, request=None):
         if request and request.session_id:
@@ -32,23 +57,27 @@ class PodcastAgentService:
                         row = await cursor.fetchone()
                         exists = row is not None
                 if exists:
-                    print(f"Loading session {session_id} from database")
                     return {"session_id": session_id}
-                else:
-                    print(f"Session {session_id} not found in database")
             except Exception as e:
                 print(f"Error checking session existence: {e}")
         new_session_id = str(uuid.uuid4())
-        print(f"Creating new session {new_session_id}")
         return {"session_id": new_session_id}
 
     async def chat(self, request):
         try:
-            # Submit task to Celery
+            session_id = request.session_id
+            task_id = await self.get_active_task(session_id)
+            if task_id:
+                return {
+                    "session_id": session_id,
+                    "response": "Your request is already being processed.",
+                    "stage": "processing",
+                    "session_state": "{}",
+                    "is_processing": True,
+                    "process_type": "chat",
+                    "task_id": task_id,
+                }
             task = agent_chat.delay(request.session_id, request.message)
-            print(f"Task {task.id} submitted for session {request.session_id}")
-            
-            # Return immediately with processing status and task ID
             return {
                 "session_id": request.session_id,
                 "response": "Your request is being processed.",
@@ -56,10 +85,9 @@ class PodcastAgentService:
                 "session_state": "{}",
                 "is_processing": True,
                 "process_type": "chat",
-                "task_id": task.id  # Return task ID to client for status checking
+                "task_id": task.id,
             }
         except Exception as e:
-            print(f"Error submitting task: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
@@ -79,14 +107,11 @@ class PodcastAgentService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={"error": "Session ID is required"},
                 )
-            
-            # Check if task_id is provided
-            task_id = getattr(request, 'task_id', None)
+
+            task_id = getattr(request, "task_id", None)
             if task_id:
-                # Check task status directly with Celery
                 task = agent_chat.AsyncResult(task_id)
-                
-                if task.state == 'PENDING' or task.state == 'STARTED':
+                if task.state == "PENDING" or task.state == "STARTED":
                     return {
                         "session_id": request.session_id,
                         "response": "Your request is still being processed.",
@@ -94,14 +119,12 @@ class PodcastAgentService:
                         "session_state": "{}",
                         "is_processing": True,
                         "process_type": "chat",
-                        "task_id": task_id  # Return task ID again for subsequent checks
+                        "task_id": task_id,
                     }
-                elif task.state == 'SUCCESS':
+                elif task.state == "SUCCESS":
                     result = task.result
                     if result and isinstance(result, dict):
-                        # Check session ID match
                         if result.get("session_id") != request.session_id:
-                            print(f"ERROR: Session ID mismatch! Expected {request.session_id}, got {result.get('session_id')}")
                             return {
                                 "session_id": request.session_id,
                                 "response": "Error: Received result for wrong session.",
@@ -110,7 +133,7 @@ class PodcastAgentService:
                                 "is_processing": False,
                             }
                         return result
-                else:  # FAILURE, REVOKED, etc.
+                else:
                     error_info = str(task.result) if task.result else f"Task failed with state: {task.state}"
                     return {
                         "session_id": request.session_id,
@@ -119,12 +142,8 @@ class PodcastAgentService:
                         "session_state": "{}",
                         "is_processing": False,
                     }
-            
-            # If no task_id or task not found, fetch from database
             return await self.get_session_state(request.session_id)
-            
         except Exception as e:
-            print(f"Error checking result status: {str(e)}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
@@ -136,19 +155,14 @@ class PodcastAgentService:
                     "is_processing": False,
                 },
             )
-            
+
     async def get_session_state(self, session_id):
-        """Fetch session state from database if no active task is found"""
         try:
             db_path = get_agent_session_db_path()
             async with aiosqlite.connect(db_path) as conn:
                 conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
-                async with conn.execute(
-                    "SELECT session_data FROM podcast_sessions WHERE session_id = ?", 
-                    (session_id,)
-                ) as cursor:
+                async with conn.execute("SELECT session_data FROM podcast_sessions WHERE session_id = ?", (session_id,)) as cursor:
                     row = await cursor.fetchone()
-                    
             if not row:
                 return {
                     "session_id": session_id,
@@ -157,20 +171,16 @@ class PodcastAgentService:
                     "session_state": "{}",
                     "is_processing": False,
                 }
-                
             session_data = json.loads(row["session_data"]) if isinstance(row["session_data"], str) else row["session_data"]
             session_state = session_data.get("session_state", {})
-            
             return {
                 "session_id": session_id,
-                "response": "",  # No direct response when getting state
+                "response": "",
                 "stage": session_state.get("stage", "idle"),
                 "session_state": json.dumps(session_state),
                 "is_processing": False,
             }
-            
         except Exception as e:
-            print(f"Error getting session state: {str(e)}")
             return {
                 "session_id": session_id,
                 "response": f"Error retrieving session state: {str(e)}",
@@ -275,6 +285,7 @@ class PodcastAgentService:
                             if os.path.exists(recording_dir):
                                 try:
                                     import shutil
+
                                     shutil.rmtree(recording_dir)
                                     print(f"Deleted recordings directory: {recording_dir}")
                                 except Exception as e:
@@ -289,6 +300,36 @@ class PodcastAgentService:
         except Exception as e:
             print(f"Error deleting session: {e}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Failed to delete session: {str(e)}"})
+
+    async def _get_chat_messages(self, row):
+        formatted_messages = []
+        session_state = {}
+        if row["session_data"]:
+            try:
+                if isinstance(row["session_data"], str):
+                    session_state = json.loads(row["session_data"])["session_state"]
+                else:
+                    session_state = row["session_data"]["session_state"]
+            except json.JSONDecodeError as e:
+                print(f"Error parsing session_data: {e}")
+
+        if row["memory"]:
+            try:
+                memory_data = json.loads(row["memory"]) if isinstance(row["memory"], str) else row["memory"]
+                if "runs" in memory_data and isinstance(memory_data["runs"], list):
+                    for run in memory_data["runs"]:
+                        if "messages" in run and isinstance(run["messages"], list):
+                            for msg in run["messages"]:
+                                if msg.get("role") in ["user", "assistant"] and "content" in msg:
+                                    if msg.get("role") == "assistant" and "tool_calls" in msg:
+                                        if not msg.get("content"):
+                                            continue
+                                    if msg.get("content"):
+                                        formatted_messages.append({"role": msg["role"], "content": msg["content"]})
+            except json.JSONDecodeError as e:
+                print(f"Error parsing memory data: {e}")
+
+        return formatted_messages, session_state
 
     async def get_session_history(self, session_id: str):
         try:
@@ -308,54 +349,22 @@ class PodcastAgentService:
                     row = await cursor.fetchone()
                 if not row:
                     return {"session_id": session_id, "messages": [], "state": "{}", "is_processing": False, "process_type": None}
-                formatted_messages = []
-                session_state = {}
-                if row["session_data"]:
-                    try:
-                        if isinstance(row["session_data"], str):
-                            session_state = json.loads(row["session_data"])["session_state"]
-                        else:
-                            session_state = row["session_data"]["session_state"]
-                    except json.JSONDecodeError as e:
-                        print(f"Error parsing session_data: {e}")
-                if row["memory"]:
-                    try:
-                        memory_data = json.loads(row["memory"]) if isinstance(row["memory"], str) else row["memory"]
-                        if "runs" in memory_data and isinstance(memory_data["runs"], list):
-                            for run in memory_data["runs"]:
-                                if "messages" in run and isinstance(run["messages"], list):
-                                    for msg in run["messages"]:
-                                        if msg.get("role") in ["user", "assistant"] and "content" in msg:
-                                            if msg.get("role") == "assistant" and "tool_calls" in msg:
-                                                if not msg.get("content"):
-                                                    continue
-                                            if msg.get("content"):
-                                                formatted_messages.append({"role": msg["role"], "content": msg["content"]})
-                    except json.JSONDecodeError as e:
-                        print(f"Error parsing memory data: {e}")
-                deduplicated_messages = []
-                seen_contents = set()
-                for msg in formatted_messages:
-                    key = f"{msg['role']}:{msg['content'][:100]}"
-                    if key not in seen_contents:
-                        seen_contents.add(key)
-                        deduplicated_messages.append(msg)
-            
-            # Check if a task is currently processing this session
-            # We do this by checking all active Celery tasks - can be optimized if needed
-            is_processing = False
-            process_type = None
-            
+                formatted_messages, session_state = await self._get_chat_messages(row)
+
+            task_id = await self.get_active_task(session_id)
+            is_processing = bool(task_id)
+            process_type = "chat" if is_processing else None
+
             return {
                 "session_id": session_id,
-                "messages": deduplicated_messages,
+                "messages": formatted_messages,
                 "state": json.dumps(session_state),
                 "is_processing": is_processing,
                 "process_type": process_type,
+                "task_id": task_id if task_id and is_processing else None,
             }
         except Exception as e:
-            print(f"Error retrieving session history: {e}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Error retrieving session history: {str(e)}"})
 
-# Create the singleton instance
+
 podcast_agent_service = PodcastAgentService()
