@@ -6,7 +6,8 @@ import numpy as np
 import soundfile as sf
 from typing import Any, Dict, List, Optional, Tuple
 from utils.load_api_keys import load_api_key
-from openai import OpenAI  # Changed from AsyncOpenAI
+from openai import OpenAI
+
 
 PODCASTS_FOLDER = "podcasts"
 PODCAST_AUDIO_FOLDER = os.path.join(PODCASTS_FOLDER, "audio")
@@ -138,11 +139,11 @@ def text_to_speech_openai(
         temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         temp_path = temp_file.name
         temp_file.close()
-        
+
         # Synchronous file write
         with open(temp_path, "wb") as f:
             f.write(audio_data)
-            
+
         try:
             return process_audio_file(temp_path)
         finally:

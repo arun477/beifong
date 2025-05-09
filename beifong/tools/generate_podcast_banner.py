@@ -1,8 +1,9 @@
 from agno.agent import Agent
 import os
 import uuid
-import requests  # Changed from aiohttp
+import requests
 from utils.load_api_keys import load_api_key
+
 
 PODCASTS_FOLDER = "podcasts"
 PODCAST_IMAGES_FOLDER = os.path.join(PODCASTS_FOLDER, "images")
@@ -48,17 +49,17 @@ def generate_banner(agent: Agent, custom_prompt: str = None) -> str:
             if "PODCAST" in clean_title:
                 clean_title = clean_title.replace("PODCAST", "").strip()
             topics = [clean_title]
-            
+
         # TRUNCATION: Limit each topic to 50 characters and take at most 2 topics
         truncated_topics = [topic[:50] for topic in topics[:2]]
         top_topics = ", ".join(truncated_topics) if truncated_topics else "News and current events"
-        
+
         # Check if custom prompt is too long and truncate if needed
         max_custom_prompt_length = 200
         if custom_prompt and len(custom_prompt) > max_custom_prompt_length:
             custom_prompt = custom_prompt[:max_custom_prompt_length] + "..."
             print(f"Custom prompt was truncated to {max_custom_prompt_length} characters")
-        
+
         # Base prompt template
         base_prompt = """
                         Create a modern, eye-catching podcast cover image that represents a podcast about these topics: {topics}.
@@ -73,29 +74,30 @@ def generate_banner(agent: Agent, custom_prompt: str = None) -> str:
                         - Create a clean, professional design suitable for a podcast
                         - AGAIN DO NOT include ANY text
                     """
-        
+
         # Add custom prompt if provided
         if custom_prompt:
             custom_prompt_section = f"\nOPTIONAL CUSTOM PROMPT FROM USER: {custom_prompt}"
         else:
             custom_prompt_section = ""
-            
+
         # Format the prompt with topics
         prompt = base_prompt.format(topics=top_topics) + custom_prompt_section
-        
+
         # Final truncation to ensure we're well under API limits
         max_prompt_length = 1000  # DALL-E typically allows around 1000 characters
         if len(prompt) > max_prompt_length:
             prompt = prompt[:max_prompt_length]
             print(f"Final prompt was truncated to {max_prompt_length} characters")
-            
+
         # Log what's being sent for debugging
         print(f"Generating banner image with topics: {top_topics}")
         print(f"Total prompt length: {len(prompt)} characters")
 
         from openai import OpenAI
+
         client = OpenAI(api_key=openai_api_key)
-        
+
         try:
             response = client.images.generate(
                 model=IMAGE_MODEL,
@@ -109,25 +111,25 @@ def generate_banner(agent: Agent, custom_prompt: str = None) -> str:
             error_details = str(api_error)
             print(f"Detailed API error: {error_details}")
             return f"Banner generation API error: {error_details}"
-        
+
         # Download and save the image
         image_response = requests.get(image_url)
         if image_response.status_code != 200:
             error_msg = f"Failed to download banner image: HTTP {image_response.status_code}"
             print(error_msg)
             return error_msg
-            
+
         unique_id = str(uuid.uuid4())
         filename = f"podcast_banner_{unique_id}.png"
-        
+
         # Ensure the images directory exists
         os.makedirs(images_dir, exist_ok=True)
-        
+
         image_path = os.path.join(images_dir, filename)
-        
+
         with open(image_path, "wb") as f:
             f.write(image_response.content)
-            
+
         frontend_path = f"{filename}"
         agent.session_state["banner_url"] = frontend_path
         agent.session_state["show_banner_for_confirmation"] = True

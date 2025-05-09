@@ -1,141 +1,76 @@
 import sqlite3
-from openai import OpenAI
-import json
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from agno.agent import Agent
-from utils.load_api_keys import load_api_key
 from db.config import get_tracking_db_path
 
-api_key = load_api_key("OPENAI_API_KEY")
-TOPICS_EXTRACTION_MODEL = "gpt-4o-mini"
 
-
-def extract_search_terms(prompt: str, max_terms: int = 8) -> list:
-    client = OpenAI(api_key=api_key)
-    system_msg = (
-        "analyze the user's request and extract up to "
-        f"{max_terms} key search terms or phrases (focus on nouns and concepts). "
-        "Include broad variations and synonyms to increase match chances. "
-        "For very specific topics, add general category terms too. "
-        "output only a json object following this exact schema: "
-        "{'terms': ['term1','term2',...]}. no additional keys or text."
-    )
-    try:
-        resp = client.chat.completions.create(
-            model=TOPICS_EXTRACTION_MODEL,
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.3,
-            response_format={"type": "json_object"},
-        )
-        parsed = json.loads(resp.choices[0].message.content.strip())
-        if isinstance(parsed, dict) and isinstance(parsed.get("terms"), list):
-            return parsed["terms"]
-    except Exception as e:
-        print(f"Error extracting search terms: {e}")
-    return [prompt.strip()]
-
-
-def search_articles(
-    agent: Agent,
-    prompt: str,
-) -> List[Dict[str, Any]]:
+def search_articles(agent: Agent, terms: Union[str, List[str]]) -> str:
     """
-    Search for articles related to a podcast topic.
+    Search for articles related to a podcast topic using direct SQL queries.
+    The agent can pass either a string topic or a list of search terms.
 
     Args:
         agent: The agent instance
-        prompt: Search prompt this will take care of the topic generation just give the proper prompt (this function uses llm to do the topic generation)
+        terms: Either a single topic string or a list of search terms
 
     Returns:
         A formatted string response with the search results
     """
     agent.session_state["stage"] = "search"
-    use_categories = True
-    limit = 5
-    operator = "OR"
+    search_terms = terms if isinstance(terms, list) else [terms]
+    limit = 10
     db_path = get_tracking_db_path()
-    from_date = (datetime.now() - timedelta(hours=100)).isoformat()
-    terms = extract_search_terms(prompt)
-    if not terms:
-        return []
-    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
-        conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
-        results = []
-        try:
-            results = _execute_search(conn, terms, from_date, operator, limit, use_categories)
+
+    try:
+        with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+            conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+            results = execute_simple_search(conn, search_terms, limit)
             if not results:
-                return "No results found in articles db."
+                agent.session_state["search_results"] = []
+                return "No relevant articles found in our database. Would you like to try a different topic or provide specific URLs?"
+
             for article in results:
-                article["categories"] = _get_article_categories(conn, article["id"])
-        except Exception as e:
-            print(f"Error searching articles: {e}")
-    if len(results) == 0:
-        return "No results found ask user to be specific about the topics"
-    agent.session_state["search_results"] = results
-    agent.session_state["stage"] = "source_selection"
-    return f"Found : {len(results)}"
+                article["categories"] = get_article_categories(conn, article["id"])
+                article["source_name"] = article.get("source_id", "Unknown Source")
+
+            agent.session_state["search_results"] = results
+            agent.session_state["stage"] = "source_selection"
+            return f"Found {len(results)} potential sources that might be relevant to your topic."
+
+    except Exception as e:
+        print(f"Error searching articles: {e}")
+        agent.session_state["search_results"] = []
+        return "I encountered a database error while searching. Would you like to try a different approach?"
 
 
-def _execute_search(
-    conn,
-    terms,
-    from_date,
-    operator,
-    limit,
-    use_categories=True,
-    partial_match=False,
-    days_fallback=0,
-):
-    if days_fallback > 0:
-        try:
-            from_date_obj = datetime.fromisoformat(from_date.replace("Z", "").split("+")[0])
-            adjusted_date = (from_date_obj - timedelta(days=days_fallback)).isoformat()
-            from_date = adjusted_date
-        except Exception as e:
-            print(f"Warning: Could not adjust date with fallback: {e}")
+def execute_simple_search(conn, terms, limit):
     base_query = """
-        SELECT DISTINCT ca.id, ca.title, ca.url, ca.published_date, ca.summary as content, 
+        SELECT DISTINCT ca.id, ca.title, ca.url, ca.published_date, 
+               COALESCE(ca.summary, ca.content) as content,
                ca.source_id, ca.feed_id
         FROM crawled_articles ca
-        WHERE ca.processed = 1 AND ca.published_date >= ?
+        WHERE ca.processed = 1 
+          AND (
     """
-    if use_categories:
-        base_query = """
-            SELECT DISTINCT ca.id, ca.title, ca.url, ca.published_date, ca.summary as content,
-                   ca.source_id, ca.feed_id
-            FROM crawled_articles ca
-            LEFT JOIN article_categories ac ON ca.id = ac.article_id
-            WHERE ca.processed = 1 AND ca.published_date >= ?
-        """
-    clauses, params = [], [from_date]
+
+    clauses = []
+    params = []
+
     for term in terms:
-        term_clauses = []
-        like = f"%{term}%"
-        term_clauses.append("(ca.title LIKE ? OR ca.content LIKE ? OR ca.summary LIKE ?)")
-        params.extend([like, like, like])
+        like_term = f"%{term}%"
+        clauses.append("(ca.title LIKE ? OR ca.content LIKE ? OR ca.summary LIKE ?)")
+        params.extend([like_term, like_term, like_term])
 
-        if use_categories:
-            term_clauses.append("(ac.category_name LIKE ?)")
-            params.append(like)
+    query = base_query + " OR ".join(clauses) + ") ORDER BY ca.published_date DESC LIMIT ?"
+    params.append(limit)
 
-        if term_clauses:
-            clauses.append(f"({' OR '.join(term_clauses)})")
-    where = f" {operator} ".join(clauses)
-    sql = f"{base_query} AND ({where}) ORDER BY ca.published_date DESC LIMIT {limit}"
-    cursor = conn.execute(sql, params)
+    cursor = conn.execute(query, params)
     return [dict(row) for row in cursor.fetchall()]
 
 
-def _get_article_categories(conn, article_id):
+def get_article_categories(conn, article_id):
     try:
-        cursor = conn.execute(
-            "SELECT category_name FROM article_categories WHERE article_id = ?",
-            (article_id,),
-        )
+        cursor = conn.execute("SELECT category_name FROM article_categories WHERE article_id = ?", (article_id,))
         return [row["category_name"] for row in cursor.fetchall()]
     except Exception as e:
         print(f"Error fetching article categories: {e}")
