@@ -87,9 +87,16 @@ INITIAL_SESSION_STATE = {
     "generated_script": {},
     "banner_url": "",
     "audio_url": "",
-    "processing_status": {"is_processing": False, "process_type": None, "started_at": None, "message": None},
+    "processing_status": {
+        "is_processing": False,
+        "process_type": None,
+        "started_at": None,
+        "message": None,
+    },
     "available_languages": AVAILABLE_LANGS,
     "selected_language": {"code": "en", "name": "English"},
 }
 
-STORAGE = SqliteStorage(table_name="podcast_sessions", db_file=get_agent_session_db_path())
+STORAGE = SqliteStorage(
+    table_name="podcast_sessions", db_file=get_agent_session_db_path()
+)

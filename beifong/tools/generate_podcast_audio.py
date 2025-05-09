@@ -1,15 +1,12 @@
 from agno.agent import Agent
 import os
 from datetime import datetime
-import asyncio
 import tempfile
 import numpy as np
 import soundfile as sf
 from typing import Any, Dict, List, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor
-import aiofiles
-from openai import AsyncOpenAI
 from utils.load_api_keys import load_api_key
+from openai import OpenAI  # Changed from AsyncOpenAI
 
 PODCASTS_FOLDER = "podcasts"
 PODCAST_AUDIO_FOLDER = os.path.join(PODCASTS_FOLDER, "audio")
@@ -54,7 +51,7 @@ def combine_audio_segments(audio_segments: List[np.ndarray], silence_duration: f
 
 
 def process_audio_file(temp_path: str) -> Optional[Tuple[np.ndarray, int]]:
-    """Process audio file in a synchronous manner (to be run in thread pool)."""
+    """Process audio file in a synchronous manner."""
     try:
         from pydub import AudioSegment
 
@@ -105,14 +102,14 @@ def resample_audio(audio, orig_sr, target_sr):
         return audio
 
 
-async def text_to_speech_openai(
-    client: AsyncOpenAI,
+def text_to_speech_openai(
+    client: OpenAI,
     text: str,
     speaker_id: int,
     voice_map: Dict[int, str] = None,
     model: str = TTS_MODEL,
 ) -> Optional[Tuple[np.ndarray, int]]:
-    """Generate speech using OpenAI's text-to-speech API asynchronously."""
+    """Generate speech using OpenAI's text-to-speech API synchronously."""
     if not text.strip():
         print("Empty text provided, skipping TTS generation")
         return None
@@ -126,7 +123,7 @@ async def text_to_speech_openai(
         print(f"No voice mapping for speaker {speaker_id}, using {voice}")
     try:
         print(f"Generating TTS for speaker {speaker_id} using voice '{voice}'")
-        response = await client.audio.speech.create(
+        response = client.audio.speech.create(
             model=model,
             voice=voice,
             input=text,
@@ -141,15 +138,16 @@ async def text_to_speech_openai(
         temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         temp_path = temp_file.name
         temp_file.close()
-        async with aiofiles.open(temp_path, "wb") as f:
-            await f.write(audio_data)
-        loop = asyncio.get_event_loop()
-        with ThreadPoolExecutor() as pool:
-            try:
-                return await loop.run_in_executor(pool, process_audio_file, temp_path)
-            finally:
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
+        
+        # Synchronous file write
+        with open(temp_path, "wb") as f:
+            f.write(audio_data)
+            
+        try:
+            return process_audio_file(temp_path)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
     except Exception as e:
         print(f"OpenAI TTS API error: {e}")
         import traceback
@@ -158,7 +156,7 @@ async def text_to_speech_openai(
         return None
 
 
-async def create_podcast_async(
+def create_podcast(
     script: Any,
     output_path: str,
     tts_engine: str = "openai",
@@ -168,7 +166,7 @@ async def create_podcast_async(
     model: str = TTS_MODEL,
 ) -> Optional[str]:
     """
-    Generate podcast audio asynchronously using OpenAI's TTS API.
+    Generate podcast audio synchronously using OpenAI's TTS API.
 
     Args:
         script: Script object with entries (either iterable with speaker and text attributes or list of dicts)
@@ -190,7 +188,7 @@ async def create_podcast_async(
         if not api_key:
             print("No OpenAI API key provided")
             return None
-        client = AsyncOpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key)
         print("OpenAI client initialized")
     except Exception as e:
         print(f"Failed to initialize OpenAI client: {e}")
@@ -215,7 +213,7 @@ async def create_podcast_async(
             speaker_id = entry["speaker"]
             entry_text = entry["text"]
         print(f"Processing entry {i + 1}/{len(entries)}: Speaker {speaker_id}")
-        result = await text_to_speech_openai(
+        result = text_to_speech_openai(
             client=client,
             text=entry_text,
             speaker_id=speaker_id,
@@ -229,14 +227,12 @@ async def create_podcast_async(
                 print(f"Using sample rate: {sampling_rate_detected} Hz")
             elif sampling_rate_detected != segment_rate:
                 print(f"Sample rate mismatch: {sampling_rate_detected} vs {segment_rate}")
-                loop = asyncio.get_event_loop()
-                with ThreadPoolExecutor() as pool:
-                    try:
-                        segment_audio = await loop.run_in_executor(pool, resample_audio, segment_audio, segment_rate, sampling_rate_detected)
-                        print(f"Resampled to {sampling_rate_detected} Hz")
-                    except Exception as e:
-                        sampling_rate_detected = segment_rate
-                        print(f"Resampling failed: {e}")
+                try:
+                    segment_audio = resample_audio(segment_audio, segment_rate, sampling_rate_detected)
+                    print(f"Resampled to {sampling_rate_detected} Hz")
+                except Exception as e:
+                    sampling_rate_detected = segment_rate
+                    print(f"Resampling failed: {e}")
             generated_segments.append(segment_audio)
         else:
             print(f"Failed to generate audio for entry {i + 1}")
@@ -247,17 +243,13 @@ async def create_podcast_async(
         print("Could not determine sample rate")
         return None
     print(f"Combining {len(generated_segments)} audio segments")
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor() as pool:
-        full_audio = await loop.run_in_executor(pool, combine_audio_segments, generated_segments, silence_duration, sampling_rate_detected)
+    full_audio = combine_audio_segments(generated_segments, silence_duration, sampling_rate_detected)
     if full_audio.size == 0:
         print("Combined audio is empty")
         return None
     print(f"Writing audio to {output_path}")
     try:
-        loop = asyncio.get_event_loop()
-        with ThreadPoolExecutor() as pool:
-            await loop.run_in_executor(pool, sf.write, output_path, full_audio, sampling_rate_detected)
+        sf.write(output_path, full_audio, sampling_rate_detected)
     except Exception as e:
         print(f"Failed to write audio file: {e}")
         return None
@@ -270,7 +262,7 @@ async def create_podcast_async(
         return None
 
 
-async def generate_audio(agent: Agent) -> str:
+def generate_audio(agent: Agent) -> str:
     """
     Generate an audio file for the podcast using the selected TTS engine.
 
@@ -319,7 +311,7 @@ async def generate_audio(agent: Agent) -> str:
                 print(error_msg)
                 return error_msg
             print(f"Generating podcast audio using {tts_engine} TTS engine in {language_name} language")
-            full_audio_path = await create_podcast_async(
+            full_audio_path = create_podcast(
                 script=script_obj,
                 output_path=audio_path,
                 tts_engine=tts_engine,

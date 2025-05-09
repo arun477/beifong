@@ -1,5 +1,5 @@
-import aiosqlite
-from openai import AsyncOpenAI
+import sqlite3
+from openai import OpenAI
 import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
@@ -11,8 +11,8 @@ api_key = load_api_key("OPENAI_API_KEY")
 TOPICS_EXTRACTION_MODEL = "gpt-4o-mini"
 
 
-async def extract_search_terms(prompt: str, max_terms: int = 8) -> list:
-    client = AsyncOpenAI(api_key=api_key)
+def extract_search_terms(prompt: str, max_terms: int = 8) -> list:
+    client = OpenAI(api_key=api_key)
     system_msg = (
         "analyze the user's request and extract up to "
         f"{max_terms} key search terms or phrases (focus on nouns and concepts). "
@@ -22,7 +22,7 @@ async def extract_search_terms(prompt: str, max_terms: int = 8) -> list:
         "{'terms': ['term1','term2',...]}. no additional keys or text."
     )
     try:
-        resp = await client.chat.completions.create(
+        resp = client.chat.completions.create(
             model=TOPICS_EXTRACTION_MODEL,
             messages=[
                 {"role": "system", "content": system_msg},
@@ -39,7 +39,7 @@ async def extract_search_terms(prompt: str, max_terms: int = 8) -> list:
     return [prompt.strip()]
 
 
-async def search_articles(
+def search_articles(
     agent: Agent,
     prompt: str,
 ) -> List[Dict[str, Any]]:
@@ -59,18 +59,18 @@ async def search_articles(
     operator = "OR"
     db_path = get_tracking_db_path()
     from_date = (datetime.now() - timedelta(hours=100)).isoformat()
-    terms = await extract_search_terms(prompt, api_key)
+    terms = extract_search_terms(prompt)
     if not terms:
         return []
-    async with aiosqlite.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
+    with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as conn:
         conn.row_factory = lambda cursor, row: {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
         results = []
         try:
-            results = await _execute_search(conn, terms, from_date, operator, limit, use_categories)
+            results = _execute_search(conn, terms, from_date, operator, limit, use_categories)
             if not results:
                 return "No results found in articles db."
             for article in results:
-                article["categories"] = await _get_article_categories(conn, article["id"])
+                article["categories"] = _get_article_categories(conn, article["id"])
         except Exception as e:
             print(f"Error searching articles: {e}")
     if len(results) == 0:
@@ -80,7 +80,7 @@ async def search_articles(
     return f"Found : {len(results)}"
 
 
-async def _execute_search(
+def _execute_search(
     conn,
     terms,
     from_date,
@@ -126,17 +126,17 @@ async def _execute_search(
             clauses.append(f"({' OR '.join(term_clauses)})")
     where = f" {operator} ".join(clauses)
     sql = f"{base_query} AND ({where}) ORDER BY ca.published_date DESC LIMIT {limit}"
-    async with conn.execute(sql, params) as cursor:
-        return [dict(row) for row in await cursor.fetchall()]
+    cursor = conn.execute(sql, params)
+    return [dict(row) for row in cursor.fetchall()]
 
 
-async def _get_article_categories(conn, article_id):
+def _get_article_categories(conn, article_id):
     try:
-        async with conn.execute(
+        cursor = conn.execute(
             "SELECT category_name FROM article_categories WHERE article_id = ?",
             (article_id,),
-        ) as cursor:
-            return [row["category_name"] for row in await cursor.fetchall()]
+        )
+        return [row["category_name"] for row in cursor.fetchall()]
     except Exception as e:
         print(f"Error fetching article categories: {e}")
         return []

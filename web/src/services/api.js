@@ -159,10 +159,13 @@ const endpoints = {
             session_id: sessionId,
             message,
          }),
-      checkStatus: sessionId =>
+      // Updated to include optional task_id parameter
+      checkStatus: (sessionId, taskId = null) =>
          api.post('/api/podcast-agent/status', {
             session_id: sessionId,
+            task_id: taskId,
          }),
+      // Keep existing endpoints
       getLatestMessage: sessionId =>
          api.get(`/api/podcast-agent/latest_message?session_id=${sessionId}`),
       listSessions: (page = 1, perPage = 10) =>

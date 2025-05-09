@@ -22,10 +22,12 @@ class ChatResponse(BaseModel):
     session_state: str
     is_processing: bool = False
     process_type: Optional[str] = None
+    task_id: Optional[str] = None  # Add task_id to response model
 
 
 class StatusRequest(BaseModel):
     session_id: str
+    task_id: Optional[str] = None  # Add optional task_id for status checking
 
 
 @router.post("/session")
@@ -44,7 +46,7 @@ async def chat(request: ChatRequest):
 @router.post("/status", response_model=ChatResponse)
 async def check_status(request: StatusRequest):
     """Check if a result is available for the session"""
-    # This will check Redis for results and return them when available
+    # This will use the task_id if available, otherwise query the database
     return await podcast_agent_service.check_result_status(request)
 
 

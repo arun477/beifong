@@ -19,6 +19,7 @@ const PodcastSession = () => {
    const [loading, setLoading] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    const [processingType, setProcessingType] = useState(null);
+   const [currentTaskId, setCurrentTaskId] = useState(null);
    const [sessionState, setSessionState] = useState({});
    const [currentStage, setCurrentStage] = useState('welcome');
    const [error, setError] = useState(null);
@@ -153,10 +154,18 @@ const PodcastSession = () => {
             );
             setIsProcessing(true);
             setProcessingType(historyData.data.process_type || 'unknown');
-            startPollingForCompletion();
+            
+            // If we have an active task ID, use it for polling
+            if (historyData.data.task_id) {
+               setCurrentTaskId(historyData.data.task_id);
+               startPollingForCompletion(historyData.data.task_id);
+            } else {
+               startPollingForCompletion();
+            }
          } else {
             setIsProcessing(false);
             setProcessingType(null);
+            setCurrentTaskId(null);
          }
 
          if (historyData.data.state) {
@@ -195,6 +204,7 @@ const PodcastSession = () => {
          }
          setIsProcessing(false);
          setProcessingType(null);
+         setCurrentTaskId(null);
          setSelectedSourceIndices([]);
          setIsScriptModalOpen(false);
          setIsFinalScriptModalOpen(false);
@@ -239,6 +249,11 @@ const PodcastSession = () => {
          // Send message to chat endpoint
          const response = await api.podcastAgent.chat(sessionId, inputMessage);
 
+         // Store the task ID for polling if available
+         if (response.data.task_id) {
+            setCurrentTaskId(response.data.task_id);
+         }
+         
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -247,14 +262,15 @@ const PodcastSession = () => {
             updateSessionState(response.data.session_state);
          }
 
-         // Start polling for the final result
-         startPollingForCompletion();
+         // Start polling for the final result using task ID if available
+         startPollingForCompletion(response.data.task_id);
       } catch (error) {
          console.error('Error sending message:', error);
          setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setCurrentTaskId(null);
       } finally {
          setLoading(false);
       }
@@ -283,7 +299,7 @@ const PodcastSession = () => {
       }
    };
 
-   const startPollingForCompletion = () => {
+   const startPollingForCompletion = (taskId = null) => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       const pollInterval = 3000;
       const maxPolls = 100;
@@ -291,6 +307,11 @@ const PodcastSession = () => {
 
       // Store the current session ID at poll start time to ensure consistency
       const currentSessionId = sessionId;
+      
+      // If a taskId is provided, update the current task ID
+      if (taskId) {
+         setCurrentTaskId(taskId);
+      }
 
       pollTimerRef.current = setInterval(async () => {
          // First verify we're still on the same session as when polling started
@@ -305,6 +326,7 @@ const PodcastSession = () => {
             clearInterval(pollTimerRef.current);
             setIsProcessing(false);
             setProcessingType(null);
+            setCurrentTaskId(null);
             setMessages(prev => [
                ...prev,
                { role: 'assistant', content: 'Process timed out. Please try again.' },
@@ -313,8 +335,8 @@ const PodcastSession = () => {
          }
 
          try {
-            // Check status endpoint for completed results
-            const statusResponse = await api.podcastAgent.checkStatus(currentSessionId);
+            // Check status using task ID if available
+            const statusResponse = await api.podcastAgent.checkStatus(currentSessionId, taskId);
 
             // CRITICAL: Verify the response is for our current session
             if (
@@ -324,14 +346,15 @@ const PodcastSession = () => {
                console.error(
                   `Session ID mismatch! Expected ${currentSessionId}, got ${statusResponse.data.session_id}`
                );
-               return; // Skip this cycle - can't use continue in an interval callback
+               return; // Skip this cycle
             }
 
-            // If there's a complete result (is_processing is false)
-            if (!statusResponse.data.is_processing) {
+            // If the task is complete (is_processing is false)
+            if (statusResponse.data.is_processing === false) {
                clearInterval(pollTimerRef.current);
                setIsProcessing(false);
                setProcessingType(null);
+               setCurrentTaskId(null);
 
                // Only add the final response to the chat if it's not a processing status message
                if (statusResponse.data.response) {
@@ -418,6 +441,11 @@ const PodcastSession = () => {
          // Send message to chat endpoint
          const response = await api.podcastAgent.chat(sessionId, selectionString);
 
+         // Store the task ID for polling if available
+         if (response.data.task_id) {
+            setCurrentTaskId(response.data.task_id);
+         }
+         
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -427,13 +455,14 @@ const PodcastSession = () => {
          }
 
          // Start polling for the final result
-         startPollingForCompletion();
+         startPollingForCompletion(response.data.task_id);
       } catch (error) {
          console.error('Error confirming sources:', error);
          setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
          setError(`Failed to confirm sources: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setCurrentTaskId(null);
       } finally {
          setLoading(false);
       }
@@ -485,6 +514,11 @@ const PodcastSession = () => {
          // Send message to chat endpoint
          const response = await api.podcastAgent.chat(sessionId, message);
 
+         // Store the task ID for polling if available
+         if (response.data.task_id) {
+            setCurrentTaskId(response.data.task_id);
+         }
+         
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -494,13 +528,14 @@ const PodcastSession = () => {
          }
 
          // Start polling for the final result
-         startPollingForCompletion();
+         startPollingForCompletion(response.data.task_id);
       } catch (error) {
          console.error('Error sending message:', error);
          setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${error.message}` }]);
          setError(`Failed to send message: ${error.message}`);
          setIsProcessing(false);
          setProcessingType(null);
+         setCurrentTaskId(null);
       } finally {
          setLoading(false);
       }
@@ -744,6 +779,9 @@ const PodcastSession = () => {
                                     {processingType
                                        ? `Processing ${processingType}...`
                                        : 'Processing request...'}
+                                    {currentTaskId && 
+                                       <span className="ml-1 text-xs opacity-60">(Task: {currentTaskId.substring(0, 8)})</span>
+                                    }
                                  </span>
                               </div>
                            </div>

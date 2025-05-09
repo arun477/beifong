@@ -1,7 +1,7 @@
 from agno.agent import Agent
 import os
 import json
-import aiosqlite
+import sqlite3  # Changed from aiosqlite
 from datetime import datetime
 from db.config import get_podcasts_db_path
 
@@ -13,7 +13,7 @@ PODCAST_AUIDO_DIR = PODCAST_DIR + "/audio"
 PODCAST_RECORDINGS_DIR = PODCAST_DIR + "/recordings"
 
 
-async def select_sources(agent: Agent, selected_ids: str) -> str:
+def select_sources(agent: Agent, selected_ids: str) -> str:
     """
     Store the user's selected article sources.
 
@@ -26,7 +26,9 @@ async def select_sources(agent: Agent, selected_ids: str) -> str:
     """
     agent.session_state["show_sources_for_selection"] = False
     try:
-        selected_numbers = [int(num.strip()) for num in selected_ids.replace(",", " ").split()]
+        selected_numbers = [
+            int(num.strip()) for num in selected_ids.replace(",", " ").split()
+        ]
         selected_indices = [num - 1 for num in selected_numbers]
     except ValueError:
         return "Please provide valid article numbers, e.g., '1, 3, 5'."
@@ -42,10 +44,15 @@ async def select_sources(agent: Agent, selected_ids: str) -> str:
             selected_articles.append(article)
     agent.session_state["selected_sources"] = selected_articles
     agent.session_state["stage"] = "script"
-    selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
+    selected_language = agent.session_state.get(
+        "selected_language", {"code": "en", "name": "English"}
+    )
     language_name = selected_language.get("name", "English")
     if selected_articles:
-        titles = [f"• {article['title']} ({article.get('url', 'No URL')})" for article in selected_articles]
+        titles = [
+            f"• {article['title']} ({article.get('url', 'No URL')})"
+            for article in selected_articles
+        ]
         return (
             f"Great! You've selected {len(selected_articles)} sources:\n"
             + "\n".join(titles)
@@ -55,7 +62,7 @@ async def select_sources(agent: Agent, selected_ids: str) -> str:
         return "No valid sources were selected. Please select at least one source by number to continue."
 
 
-async def update_podcast_info(agent: Agent, topic: str) -> str:
+def update_podcast_info(agent: Agent, topic: str) -> str:
     """
     Update the podcast information with the specified topic.
     This ensures the topic is properly tracked for generating titles and context.
@@ -75,7 +82,7 @@ async def update_podcast_info(agent: Agent, topic: str) -> str:
     return f"Podcast topic set to: {topic}"
 
 
-async def toggle_source_selection(agent: Agent, status: bool = False) -> str:
+def toggle_source_selection(agent: Agent, status: bool = False) -> str:
     """
     Toggle the show_sources_for_selection flag.
     This controls whether the source selection UI is shown to the user.
@@ -88,7 +95,7 @@ async def toggle_source_selection(agent: Agent, status: bool = False) -> str:
     return f"source selection status changed to: {status}"
 
 
-async def toggle_script_confirm(agent: Agent, status: bool = False) -> str:
+def toggle_script_confirm(agent: Agent, status: bool = False) -> str:
     """
     Toggle the show_script_for_confirmation flag.
     This controls whether the script confirmation UI is shown to the user.
@@ -101,7 +108,7 @@ async def toggle_script_confirm(agent: Agent, status: bool = False) -> str:
     return f"script confirmation status changed to: {status}"
 
 
-async def toggle_banner_confirm(agent: Agent, status: bool = False) -> str:
+def toggle_banner_confirm(agent: Agent, status: bool = False) -> str:
     """
     Toggle the show_banner_for_confirmation flag.
     This controls whether the banner confirmation UI is shown to the user.
@@ -114,7 +121,7 @@ async def toggle_banner_confirm(agent: Agent, status: bool = False) -> str:
     return f"banner confirmation status changed to: {status}"
 
 
-async def toggle_audio_confirm(agent: Agent, status: bool = False) -> str:
+def toggle_audio_confirm(agent: Agent, status: bool = False) -> str:
     """
     Toggle the show_audio_for_confirmation flag.
     This controls whether the audio player is shown to the user.
@@ -127,7 +134,7 @@ async def toggle_audio_confirm(agent: Agent, status: bool = False) -> str:
     return f"audio confirmation status changed to: {status}"
 
 
-async def toggle_recording_player(agent: Agent, status: bool = False) -> str:
+def toggle_recording_player(agent: Agent, status: bool = False) -> str:
     """
     Toggle the show_recording_player flag.
     This controls whether the web search recording player is shown to the user.
@@ -136,9 +143,9 @@ async def toggle_recording_player(agent: Agent, status: bool = False) -> str:
     return f"Recording player visibility changed to: {status}"
 
 
-async def _save_podcast_to_database_async(agent: Agent) -> tuple[bool, str, int]:
+def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
     """
-    Private asynchronous function to save a completed podcast to the podcasts database.
+    Private synchronous function to save a completed podcast to the podcasts database.
     Ensures sources are in the correct format (List[str]).
 
     Args:
@@ -149,19 +156,35 @@ async def _save_podcast_to_database_async(agent: Agent) -> tuple[bool, str, int]
     """
     try:
         if agent.session_state.get("podcast_id"):
-            return True, f"Podcast already saved with ID: {agent.session_state['podcast_id']}", agent.session_state["podcast_id"]
+            return (
+                True,
+                f"Podcast already saved with ID: {agent.session_state['podcast_id']}",
+                agent.session_state["podcast_id"],
+            )
         podcast_info = agent.session_state.get("podcast_info", {})
         generated_script = agent.session_state.get("generated_script", {})
         banner_url = agent.session_state.get("banner_url")
         audio_url = agent.session_state.get("audio_url")
-        selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
+        selected_language = agent.session_state.get(
+            "selected_language", {"code": "en", "name": "English"}
+        )
         language_code = selected_language.get("code", "en")
         if not generated_script or not isinstance(generated_script, dict):
-            return False, "Cannot complete podcast: Generated script is missing or invalid.", None
+            return (
+                False,
+                "Cannot complete podcast: Generated script is missing or invalid.",
+                None,
+            )
         if "title" not in generated_script:
             generated_script["title"] = podcast_info.get("topic", "Untitled Podcast")
-        if "sections" not in generated_script or not isinstance(generated_script["sections"], list):
-            return False, "Cannot complete podcast: Generated script is missing required 'sections' array.", None
+        if "sections" not in generated_script or not isinstance(
+            generated_script["sections"], list
+        ):
+            return (
+                False,
+                "Cannot complete podcast: Generated script is missing required 'sections' array.",
+                None,
+            )
         sources = []
         if "sources" in generated_script and generated_script["sources"]:
             for source in generated_script["sources"]:
@@ -175,43 +198,48 @@ async def _save_podcast_to_database_async(agent: Agent) -> tuple[bool, str, int]
         db_path = get_podcasts_db_path()
         db_directory = DB_PATH
         os.makedirs(db_directory, exist_ok=True)
-        async with aiosqlite.connect(db_path) as conn:
-            content_json = json.dumps(generated_script)
-            sources_json = json.dumps(sources) if sources else None
-            current_time = datetime.now().isoformat()
-            query = """
-                INSERT INTO podcasts (
-                    title, 
-                    date, 
-                    content_json, 
-                    audio_generated, 
-                    audio_path, 
-                    banner_img_path, 
-                    tts_engine, 
-                    language_code, 
-                    sources_json,
-                    created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """
-            await conn.execute(
-                query,
-                (
-                    generated_script.get("title", "Untitled Podcast"),
-                    datetime.now().strftime("%Y-%m-%d"),
-                    content_json,
-                    1 if audio_url else 0,
-                    audio_url,
-                    banner_url,
-                    "openai",
-                    language_code,
-                    sources_json,
-                    current_time,
-                ),
-            )
-            await conn.commit()
-            async with conn.execute("SELECT last_insert_rowid()") as cursor:
-                podcast_id = await cursor.fetchone()
-                podcast_id = podcast_id[0] if podcast_id else None
+
+        conn = sqlite3.connect(db_path)
+        content_json = json.dumps(generated_script)
+        sources_json = json.dumps(sources) if sources else None
+        current_time = datetime.now().isoformat()
+        query = """
+            INSERT INTO podcasts (
+                title, 
+                date, 
+                content_json, 
+                audio_generated, 
+                audio_path,
+                banner_img_path, 
+                tts_engine, 
+                language_code, 
+                sources_json,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        conn.execute(
+            query,
+            (
+                generated_script.get("title", "Untitled Podcast"),
+                datetime.now().strftime("%Y-%m-%d"),
+                content_json,
+                1 if audio_url else 0,
+                audio_url,
+                banner_url,
+                "openai",
+                language_code,
+                sources_json,
+                current_time,
+            ),
+        )
+        conn.commit()
+
+        cursor = conn.execute("SELECT last_insert_rowid()")
+        podcast_id = cursor.fetchone()
+        podcast_id = podcast_id[0] if podcast_id else None
+        cursor.close()
+        conn.close()
+
         agent.session_state["podcast_id"] = podcast_id
         return True, f"Podcast successfully saved with ID: {podcast_id}", podcast_id
     except Exception as e:
@@ -219,7 +247,7 @@ async def _save_podcast_to_database_async(agent: Agent) -> tuple[bool, str, int]
         return False, f"Error saving podcast to database: {str(e)}", None
 
 
-async def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
+def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
     """
     Toggle the podcast_generated flag.
     When set to true, this indicates the podcast creation process is complete and
@@ -233,10 +261,12 @@ async def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
         agent.session_state["show_audio_for_confirmation"] = False
         agent.session_state["show_recording_player"] = False
         agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+        agent.session_state["stage"] = (
+            "complete" if status else agent.session_state.get("stage")
+        )
         if status:
             try:
-                success, message, podcast_id = await _save_podcast_to_database_async(agent)
+                success, message, podcast_id = _save_podcast_to_database_sync(agent)
                 if success and podcast_id:
                     agent.session_state["podcast_id"] = podcast_id
                     return f"Podcast generated and saved to database with ID: {podcast_id}. You can now access it from the Podcasts section."
@@ -247,11 +277,13 @@ async def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
                 return f"Podcast generated, but there was an error saving it to the database: {str(e)}"
     else:
         agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+        agent.session_state["stage"] = (
+            "complete" if status else agent.session_state.get("stage")
+        )
     return f"Podcast generated status changed to: {status}"
 
 
-async def update_language(agent: Agent, language_code: str) -> str:
+def update_language(agent: Agent, language_code: str) -> str:
     """
     Update the podcast language with the specified language code.
     This ensures the language is properly tracked for generating content and audio.
@@ -268,7 +300,10 @@ async def update_language(agent: Agent, language_code: str) -> str:
         if lang.get("code") == language_code:
             language_name = lang.get("name")
             break
-    agent.session_state["selected_language"] = {"code": language_code, "name": language_name}
+    agent.session_state["selected_language"] = {
+        "code": language_code,
+        "name": language_name,
+    }
     podcast_info = agent.session_state.get("podcast_info", {})
     if not podcast_info:
         podcast_info = {}

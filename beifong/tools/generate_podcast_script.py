@@ -4,12 +4,12 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from agno.agent import Agent
 from utils.load_api_keys import load_api_key
-from openai import AsyncOpenAI
+from openai import OpenAI  # Changed from AsyncOpenAI to OpenAI
 
 SCRIPT_MODEL = "gpt-4o"
 
 
-async def generate_script(agent: Agent, custom_prompt: str = None):
+def generate_script(agent: Agent, custom_prompt: str = None):
     """
     Generate a podcast script based on the selected sources.
 
@@ -34,9 +34,9 @@ async def generate_script(agent: Agent, custom_prompt: str = None):
         error_msg = "Cannot generate script: OpenAI API key not found."
         print(error_msg)
         return error_msg
-    openai_client = AsyncOpenAI(api_key=api_key)
+    openai_client = OpenAI(api_key=api_key)
     try:
-        script = await _generate_async(openai_client, articles=selected_sources, language_code=language_code, custom_prompt=custom_prompt)
+        script = _generate(openai_client, articles=selected_sources, language_code=language_code, custom_prompt=custom_prompt)
         if not script:
             error_msg = "Failed to generate script. Please try again."
             print(error_msg)
@@ -52,13 +52,13 @@ async def generate_script(agent: Agent, custom_prompt: str = None):
         return error_msg
 
 
-async def _generate_async(
-    openai_client: AsyncOpenAI,
+def _generate(
+    openai_client: OpenAI,
     articles: List[Dict[str, Any]],
     custom_prompt: Optional[str] = None,
     language_code: str = "en",
 ) -> Dict[str, Any]:
-    """Generate podcast script asynchronously using OpenAI API"""
+    """Generate podcast script synchronously using OpenAI API"""
     if not articles:
         print("No articles provided for script generation")
         return None
@@ -172,7 +172,7 @@ async def _generate_async(
     model = SCRIPT_MODEL
     print(f"Sending script generation request to OpenAI using {model}")
     try:
-        response = await openai_client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model=model,
             messages=[
                 {
