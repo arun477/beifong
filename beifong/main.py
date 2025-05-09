@@ -204,6 +204,7 @@ async def stream_recording(session_id: str, filename: str, request: Request):
 
 # Mount static files
 app.mount("/audio", StaticFiles(directory="podcasts/audio"), name="audio")
+app.mount("/server_static", StaticFiles(directory="static"), name="server_static")
 app.mount("/podcast_img", StaticFiles(directory="podcasts/images"), name="podcast_img")
 
 # Mount React static files if they exist
