@@ -5,11 +5,11 @@ import api from '../services/api';
 const PonyoChatIcon = ({ 
   size = 40, 
   isLoading = false,
-  glowIntensity = 'high' // 'low', 'medium', 'high', 'ultra'
+  glowIntensity = 'ultra' // 'low', 'medium', 'high', 'ultra'
 }) => {
   // Get base URL with fallback to prevent undefined
   const baseUrl = api?.API_BASE_URL || '';
-  const imageUrl = `${baseUrl}/server_static/images/ponyo.png`;
+  const imageUrl = `${baseUrl}/podcast_img/ponyo.png`;
   
   // Add a subtle hover animation effect
   const [isHovered, setIsHovered] = useState(false);
@@ -43,7 +43,7 @@ const PonyoChatIcon = ({
     return () => clearInterval(rayInterval);
   }, [isLoading]);
   
-  // Map intensity levels to actual values with enhanced emerald settings
+  // Map intensity levels to actual values with enhanced ocean blue settings
   const glowValues = {
     low: { blur: 'blur-md', opacity: 'opacity-20', scale: 1.15 },
     medium: { blur: 'blur-lg', opacity: 'opacity-30', scale: 1.2 },
@@ -63,16 +63,16 @@ const PonyoChatIcon = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Enhanced emerald background glow effect with double-layered glow */}
+      {/* Enhanced ocean blue background glow effect with double-layered glow */}
       <div 
-        className={`absolute inset-0 bg-emerald-400 ${glow.opacity} rounded-full ${glow.blur} transition-all duration-300 emerald-outer-glow`}
+        className={`absolute inset-0 bg-blue-400 ${glow.opacity} rounded-full ${glow.blur} transition-all duration-300 ocean-outer-glow`}
         style={{
           transform: `scale(${heartbeat || isHovered ? glow.scale + 0.1 : glow.scale})`,
         }}
       ></div>
       
       <div 
-        className={`absolute inset-0 bg-emerald-300 opacity-20 rounded-full blur-md transition-all duration-300`}
+        className={`absolute inset-0 bg-sky-300 opacity-20 rounded-full blur-md transition-all duration-300`}
         style={{
           transform: `scale(${(heartbeat || isHovered ? 1.15 : 1.1)})`,
         }}
@@ -83,7 +83,7 @@ const PonyoChatIcon = ({
         {[...Array(8)].map((_, i) => (
           <div 
             key={i}
-            className="absolute top-1/2 left-1/2 h-full w-1 bg-gradient-to-t from-emerald-400/0 via-emerald-300/40 to-emerald-400/0 emerald-ray"
+            className="absolute top-1/2 left-1/2 h-full w-1 bg-gradient-to-t from-blue-400/0 via-cyan-300/40 to-blue-400/0 ocean-ray"
             style={{ 
               transformOrigin: 'bottom center',
               transform: `translateX(-50%) rotate(${rayAngle + (i * 45)}deg) translateY(-25%)`,
@@ -96,12 +96,12 @@ const PonyoChatIcon = ({
       {/* Improved background gradient */}
       <div className="absolute inset-0 rounded-full border border-gray-700 bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800"></div>
       
-      {/* Enhanced emerald ring effects */}
+      {/* Enhanced ocean blue ring effects */}
       {!isLoading && (
         <>
-          <div className="absolute inset-0 rounded-full border border-emerald-400/30 emerald-ring-1"></div>
-          <div className="absolute inset-0 rounded-full border border-emerald-500/20 emerald-ring-2"></div>
-          <div className="absolute inset-0 rounded-full border border-emerald-300/10 emerald-ring-3"></div>
+          <div className="absolute inset-0 rounded-full border border-blue-400/30 ocean-ring-1"></div>
+          <div className="absolute inset-0 rounded-full border border-blue-500/20 ocean-ring-2"></div>
+          <div className="absolute inset-0 rounded-full border border-cyan-300/10 ocean-ring-3"></div>
         </>
       )}
       
@@ -117,9 +117,9 @@ const PonyoChatIcon = ({
           transform: isHovered && !isLoading ? 'scale(1.05) translateY(-2px)' : 'scale(1)',
         }}
       >
-        {/* Dynamic emerald glow inside */}
+        {/* Dynamic ocean blue glow inside */}
         <div 
-          className="absolute inset-0 rounded-full bg-emerald-500/5 emerald-inner-glow"
+          className="absolute inset-0 rounded-full bg-blue-500/5 ocean-inner-glow"
           style={{
             filter: `blur(${isHovered ? 5 : 2}px)`,
             opacity: heartbeat ? 0.4 : isHovered ? 0.35 : 0.25,
@@ -128,8 +128,8 @@ const PonyoChatIcon = ({
         ></div>
         
         {/* Accent glow spots */}
-        <div className="absolute top-1/4 left-1/4 w-1/6 h-1/6 rounded-full bg-emerald-300/40 blur-sm"></div>
-        <div className="absolute bottom-1/5 right-1/4 w-1/10 h-1/10 rounded-full bg-emerald-200/30 blur-sm emerald-spot-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-1/6 h-1/6 rounded-full bg-sky-300/40 blur-sm"></div>
+        <div className="absolute bottom-1/5 right-1/4 w-1/10 h-1/10 rounded-full bg-cyan-200/30 blur-sm ocean-spot-pulse"></div>
         
         {/* More sophisticated highlights for bubble effect */}
         <div className="absolute top-0 left-0 w-1/3 h-1/3 rounded-full bg-white/10 transform translate-x-1/4 translate-y-1/4"></div>
@@ -146,23 +146,23 @@ const PonyoChatIcon = ({
         ></div>
       </div>
       
-      {/* Enhanced loading spinner with emerald glow effects */}
+      {/* Enhanced loading spinner with ocean blue glow effects */}
       {isLoading && (
         <>
           <div 
-            className="absolute inset-0 rounded-full border-2 border-emerald-400/70 border-t-transparent animate-spin" 
+            className="absolute inset-0 rounded-full border-2 border-blue-400/70 border-t-transparent animate-spin" 
             style={{ animationDuration: '1.5s' }}
           ></div>
           <div 
-            className="absolute inset-0 rounded-full border border-emerald-300/40 border-b-transparent animate-spin" 
+            className="absolute inset-0 rounded-full border border-cyan-300/40 border-b-transparent animate-spin" 
             style={{ animationDuration: '2.5s', padding: '3px' }}
           ></div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-1/4 h-1/4 bg-emerald-400/80 rounded-full animate-ping emerald-ping"></div>
+            <div className="w-1/4 h-1/4 bg-blue-400/80 rounded-full animate-ping ocean-ping"></div>
           </div>
           
           {/* Extra loading glow */}
-          <div className="absolute inset-0 rounded-full bg-emerald-500/10 blur-md animate-pulse"></div>
+          <div className="absolute inset-0 rounded-full bg-blue-500/10 blur-md animate-pulse"></div>
         </>
       )}
       
@@ -182,7 +182,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-inner-glow {
+        @keyframes ocean-inner-glow {
           0%, 100% {
             opacity: 0.25;
             transform: scale(0.98);
@@ -193,7 +193,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-outer-glow {
+        @keyframes ocean-outer-glow {
           0%, 100% {
             opacity: 0.3;
             filter: blur(8px);
@@ -204,7 +204,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-ring-1 {
+        @keyframes ocean-ring-1 {
           0% {
             transform: scale(0.95);
             opacity: 0.5;
@@ -215,7 +215,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-ring-2 {
+        @keyframes ocean-ring-2 {
           0% {
             transform: scale(0.9);
             opacity: 0.4;
@@ -226,7 +226,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-ring-3 {
+        @keyframes ocean-ring-3 {
           0% {
             transform: scale(1);
             opacity: 0.3;
@@ -237,7 +237,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-ray {
+        @keyframes ocean-ray {
           0% {
             opacity: 0.1;
             height: 100%;
@@ -252,7 +252,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-spot-pulse {
+        @keyframes ocean-spot-pulse {
           0%, 100% {
             opacity: 0.2;
             transform: scale(1);
@@ -263,7 +263,7 @@ const PonyoChatIcon = ({
           }
         }
         
-        @keyframes emerald-ping {
+        @keyframes ocean-ping {
           0% {
             transform: scale(0.8);
             opacity: 0.8;
@@ -278,39 +278,39 @@ const PonyoChatIcon = ({
           animation: enhanced-float 4s ease-in-out infinite;
         }
         
-        .emerald-inner-glow {
-          animation: emerald-inner-glow 5s ease-in-out infinite;
+        .ocean-inner-glow {
+          animation: ocean-inner-glow 5s ease-in-out infinite;
         }
         
-        .emerald-outer-glow {
-          animation: emerald-outer-glow 6s ease-in-out infinite;
+        .ocean-outer-glow {
+          animation: ocean-outer-glow 6s ease-in-out infinite;
         }
         
-        .emerald-ring-1 {
-          animation: emerald-ring-1 3s ease-out infinite;
+        .ocean-ring-1 {
+          animation: ocean-ring-1 3s ease-out infinite;
         }
         
-        .emerald-ring-2 {
-          animation: emerald-ring-2 3.5s ease-out infinite;
+        .ocean-ring-2 {
+          animation: ocean-ring-2 3.5s ease-out infinite;
           animation-delay: 0.5s;
         }
         
-        .emerald-ring-3 {
-          animation: emerald-ring-3 4s ease-out infinite;
+        .ocean-ring-3 {
+          animation: ocean-ring-3 4s ease-out infinite;
           animation-delay: 1s;
         }
         
-        .emerald-ray {
-          animation: emerald-ray 3s ease-in-out infinite;
+        .ocean-ray {
+          animation: ocean-ray 3s ease-in-out infinite;
           animation-delay: calc(var(--index) * 0.5s);
         }
         
-        .emerald-spot-pulse {
-          animation: emerald-spot-pulse 4s ease-in-out infinite;
+        .ocean-spot-pulse {
+          animation: ocean-spot-pulse 4s ease-in-out infinite;
         }
         
-        .emerald-ping {
-          animation: emerald-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        .ocean-ping {
+          animation: ocean-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
       `}</style>
     </div>
