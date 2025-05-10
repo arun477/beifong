@@ -4,6 +4,7 @@ import json
 import sqlite3  # Changed from aiosqlite
 from datetime import datetime
 from db.config import get_podcasts_db_path
+from typing import List
 
 
 DB_PATH = "databases"
@@ -11,6 +12,11 @@ PODCAST_DIR = "podcasts"
 PODCAST_IMG_DIR = PODCAST_DIR + "/images"
 PODCAST_AUIDO_DIR = PODCAST_DIR + "/audio"
 PODCAST_RECORDINGS_DIR = PODCAST_DIR + "/recordings"
+
+
+def add_search_results(agent: Agent, search_results: List[str]) -> str:
+    agent.session_state["search_results"] = search_results
+    return f"Sources added: {search_results}"
 
 
 def select_sources(agent: Agent, selected_ids: str) -> str:

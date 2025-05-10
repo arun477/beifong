@@ -56,7 +56,7 @@ def _run_browser_search_in_process(topic, session_id, task, result_queue):
         # Initialize browser-specific resources inside this process
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         results, recording_path = loop.run_until_complete(_web_search_async(topic, session_id, task))
         result_queue.put((results, recording_path))
     except Exception as e:
@@ -70,9 +70,7 @@ def _run_browser_search_in_process(topic, session_id, task, result_queue):
             pass
 
 
-async def _web_search_async(
-    topic: str, session_id: str, task: str
-) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+async def _web_search_async(topic: str, session_id: str, task: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """
     Perform a web search using BrowserUse and return structured results.
     BrowserUse is a browser Agent with vision and interaction capacity that can perform instructed tasks like an agent operating on the browser.
@@ -183,9 +181,9 @@ async def _web_search_async(
             # Set a timeout of 5 minutes for the entire search operation
             history = await asyncio.wait_for(
                 browser_agent.run(max_steps=15),  # Reduced from 20 to 15 steps
-                timeout=300  # 5 minute timeout
+                timeout=300,  # 5 minute timeout
             )
-            
+
             print("Web search completed, processing results")
             for path in os.listdir(recordings_dir):
                 if path.endswith(".webm"):
@@ -213,9 +211,7 @@ async def _web_search_async(
     return formatted_results, recording_path
 
 
-def _web_search(
-    topic: str, session_id: str, task: str
-) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+def _web_search(topic: str, session_id: str, task: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """
     Run web search in a separate process to avoid fork-related issues.
 
@@ -230,26 +226,23 @@ def _web_search(
     try:
         # Create a queue for inter-process communication
         result_queue = multiprocessing.Queue()
-        
+
         # Create and start a separate process for the browser search
-        search_process = multiprocessing.Process(
-            target=_run_browser_search_in_process,
-            args=(topic, session_id, task, result_queue)
-        )
-        
+        search_process = multiprocessing.Process(target=_run_browser_search_in_process, args=(topic, session_id, task, result_queue))
+
         # Start the process with a timeout
         search_process.start()
-        
+
         # Wait for the process to complete (with a 10-minute timeout)
         search_process.join(timeout=600)
-        
+
         # Check if the process is still alive after timeout
         if search_process.is_alive():
             print("Web search process timed out after 10 minutes, terminating")
             search_process.terminate()
             search_process.join(timeout=5)
             return [], None
-        
+
         # Get results from the queue
         if not result_queue.empty():
             results, recording_path = result_queue.get()
@@ -257,14 +250,14 @@ def _web_search(
         else:
             print("No results returned from search process")
             return [], None
-            
+
     except Exception as e:
         print(f"Error in web search process management: {e}")
         return [], None
 
 
 def web_search(agent: Agent, topic: str, task: str) -> str:
-    return 'Temporily not available'
+    return "Temporily not available"
     """
     Synchronous tool for performing web searches using BrowserUse.
 
@@ -283,25 +276,25 @@ def web_search(agent: Agent, topic: str, task: str) -> str:
         # Limit topic length to avoid potential issues
         topic = topic[:200] if topic else ""
         task = task[:500] if task else ""
-        
+
         # First check for existing recordings
         recordings_dir = os.path.join(PODCAST_DIR, "recordings", session_id)
         recording_path = None
-        
+
         if os.path.exists(recordings_dir):
             for path in os.listdir(recordings_dir):
                 if path.endswith(".webm"):
                     recording_path = os.path.join("recordings", session_id, path)
                     print(f"Using existing recording at: {recording_path}")
                     break
-        
+
         # Perform the web search in a separate process
         results, new_recording_path = _web_search(topic, session_id, task)
-        
+
         # Use the new recording path if found
         if new_recording_path:
             recording_path = new_recording_path
-        
+
         agent.session_state["web_search_results"] = results
         agent.session_state["web_search_recording"] = recording_path
 

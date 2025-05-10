@@ -2,6 +2,7 @@ from services.celery_app import app, SessionLockedTask
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agno.storage.sqlite import SqliteStorage
+from agno.tools.newspaper4k import Newspaper4kTools
 import os
 import json
 from db.config import get_agent_session_db_path
@@ -33,6 +34,7 @@ from tools.session_state_manager import (
     update_podcast_info,
     toggle_source_selection,
     toggle_script_confirm,
+    add_search_results
 )
 
 
@@ -76,6 +78,8 @@ def agent_chat(self, session_id, message):
                 worldbank_search,
                 openlibrary_search,
                 jikan_search,
+                Newspaper4kTools(),
+                add_search_results,
             ],
         )
         response = agent.run(message)
