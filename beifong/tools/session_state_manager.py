@@ -4,7 +4,7 @@ import json
 import sqlite3  # Changed from aiosqlite
 from datetime import datetime
 from db.config import get_podcasts_db_path
-from typing import List
+from typing import List, Dict, Any
 
 
 DB_PATH = "databases"
@@ -14,9 +14,35 @@ PODCAST_AUIDO_DIR = PODCAST_DIR + "/audio"
 PODCAST_RECORDINGS_DIR = PODCAST_DIR + "/recordings"
 
 
-def add_search_results(agent: Agent, search_results: List[str]) -> str:
-    agent.session_state["search_results"] = search_results
-    return f"Sources added: {search_results}"
+def add_to_search_results(agent: Agent, items: List[Dict[str, Any]]) -> str:
+    """
+    Add search results to the session state search_results.
+    Args:
+        agent: The agent instance
+        items: List of search results
+    Returns:
+        Confirmation message
+    """
+    agent.session_state["search_results"].extend(items)
+    return f"Source added: {items}"
+
+
+def remove_from_search_results(agent: Agent, url: str, all: bool = False) -> str:
+    """
+    Remove search results from the session state search_results.
+    Args:
+        agent: The agent instance
+        url: URL of the search result to remove
+        all: Boolean indicating whether to remove all search results
+    Returns:
+        Confirmation message
+    """
+    if all:
+        agent.session_state["search_results"] = []
+        return "All sources removed"
+    else:
+        agent.session_state["search_results"] = [item for item in agent.session_state["search_results"] if item["url"] != url]
+        return f"Source removed: {url}"
 
 
 def select_sources(agent: Agent, selected_ids: str) -> str:
@@ -32,9 +58,7 @@ def select_sources(agent: Agent, selected_ids: str) -> str:
     """
     agent.session_state["show_sources_for_selection"] = False
     try:
-        selected_numbers = [
-            int(num.strip()) for num in selected_ids.replace(",", " ").split()
-        ]
+        selected_numbers = [int(num.strip()) for num in selected_ids.replace(",", " ").split()]
         selected_indices = [num - 1 for num in selected_numbers]
     except ValueError:
         return "Please provide valid article numbers, e.g., '1, 3, 5'."
@@ -50,15 +74,10 @@ def select_sources(agent: Agent, selected_ids: str) -> str:
             selected_articles.append(article)
     agent.session_state["selected_sources"] = selected_articles
     agent.session_state["stage"] = "script"
-    selected_language = agent.session_state.get(
-        "selected_language", {"code": "en", "name": "English"}
-    )
+    selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
     language_name = selected_language.get("name", "English")
     if selected_articles:
-        titles = [
-            f"• {article['title']} ({article.get('url', 'No URL')})"
-            for article in selected_articles
-        ]
+        titles = [f"• {article['title']} ({article.get('url', 'No URL')})" for article in selected_articles]
         return (
             f"Great! You've selected {len(selected_articles)} sources:\n"
             + "\n".join(titles)
@@ -171,9 +190,7 @@ def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
         generated_script = agent.session_state.get("generated_script", {})
         banner_url = agent.session_state.get("banner_url")
         audio_url = agent.session_state.get("audio_url")
-        selected_language = agent.session_state.get(
-            "selected_language", {"code": "en", "name": "English"}
-        )
+        selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
         language_code = selected_language.get("code", "en")
         if not generated_script or not isinstance(generated_script, dict):
             return (
@@ -183,9 +200,7 @@ def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
             )
         if "title" not in generated_script:
             generated_script["title"] = podcast_info.get("topic", "Untitled Podcast")
-        if "sections" not in generated_script or not isinstance(
-            generated_script["sections"], list
-        ):
+        if "sections" not in generated_script or not isinstance(generated_script["sections"], list):
             return (
                 False,
                 "Cannot complete podcast: Generated script is missing required 'sections' array.",
@@ -267,9 +282,7 @@ def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
         agent.session_state["show_audio_for_confirmation"] = False
         agent.session_state["show_recording_player"] = False
         agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = (
-            "complete" if status else agent.session_state.get("stage")
-        )
+        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
         if status:
             try:
                 success, message, podcast_id = _save_podcast_to_database_sync(agent)
@@ -283,9 +296,7 @@ def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
                 return f"Podcast generated, but there was an error saving it to the database: {str(e)}"
     else:
         agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = (
-            "complete" if status else agent.session_state.get("stage")
-        )
+        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
     return f"Podcast generated status changed to: {status}"
 
 

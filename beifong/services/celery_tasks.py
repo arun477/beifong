@@ -34,7 +34,8 @@ from tools.session_state_manager import (
     update_podcast_info,
     toggle_source_selection,
     toggle_script_confirm,
-    add_search_results
+    add_to_search_results,
+    remove_from_search_results,
 )
 
 
@@ -79,7 +80,8 @@ def agent_chat(self, session_id, message):
                 openlibrary_search,
                 jikan_search,
                 Newspaper4kTools(),
-                add_search_results,
+                add_to_search_results,
+                remove_from_search_results,
             ],
         )
         response = agent.run(message)
