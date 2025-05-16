@@ -1,5 +1,72 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Wrench } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
+
+const SourceIcon = ({ url }) => {
+   const [iconUrl, setIconUrl] = useState(null);
+   const [isIconReady, setIsIconReady] = useState(false);
+   const defaultIconSvg = (
+      <svg
+         className="w-4 h-4 text-emerald-400 transition-transform duration-200 group-hover:scale-110"
+         fill="none"
+         viewBox="0 0 24 24"
+         stroke="currentColor"
+      >
+         <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+         />
+      </svg>
+   );
+
+   useEffect(() => {
+      let isMounted = true;
+      const preloadFavicon = () => {
+         try {
+            const domain = new URL(url).hostname;
+            const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+            const img = new Image();
+            img.src = faviconUrl;
+            img.onload = () => {
+               if (isMounted) {
+                  setIconUrl(faviconUrl);
+                  setIsIconReady(true);
+               }
+            };
+            img.onerror = () => {
+               if (isMounted) {
+                  setIconUrl(null);
+                  setIsIconReady(true);
+               }
+            };
+         } catch (e) {
+            if (isMounted) {
+               setIconUrl(null);
+               setIsIconReady(true);
+            }
+         }
+      };
+
+      preloadFavicon();
+      return () => {
+         isMounted = false;
+      };
+   }, [url]);
+   
+   if (!isIconReady || !iconUrl) {
+      return defaultIconSvg;
+   }
+   
+   return (
+      <img
+         src={iconUrl}
+         alt="Source icon"
+         className="w-4 h-4 object-contain transition-transform duration-200 group-hover:scale-110"
+      />
+   );
+};
 
 const SourceSelection = ({
    sources,
@@ -12,6 +79,29 @@ const SourceSelection = ({
    selectedLanguage,
    onSelectLanguage,
 }) => {
+   console.log('sources', sources);
+
+   const getToolIcon = () => {
+      return(
+         <Wrench className="w-3 h-3" />
+      );
+   };
+
+   const formatDate = dateString => {
+      if (!dateString) return null;
+
+      try {
+         const date = new Date(dateString);
+         return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+         });
+      } catch (error) {
+         return null;
+      }
+   };
+
    return (
       <div className="my-4 space-y-4 bg-[#121824] border border-gray-700 rounded-md p-4 shadow-lg animate-slideUp">
          <div className="flex items-start mb-2">
@@ -30,8 +120,13 @@ const SourceSelection = ({
                   />
                </svg>
             </div>
-            <div>
-               <h3 className="font-medium text-white">Select Sources</h3>
+            <div className="flex-1">
+               <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-white">Select Sources</h3>
+                  <span className="text-sm text-emerald-400 bg-emerald-900/20 px-2 py-1 rounded">
+                     {selectedIndices.length} of {sources.length} selected
+                  </span>
+               </div>
                <p className="text-sm text-gray-400 mt-1">
                   Choose the sources you want to include in your podcast.
                </p>
@@ -65,21 +160,42 @@ const SourceSelection = ({
                         {index + 1}. {source.title}
                      </label>
                   </div>
-                  <div className="mt-1 ml-6 text-xs text-gray-500">
-                     {source.source_name || source.source_id || 'Unknown Source'}
+                  <div
+                     className="mt-1 ml-6 text-xs text-gray-500 flex items-center gap-2"
+                     style={{ position: 'relative' }}
+                  >
+                     <span>{source.source_name || source.source_id || 'Unknown Source'}</span>
+                     {source.tool_used && (
+                        <div className="relative group">
+                           <span 
+                              className="bg-white/10 backdrop-blur-sm hover:bg-white/20 px-1.5 py-1 rounded text-xs flex items-center transition-all duration-200 cursor-help"
+                           >
+                              {getToolIcon()}
+                           </span>
+                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 border border-gray-700 text-white text-xs rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                              {source.tool_used}
+                           </div>
+                        </div>
+                     )}
                      {source.url && (
                         <a
                            href={source.url}
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="ml-2 text-emerald-500 hover:text-emerald-400"
+                           className="bg-white/10 backdrop-blur-sm hover:bg-white/20 px-1.5 py-1 rounded group flex items-center transition-all duration-200"
+                           title={`Visit ${new URL(source.url).hostname}`}
                         >
-                           View Source
+                           <SourceIcon url={source.url} />
                         </a>
+                     )}
+                     {formatDate(source.published_date) && (
+                        <span className="bg-white/10 backdrop-blur-sm px-1.5 py-1 rounded text-gray-400">
+                           {formatDate(source.published_date)}
+                        </span>
                      )}
                   </div>
                   <div className="mt-2 ml-6 text-xs text-gray-400 line-clamp-3">
-                     {source.summary || source.content || 'No content available'}
+                     {source.description || 'No description available'}
                   </div>
                </div>
             ))}
