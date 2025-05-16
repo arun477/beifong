@@ -47,28 +47,28 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
 
    return (
       <div className="w-full max-w-2xl mx-auto">
-         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
-            {/* Enhanced Header */}
-            <div className="relative px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-2xl">
+            {/* Compact Header */}
+            <div className="relative px-3 py-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-               <div className="relative flex items-center gap-3">
-                  <div className={`p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
+               <div className="relative flex items-center gap-2">
+                  <div className={`p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-md transition-all duration-300 ${
                      isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
                   }`}>
-                     <Volume2 className={`w-5 h-5 text-emerald-400 transition-all duration-300 ${
+                     <Volume2 className={`w-3 h-3 text-emerald-400 transition-all duration-300 ${
                         isPlaying ? 'scale-110' : ''
                      }`} />
                   </div>
                   <div>
-                     <h3 className="text-lg font-semibold text-white">
-                        Podcast Audio Preview
+                     <h3 className="text-sm font-semibold text-white">
+                        Audio Preview
                      </h3>
-                     <p className="text-sm text-gray-400 mt-0.5 flex items-center gap-2">
+                     <p className="text-xs text-gray-400 flex items-center gap-1.5">
                         "{topic}"
                         {isPlaying && (
-                           <span className="flex items-center gap-1 text-emerald-400">
-                              <Play className="w-3 h-3" />
-                              <span className="text-xs">Playing</span>
+                           <span className="flex items-center gap-0.5 text-emerald-400">
+                              <Play className="w-2 h-2" />
+                              <span className="text-[10px]">Playing</span>
                            </span>
                         )}
                      </p>
@@ -77,11 +77,11 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
             </div>
 
             {/* Audio Player Section with Frequency Visualization */}
-            <div className="px-6 py-6">
+            <div className="px-3 py-3">
                <div className="relative">
                   {/* Frequency Visualization Background */}
-                  <div className="absolute inset-0 overflow-hidden rounded-xl">
-                     <div className="flex items-end justify-center h-full gap-1 p-6">
+                  <div className="absolute inset-0 overflow-hidden rounded-lg">
+                     <div className="flex items-end justify-center h-full gap-1 p-3">
                         {frequencyBars.map((bar) => (
                            <div
                               key={bar.id}
@@ -103,18 +103,18 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
 
                   {/* Pulsing Ring Animation */}
                   {isPlaying && (
-                     <div className="absolute inset-0 rounded-xl">
-                        <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-xl animate-ping" />
-                        <div className="absolute inset-2 border border-emerald-400/10 rounded-xl animate-pulse" />
+                     <div className="absolute inset-0 rounded-lg">
+                        <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-lg animate-ping" />
+                        <div className="absolute inset-2 border border-emerald-400/10 rounded-lg animate-pulse" />
                      </div>
                   )}
 
                   {/* Audio Controls Container */}
-                  <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-xl p-6 border border-gray-600/30 backdrop-blur-sm">
+                  <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
                      <audio 
                         ref={audioRef}
                         controls 
-                        className="w-full h-12 outline-none focus:outline-none"
+                        className="w-full h-10 outline-none focus:outline-none"
                         style={{
                            backgroundColor: 'transparent',
                         }}
@@ -125,11 +125,11 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                   </div>
 
                   {/* Audio Visual Enhancement Overlay */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/5 to-teal-500/5 pointer-events-none" />
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/5 to-teal-500/5 pointer-events-none" />
                </div>
 
                {/* Frequency Bars Below Player */}
-               <div className="mt-4 flex items-center justify-center gap-1 h-12 overflow-hidden">
+               <div className="mt-2 flex items-center justify-center gap-1 h-8 overflow-hidden">
                   {Array.from({ length: 32 }, (_, i) => (
                      <div
                         key={i}
@@ -139,7 +139,7 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                               : 'animate-pulse opacity-30'
                         }`}
                         style={{
-                           width: '4px',
+                           width: '3px',
                            height: isPlaying 
                               ? `${Math.random() * 80 + 20}%` 
                               : '15%',
@@ -151,14 +151,14 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                </div>
 
                {/* Audio Info */}
-               <div className="mt-4 text-center">
-                  <p className="text-sm text-gray-400 flex items-center justify-center gap-2">
-                     <Sparkles className={`w-4 h-4 transition-all duration-300 ${
+               <div className="mt-2 text-center">
+                  <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
+                     <Sparkles className={`w-3 h-3 transition-all duration-300 ${
                         isPlaying ? 'text-emerald-400' : ''
                      }`} />
-                     High-quality podcast audio ready for approval
+                     High-quality audio ready
                      {isPlaying && (
-                        <span className="ml-2 px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
+                        <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] rounded-full">
                            ♪ Playing
                         </span>
                      )}
@@ -166,35 +166,35 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                </div>
             </div>
 
-            {/* Enhanced Actions Section */}
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
-               <div className="flex gap-4 justify-center">
+            {/* Compact Actions Section */}
+            <div className="px-3 py-2 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+               <div className="flex gap-3 justify-center">
                   <button
                      onClick={handleDownload}
                      disabled={isProcessing}
-                     className="group flex-1 max-w-40 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                     className="group flex-1 max-w-32 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
                      aria-disabled={isProcessing}
                   >
-                     <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                     <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
                      Download
                   </button>
 
                   <button
                      onClick={onApprove}
                      disabled={isProcessing}
-                     className={`group flex-1 max-w-48 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
+                     className={`group flex-1 max-w-40 flex items-center justify-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
                         isProcessing ? 'opacity-70 cursor-not-allowed' : ''
                      }`}
                      aria-disabled={isProcessing}
                   >
                      {isProcessing ? (
                         <>
-                           <Loader2 className="w-5 h-5 animate-spin" />
+                           <Loader2 className="w-4 h-4 animate-spin" />
                            <span>Processing...</span>
                         </>
                      ) : (
                         <>
-                           <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                           <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
                            <span>Sounds Great!</span>
                         </>
                      )}
@@ -202,11 +202,11 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                </div>
 
                {/* Additional info */}
-               <div className="mt-3 text-center">
+               <div className="mt-1.5 text-center">
                   <p className="text-xs text-gray-400">
                      {isPlaying 
-                        ? '🎵 Audio visualization active - enjoy the preview!'
-                        : 'Use the audio controls above to preview your podcast'
+                        ? '🎵 Audio visualization active'
+                        : 'Use the controls to preview'
                      }
                   </p>
                </div>
@@ -214,11 +214,11 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
 
             {/* Floating Audio Waves Animation */}
             {isPlaying && (
-               <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96">
+               <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-lg">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72">
                      <div className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                     <div className="absolute inset-8 border border-teal-400/10 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-                     <div className="absolute inset-16 border border-emerald-300/10 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                     <div className="absolute inset-6 border border-teal-400/10 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+                     <div className="absolute inset-12 border border-emerald-300/10 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
                   </div>
                </div>
             )}

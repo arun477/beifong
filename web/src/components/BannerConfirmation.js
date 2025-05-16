@@ -89,40 +89,40 @@ const BannerConfirmation = ({
 
    return (
       <div className="w-full max-w-2xl mx-auto">
-         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
-            {/* Header with gradient and visual enhancement */}
-            <div className="relative px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-2xl">
+            {/* Compact Header */}
+            <div className="relative px-3 py-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                <div className="relative flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
-                        <Sparkles className="w-5 h-5 text-emerald-400" />
+                  <div className="flex items-center gap-2">
+                     <div className="p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-md">
+                        <Sparkles className="w-3 h-3 text-emerald-400" />
                      </div>
                      <div>
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-sm font-semibold text-white">
                            Banner{hasMultipleImages ? ' Collection' : ''} Preview
                         </h3>
-                        <p className="text-sm text-gray-400">{topic}</p>
+                        <p className="text-xs text-gray-400">{topic}</p>
                      </div>
                   </div>
                   {hasMultipleImages && (
-                     <div className="flex items-center gap-4">
-                        <div className="text-sm text-gray-300 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/30">
+                     <div className="flex items-center gap-3">
+                        <div className="text-xs text-gray-300 bg-gray-800/50 px-2 py-1 rounded-md border border-gray-700/30">
                            {currentImageIndex + 1} of {imagesToShow.length}
                         </div>
                         <button
                            onClick={toggleAutoPlay}
-                           className="p-2 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded-lg"
+                           className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded-md"
                            title={autoPlayEnabled ? 'Pause slideshow' : 'Play slideshow'}
                         >
-                           {autoPlayEnabled ? <Pause size={18} /> : <Play size={18} />}
+                           {autoPlayEnabled ? <Pause size={14} /> : <Play size={14} />}
                         </button>
                      </div>
                   )}
                </div>
             </div>
 
-            {/* Banner Image Container - Now much larger and rectangular */}
+            {/* Banner Image Container - Unchanged */}
             <div className="relative px-6 py-6">
                {isProcessing && (
                   <div className="absolute inset-6 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl border border-gray-700/30">
@@ -225,35 +225,25 @@ const BannerConfirmation = ({
                )}
             </div>
 
-            {/* Premium Actions Section */}
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
-               <div className="flex gap-4 justify-center">
-                  <button
-                     onClick={onReject}
-                     disabled={isProcessing}
-                     className="group flex-1 max-w-40 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                     aria-disabled={isProcessing}
-                  >
-                     <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                     Reject
-                  </button>
-
+            {/* Compact Actions Section - Only Approve Button */}
+            <div className="px-3 py-2 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+               <div className="flex justify-center">
                   <button
                      onClick={onApprove}
                      disabled={isProcessing}
-                     className={`group flex-1 max-w-56 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
+                     className={`group flex items-center justify-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
                         isProcessing ? 'opacity-70 cursor-not-allowed' : ''
                      }`}
                      aria-disabled={isProcessing}
                   >
                      {isProcessing ? (
                         <>
-                           <Loader2 className="w-5 h-5 animate-spin" />
+                           <Loader2 className="w-4 h-4 animate-spin" />
                            <span>Processing...</span>
                         </>
                      ) : (
                         <>
-                           <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                           <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
                            <span>Approve Banner{hasMultipleImages ? 's' : ''}</span>
                         </>
                      )}
@@ -261,9 +251,9 @@ const BannerConfirmation = ({
                </div>
 
                {/* Additional info */}
-               <div className="mt-3 text-center">
+               <div className="mt-1.5 text-center">
                   <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
-                     <Eye className="w-4 h-4" />
+                     <Eye className="w-3 h-3" />
                      {hasMultipleImages
                         ? 'Click any banner to view in full size'
                         : 'Click banner to view in full size'}
