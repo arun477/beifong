@@ -13,9 +13,14 @@ import {
    Users,
    Sparkles,
    X,
-   Download
+   Download,
+   Edit3,
+   Trash2,
+   Info,
+   Pause
 } from 'lucide-react';
 import apiService from '../services/api';
+import SpootIcon from '../icons/Spoot'
 
 const formatTtsEngineName = engine => {
    if (!engine) return '';
@@ -119,7 +124,8 @@ const PodcastDetail = () => {
          }
       };
       fetchPodcast();
-      const initialWaveform = Array.from({ length: 40 }, () => Math.random() * 0.4 + 0.1);
+      // Generate frequency bars
+      const initialWaveform = Array.from({ length: 32 }, () => Math.random() * 80 + 20);
       setWaveform(initialWaveform);
       return () => {
          if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -155,18 +161,14 @@ const PodcastDetail = () => {
 
    useEffect(() => {
       if (isPlaying) {
-         let frameCount = 0;
          const animateWaveform = () => {
-            frameCount++;
-            if (frameCount % 3 === 0) {
-               setWaveform(prevWaveform =>
-                  prevWaveform.map(height => {
-                     let newHeight = height + (Math.random() * 0.2 - 0.1);
-                     newHeight = Math.max(0.1, Math.min(0.8, newHeight));
-                     return newHeight;
-                  })
-               );
-            }
+            setWaveform(prevWaveform =>
+               prevWaveform.map((height, index) => {
+                  let newHeight = height + (Math.random() * 20 - 10);
+                  newHeight = Math.max(20, Math.min(100, newHeight));
+                  return newHeight;
+               })
+            );
             animationRef.current = requestAnimationFrame(animateWaveform);
          };
          animationRef.current = requestAnimationFrame(animateWaveform);
@@ -224,7 +226,7 @@ const PodcastDetail = () => {
       if (!dateString) return '';
       const date = new Date(dateString.replace(' ', 'T'));
       if (isNaN(date)) return 'Invalid Date';
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
       return date.toLocaleDateString(undefined, options);
    };
 
@@ -283,18 +285,18 @@ const PodcastDetail = () => {
    }
 
    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 py-8 px-4 relative overflow-hidden">
+      <div className="min-h-screen  py-4 px-4 relative overflow-hidden">
          {/* Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
          </div>
 
-         <div className="max-w-6xl mx-auto relative z-10">
+         <div className="max-w-lg mx-auto relative z-10">
             {/* Back Button */}
             <button
                onClick={handleGoBack}
-               className="text-gray-300 hover:text-emerald-300 flex items-center mb-8 transition-colors duration-200 group"
+               className="text-gray-300 hover:text-emerald-300 flex items-center mb-3 transition-colors duration-200 group"
             >
                <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -311,311 +313,227 @@ const PodcastDetail = () => {
                Back
             </button>
 
-            {/* Main Card with Frosted Glass Effect */}
-            <div className="backdrop-blur-xl bg-gray-900/50 border border-gray-700/50 rounded-3xl overflow-hidden shadow-2xl relative">
-               {/* Frosted glass overlay */}
-               <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 backdrop-blur-lg"></div>
+            {/* Ultra Compact Card */}
+            <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
                
-               {/* Content */}
-               <div className="relative z-10">
-                  {/* Header */}
-                  <div className="px-8 py-6 border-b border-gray-700/30 backdrop-blur-sm">
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                           <div className="p-3 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-xl backdrop-blur-sm border border-emerald-500/30">
-                              <Volume2 className="w-6 h-6 text-emerald-400" />
+               {/* Compact Header with Banner */}
+               <div className="relative">
+                  {/* Banner as header background if available */}
+                  {hasBanner && (
+                     <div className="h-80 relative overflow-hidden">
+                        <img
+                           src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
+                           alt={content.title || 'Podcast'}
+                           className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
+                     </div>
+                  )}
+                  
+                  {/* Header content overlay */}
+                  <div className={`${hasBanner ? 'absolute bottom-0 left-0 right-0' : ''} px-4 py-3 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30`}>
+                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                     <div className="relative flex justify-between items-center">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                           <div className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
+                              isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+                           }`}>
+                              <Volume2 className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
+                                 isPlaying ? 'scale-110' : ''
+                              }`} />
                            </div>
-                           <div>
-                              <h1 className="text-2xl font-bold text-white">
+                           <div className="min-w-0">
+                              <h3 className="text-base font-semibold text-white truncate">
                                  {content.title || `Podcast - ${formatDate(podcastData.date)}`}
-                              </h1>
-                              <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
-                                 <Calendar className="w-4 h-4" />
+                              </h3>
+                              <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                                 <Calendar className="w-3 h-3" />
                                  {formatDate(podcastData.date)}
+                                 {isPlaying && (
+                                    <span className="flex items-center gap-1 text-emerald-400 ml-1">
+                                       <Play className="w-2.5 h-2.5" />
+                                       <span className="text-xs">Playing</span>
+                                    </span>
+                                 )}
                               </p>
                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
                            <button
                               onClick={() => setShowEditModal(true)}
-                              className="p-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl text-gray-400 hover:text-blue-400 transition-all duration-200 backdrop-blur-sm border border-gray-700/30"
+                              className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
                               title="Edit Title"
                            >
-                              <svg
-                                 xmlns="http://www.w3.org/2000/svg"
-                                 className="h-5 w-5"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke="currentColor"
-                              >
-                                 <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                 />
-                              </svg>
+                              <Edit3 className="w-3.5 h-3.5" />
                            </button>
                            <button
                               onClick={handleDelete}
-                              className="p-3 bg-gray-800/50 hover:bg-gray-700/50 rounded-xl text-gray-400 hover:text-red-400 transition-all duration-200 backdrop-blur-sm border border-gray-700/30"
+                              className="p-1.5 text-gray-400 hover:text-red-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
                               title="Delete Podcast"
                            >
-                              <svg
-                                 xmlns="http://www.w3.org/2000/svg"
-                                 className="h-5 w-5"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                                 stroke="currentColor"
-                              >
-                                 <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                 />
-                              </svg>
+                              <Trash2 className="w-3.5 h-3.5" />
                            </button>
                         </div>
                      </div>
-
-                     {/* Metadata Tags */}
-                     <div className="flex flex-wrap items-center gap-3 mt-6">
-                        {podcastData.language_code && (
-                           <div className="flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50 backdrop-blur-sm">
-                              <Globe className="w-4 h-4 mr-2" />
-                              <span>{getLanguageName(podcastData.language_code)}</span>
-                           </div>
-                        )}
-                        {podcastData.tts_engine && (
-                           <div className="flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-purple-900/80 to-purple-800/80 text-purple-200 border border-purple-800/50 backdrop-blur-sm">
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
-                           </div>
-                        )}
-                        {hasAudio && (
-                           <div className="flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-emerald-900/80 to-emerald-800/80 text-emerald-200 border border-emerald-800/50 backdrop-blur-sm">
-                              <Volume2 className="w-4 h-4 mr-2" />
-                              <span>Audio</span>
-                           </div>
-                        )}
-                        {hasSources && (
-                           <div className="flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-gray-900/80 to-gray-800/80 text-gray-400 border border-gray-700/50 backdrop-blur-sm">
-                              <ExternalLink className="w-4 h-4 mr-2 text-emerald-500" />
-                              <span>{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
-                           </div>
-                        )}
-                     </div>
                   </div>
+               </div>
 
-                  {/* Banner and Content Section */}
-                  <div className="px-8 py-8">
-                     <div className="flex flex-col lg:flex-row items-center gap-8">
-                        {/* Prominent Banner Image */}
-                        <div className="flex-shrink-0">
-                           {hasBanner ? (
-                              <div className="relative group">
-                                 <div className="w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-2xl transform transition-all duration-500 hover:scale-105 hover:rotate-1 relative">
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10"></div>
-                                    <img
-                                       src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
-                                       alt={content.title || 'Podcast'}
-                                       className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-300 rounded-2xl"></div>
-                                 </div>
-                                 {/* Reflection effect */}
-                                 <div className="absolute -bottom-4 -inset-x-4 h-20 bg-gradient-to-t from-emerald-500/10 to-transparent rounded-2xl blur-xl opacity-60"></div>
-                              </div>
-                           ) : (
-                              <div className="w-64 h-64 md:w-80 md:h-80 bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-2xl flex items-center justify-center border border-gray-600/30 shadow-2xl backdrop-blur-sm">
-                                 <div className="text-center">
-                                    <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-20 w-20 text-emerald-400 mx-auto mb-4"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={1.5}
-                                          d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                                       />
-                                    </svg>
-                                    <p className="text-gray-400 text-sm">No cover art</p>
-                                 </div>
-                              </div>
-                           )}
+               {/* Compact Metadata Tags */}
+               <div className="px-4 py-2">
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                     {podcastData.language_code && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50">
+                           <Globe className="w-3 h-3 mr-1" />
+                           <span>{getLanguageName(podcastData.language_code)}</span>
+                        </div>
+                     )}
+                     {podcastData.tts_engine && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-900/80 to-purple-800/80 text-purple-200 border border-purple-800/50">
+                           <Sparkles className="w-3 h-3 mr-1" />
+                           <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
+                        </div>
+                     )}
+                     {hasSources && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-gray-900/80 to-gray-800/80 text-gray-400 border border-gray-700/50">
+                           <ExternalLink className="w-3 h-3 mr-1 text-emerald-500" />
+                           <span>{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               {/* Compact Audio Section */}
+               {hasAudio && (
+                  <div className="px-4 py-3">
+                     <div className="relative">
+                        {/* Simplified frequency visualization */}
+                        <div className="absolute inset-0 overflow-hidden rounded-lg">
+                           <div className="flex items-end justify-center h-full gap-px p-2">
+                              {waveform.map((height, index) => (
+                                 <div
+                                    key={index}
+                                    className={`bg-gradient-to-t from-emerald-600/30 to-teal-400/30 rounded-full transition-all duration-300 ${
+                                       isPlaying 
+                                          ? 'animate-pulse' 
+                                          : 'opacity-40'
+                                    }`}
+                                    style={{
+                                       width: '2px',
+                                       height: isPlaying ? `${height}%` : '20%',
+                                       animationDelay: `${index * 30}ms`,
+                                       animationDuration: `${1000 + Math.random() * 300}ms`,
+                                    }}
+                                 />
+                              ))}
+                           </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex-1 w-full">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {/* Script Button */}
-                              {hasScript && (
-                                 <button
-                                    onClick={() => setIsFullScriptOpen(true)}
-                                    className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-lg border border-gray-700/30 p-6 hover:border-emerald-500/50 transition-all duration-300 hover:scale-105"
-                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                    <div className="relative z-10">
-                                       <div className="flex items-center gap-3 mb-3">
-                                          <div className="p-2 bg-emerald-500/20 rounded-lg">
-                                             <FileText className="w-6 h-6 text-emerald-400" />
-                                          </div>
-                                          <span className="text-lg font-semibold text-white">View Script</span>
-                                       </div>
-                                       <p className="text-gray-400 text-sm">
-                                          {content.sections.length} sections • Complete transcript
-                                       </p>
-                                       <div className="mt-4 flex items-center gap-2 text-emerald-400 text-sm group-hover:text-emerald-300 transition-colors">
-                                          <span>Read full podcast script</span>
-                                          <ExternalLink className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                                       </div>
-                                    </div>
-                                 </button>
-                              )}
-
-                              {/* Sources Button */}
-                              {hasSources && (
-                                 <button
-                                    onClick={() => setIsSourcesOpen(true)}
-                                    className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-lg border border-gray-700/30 p-6 hover:border-teal-500/50 transition-all duration-300 hover:scale-105"
-                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                    <div className="relative z-10">
-                                       <div className="flex items-center gap-3 mb-3">
-                                          <div className="p-2 bg-teal-500/20 rounded-lg">
-                                             <Globe className="w-6 h-6 text-teal-400" />
-                                          </div>
-                                          <span className="text-lg font-semibold text-white">View Sources</span>
-                                       </div>
-                                       <p className="text-gray-400 text-sm">
-                                          {sources.length} source{sources.length !== 1 ? 's' : ''} • External references
-                                       </p>
-                                       <div className="mt-4 flex items-center gap-2 text-teal-400 text-sm group-hover:text-teal-300 transition-colors">
-                                          <span>Explore all sources</span>
-                                          <ExternalLink className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                                       </div>
-                                    </div>
-                                 </button>
-                              )}
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Audio Player Section */}
-                  {hasAudio && (
-                     <div className="px-8 py-6 border-t border-gray-700/30 backdrop-blur-sm">
-                        <div className="flex flex-col">
+                        {/* Audio Controls */}
+                        <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
                            {audioError ? (
-                              <div className="bg-gradient-to-r from-red-900/30 to-red-800/30 border border-red-500/50 p-4 rounded-xl mb-4 backdrop-blur-sm">
-                                 <div className="flex">
-                                    <div className="flex-shrink-0">
-                                       <svg
-                                          className="h-5 w-5 text-red-400"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 20 20"
-                                          fill="currentColor"
-                                       >
-                                          <path
-                                             fillRule="evenodd"
-                                             d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-4.707a1 1 0 001.414 0L12 12.07l1.293 1.293a1 1 0 001.414-1.414L13.414 10l1.293-1.293a1 1 0 00-1.414-1.414L12 8.586l-1.293-1.293a1 1 0 00-1.414 1.414L10.586 10l-1.293 1.293a1 1 0 000 1.414z"
-                                             clipRule="evenodd"
-                                          />
-                                       </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                       <p className="text-sm text-red-300 font-medium">Audio Error</p>
-                                       <p className="text-sm text-red-200">{audioError}</p>
-                                    </div>
-                                 </div>
+                              <div className="flex items-center gap-2 text-red-400">
+                                 <Info className="w-4 h-4" />
+                                 <span className="text-xs">{audioError}</span>
                               </div>
                            ) : (
-                              <>
-                                 <div className="bg-gray-800/30 rounded-2xl border border-gray-700/30 p-6 mb-4 backdrop-blur-sm">
-                                    <audio
-                                       ref={audioRef}
-                                       className="w-full"
-                                       src={streamingAudioUrl}
-                                       controls
-                                       preload="auto"
-                                       onPlay={() => setIsPlaying(true)}
-                                       onPause={() => setIsPlaying(false)}
-                                       onEnded={() => setIsPlaying(false)}
-                                       onError={e => {
-                                          console.error('Audio playback error:', e);
-                                          setAudioError('There was an error playing this audio file.');
-                                       }}
-                                       style={{
-                                          height: '50px',
-                                          borderRadius: '12px',
-                                          backgroundColor: 'transparent',
-                                       }}
-                                    />
-                                 </div>
-                                 
-                                 {/* Enhanced Waveform Visualization */}
-                                 <div className="relative bg-gray-800/20 rounded-2xl h-16 overflow-hidden border border-gray-700/30 backdrop-blur-sm">
-                                    <div className="flex h-full items-center justify-center gap-1 px-4">
-                                       {waveform.map((height, index) => (
-                                          <div
-                                             key={index}
-                                             style={{
-                                                height: `${height * 100}%`,
-                                                transition: 'height 0.15s ease-in-out',
-                                             }}
-                                             className={`w-1 ${
-                                                index < waveform.length / 3
-                                                   ? 'bg-gradient-to-t from-emerald-900 to-emerald-400'
-                                                   : index < (2 * waveform.length) / 3
-                                                   ? 'bg-gradient-to-t from-emerald-800 to-emerald-300'
-                                                   : 'bg-gradient-to-t from-emerald-900 to-emerald-400'
-                                             } rounded-full`}
-                                          />
-                                       ))}
-                                    </div>
-                                    
-                                    {/* Audio visualization effects */}
-                                    {isPlaying && (
-                                       <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64">
-                                             <div className="absolute inset-0 border border-emerald-500/20 rounded-full animate-ping" style={{ animationDuration: '4s' }} />
-                                             <div className="absolute inset-8 border border-emerald-400/15 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                                             <div className="absolute inset-16 border border-emerald-400/10 rounded-full animate-ping" style={{ animationDuration: '2s' }} />
-                                          </div>
-                                       </div>
-                                    )}
-                                 </div>
-                                 
-                                 <div className="mt-4 text-center">
-                                    <div className="flex justify-center text-xs text-gray-500 flex-wrap gap-3">
-                                       <span className="inline-flex items-center gap-1">
-                                          <kbd className="px-2 py-1 bg-gray-700/50 rounded-lg text-xs backdrop-blur-sm">Space</kbd>
-                                          <span>Play/Pause</span>
-                                       </span>
-                                       <span className="hidden sm:inline">•</span>
-                                       <span className="inline-flex items-center gap-1">
-                                          <kbd className="px-2 py-1 bg-gray-700/50 rounded-lg text-xs backdrop-blur-sm">←</kbd>
-                                          <kbd className="px-2 py-1 bg-gray-700/50 rounded-lg text-xs backdrop-blur-sm">→</kbd>
-                                          <span>Seek</span>
-                                       </span>
-                                       <span className="hidden sm:inline">•</span>
-                                       <span className="inline-flex items-center gap-1">
-                                          <kbd className="px-2 py-1 bg-gray-700/50 rounded-lg text-xs backdrop-blur-sm">M</kbd>
-                                          <span>Mute</span>
-                                       </span>
-                                    </div>
-                                 </div>
-                              </>
+                              <audio 
+                                 ref={audioRef}
+                                 controls 
+                                 className="w-full h-8"
+                                 src={streamingAudioUrl}
+                                 onPlay={() => setIsPlaying(true)}
+                                 onPause={() => setIsPlaying(false)}
+                                 onEnded={() => setIsPlaying(false)}
+                                 onError={e => {
+                                    console.error('Audio playback error:', e);
+                                    setAudioError('There was an error playing this audio file.');
+                                 }}
+                              >
+                                 Your browser does not support the audio element.
+                              </audio>
                            )}
+                        </div>
+
+                        {/* Pulsing Ring Animation when playing */}
+                        {isPlaying && (
+                           <div className="absolute inset-0 rounded-lg pointer-events-none">
+                              <div className="absolute inset-0 border border-emerald-500/20 rounded-lg animate-ping" />
+                              <div className="absolute inset-1 border border-emerald-400/10 rounded-lg animate-pulse" />
+                           </div>
+                        )}
+                     </div>
+
+                     {/* Compact Audio Info */}
+                     <div className="mt-2 text-center">
+                        <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
+                           <Sparkles className={`w-3 h-3 transition-all duration-300 ${
+                              isPlaying ? 'text-emerald-400' : ''
+                           }`} />
+                           High-quality podcast audio
+                           {isPlaying && (
+                              <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded">
+                                 ♪ Playing
+                              </span>
+                           )}
+                        </p>
+                     </div>
+                  </div>
+               )}
+
+               {/* Compact Actions Section */}
+               <div className="px-4 py-3 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+                  <div className="flex justify-center gap-3">
+                     {hasScript && (
+                        <button
+                           onClick={() => setIsFullScriptOpen(true)}
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30"
+                        >
+                           <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                           Script
+                        </button>
+                     )}
+                     {hasSources && (
+                        <button
+                           onClick={() => setIsSourcesOpen(true)}
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30"
+                        >
+                           <Globe className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                           Sources
+                        </button>
+                     )}
+                  </div>
+
+                  {/* Keyboard shortcuts - More compact */}
+                  {hasAudio && (
+                     <div className="mt-2 text-center">
+                        <div className="flex justify-center text-xs text-gray-500 gap-2">
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">Space</kbd>
+                              Play
+                           </span>
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">←→</kbd>
+                              Seek
+                           </span>
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">M</kbd>
+                              Mute
+                           </span>
                         </div>
                      </div>
                   )}
                </div>
+
+               {/* Floating Audio Waves Animation when playing */}
+               {isPlaying && hasAudio && (
+                  <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl">
+                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
+                        <div className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
+                        <div className="absolute inset-8 border border-teal-400/10 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+                        <div className="absolute inset-16 border border-emerald-300/10 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                     </div>
+                  </div>
+               )}
             </div>
 
             {/* Full Script Modal */}
