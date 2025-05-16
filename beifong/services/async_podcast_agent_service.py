@@ -223,11 +223,11 @@ class PodcastAgentService:
                     for row in rows:
                         try:
                             session_data = json.loads(row["session_data"]) if isinstance(row["session_data"], str) else row["session_data"]
-                            podcast_info = session_data.get("session_state", {}).get("podcast_info", {})
-                            topic = podcast_info.get("topic", "Untitled Podcast")
-                            stage = session_data.get("session_state", {}).get("stage", "welcome")
+                            session_state = session_data.get("session_state", {})
+                            title = session_state.get("title", "Untitled Podcast")
+                            stage = session_state.get("stage", "welcome")
                             updated_at = row["updated_at"]
-                            sessions.append({"session_id": row["session_id"], "topic": topic, "stage": stage, "updated_at": updated_at})
+                            sessions.append({"session_id": row["session_id"], "topic": title, "stage": stage, "updated_at": updated_at})
                         except Exception as e:
                             print(f"Error parsing session data: {e}")
             return {

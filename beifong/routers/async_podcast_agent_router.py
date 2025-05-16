@@ -22,12 +22,12 @@ class ChatResponse(BaseModel):
     session_state: str
     is_processing: bool = False
     process_type: Optional[str] = None
-    task_id: Optional[str] = None  # Add task_id to response model
+    task_id: Optional[str] = None 
 
 
 class StatusRequest(BaseModel):
     session_id: str
-    task_id: Optional[str] = None  # Add optional task_id for status checking
+    task_id: Optional[str] = None  
 
 
 @router.post("/session")
@@ -39,14 +39,12 @@ async def create_session(request: SessionRequest = None):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     """Send a message to the podcast agent and get a response"""
-    # This will queue the message and return immediately with processing status
     return await podcast_agent_service.chat(request)
 
 
 @router.post("/status", response_model=ChatResponse)
 async def check_status(request: StatusRequest):
     """Check if a result is available for the session"""
-    # This will use the task_id if available, otherwise query the database
     return await podcast_agent_service.check_result_status(request)
 
 
