@@ -53,11 +53,11 @@ const SourceIcon = ({ url }) => {
          isMounted = false;
       };
    }, [url]);
-   
+
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-   
+
    return (
       <img
          src={iconUrl}
@@ -85,10 +85,10 @@ const ScriptConfirmation = ({
    const speakerColors = {
       ALEX: 'from-slate-600 to-slate-700',
       MORGAN: 'from-gray-600 to-gray-700',
-      default: 'from-zinc-600 to-zinc-700'
+      default: 'from-zinc-600 to-zinc-700',
    };
 
-   const getSpeakerColor = (speaker) => {
+   const getSpeakerColor = speaker => {
       return speakerColors[speaker] || speakerColors.default;
    };
 
@@ -114,7 +114,11 @@ const ScriptConfirmation = ({
          if (firstSection.dialog && firstSection.dialog.length > 0) {
             return firstSection.dialog.slice(0, 2).map((line, index) => (
                <div key={index} className="mb-2">
-                  <span className={`inline-block px-3 py-1 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full mr-3 min-w-16 text-center`}>
+                  <span
+                     className={`inline-block px-3 py-1 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                        line.speaker
+                     )} text-white rounded-full mr-3 min-w-16 text-center`}
+                  >
                      {line.speaker}
                   </span>
                   <span className="text-gray-300">{line.text}</span>
@@ -123,17 +127,26 @@ const ScriptConfirmation = ({
          }
       }
       // Fallback to markdown format
-      return <div dangerouslySetInnerHTML={{ __html: formatScriptMarkdown(scriptText.split('\n').slice(0, 4).join('\n') + '...') }} />;
+      return (
+         <div
+            dangerouslySetInnerHTML={{
+               __html: formatScriptMarkdown(scriptText.split('\n').slice(0, 4).join('\n') + '...'),
+            }}
+         />
+      );
    };
 
-   const formatSectionType = (type) => {
+   const formatSectionType = type => {
       return type.charAt(0).toUpperCase() + type.slice(1);
    };
 
    // Count total dialog lines
    const getTotalLines = () => {
       if (!hasStructuredScript) return null;
-      return scriptData.sections.reduce((total, section) => total + (section.dialog ? section.dialog.length : 0), 0);
+      return scriptData.sections.reduce(
+         (total, section) => total + (section.dialog ? section.dialog.length : 0),
+         0
+      );
    };
 
    // Get unique speakers
@@ -203,17 +216,33 @@ const ScriptConfirmation = ({
                         <div className="space-y-3">
                            {getScriptPreview()}
                            <div className="pt-3 border-t border-gray-600/30">
-                              <div className="text-emerald-400 text-sm font-medium cursor-pointer hover:underline flex items-center gap-2" onClick={() => !isProcessing && onToggleModal()}>
+                              <div
+                                 className="text-emerald-400 text-sm font-medium cursor-pointer hover:underline flex items-center gap-2"
+                                 onClick={() => !isProcessing && onToggleModal()}
+                              >
                                  <Sparkles className="w-4 h-4" />
-                                 Click to read the complete script with {scriptData.sections.length} sections...
+                                 Click to read the complete script with {
+                                    scriptData.sections.length
+                                 }{' '}
+                                 sections...
                               </div>
                            </div>
                         </div>
                      ) : (
                         <div>
-                           <div className="text-sm text-gray-300" dangerouslySetInnerHTML={{ __html: formatScriptMarkdown(scriptText.split('\n').slice(0, 4).join('\n') + '...') }} />
+                           <div
+                              className="text-sm text-gray-300"
+                              dangerouslySetInnerHTML={{
+                                 __html: formatScriptMarkdown(
+                                    scriptText.split('\n').slice(0, 4).join('\n') + '...'
+                                 ),
+                              }}
+                           />
                            <div className="pt-3 border-t border-gray-600/30">
-                              <div className="text-emerald-400 text-sm cursor-pointer hover:underline flex items-center gap-2" onClick={() => !isProcessing && onToggleModal()}>
+                              <div
+                                 className="text-emerald-400 text-sm cursor-pointer hover:underline flex items-center gap-2"
+                                 onClick={() => !isProcessing && onToggleModal()}
+                              >
                                  <Sparkles className="w-4 h-4" />
                                  Click to expand full script...
                               </div>
@@ -269,10 +298,9 @@ const ScriptConfirmation = ({
                   <div className="mt-3 text-center">
                      <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                         <FileText className="w-4 h-4" />
-                        {hasStructuredScript 
+                        {hasStructuredScript
                            ? 'Review the complete script with speaker dialogs and sections'
-                           : 'Review the complete script before approval'
-                        }
+                           : 'Review the complete script before approval'}
                      </p>
                   </div>
                </div>
@@ -286,7 +314,9 @@ const ScriptConfirmation = ({
                   {/* Modal Header */}
                   <div className="px-6 py-4 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
                      <div>
-                        <h3 className="text-xl font-semibold text-white">Complete Podcast Script</h3>
+                        <h3 className="text-xl font-semibold text-white">
+                           Complete Podcast Script
+                        </h3>
                         {hasStructuredScript && scriptData.title && (
                            <p className="text-sm text-gray-400 mt-1">{scriptData.title}</p>
                         )}
@@ -307,7 +337,9 @@ const ScriptConfirmation = ({
                            {/* Section Navigation */}
                            <div className="w-64 border-r border-gray-700/30 bg-gray-800/30 overflow-y-auto flex-shrink-0">
                               <div className="p-4">
-                                 <h4 className="text-sm font-medium text-gray-300 mb-3">Sections</h4>
+                                 <h4 className="text-sm font-medium text-gray-300 mb-3">
+                                    Sections
+                                 </h4>
                                  <div className="space-y-2">
                                     {scriptData.sections.map((section, index) => (
                                        <button
@@ -319,7 +351,9 @@ const ScriptConfirmation = ({
                                                 : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
                                           }`}
                                        >
-                                          <div className="font-medium">{formatSectionType(section.type)}</div>
+                                          <div className="font-medium">
+                                             {formatSectionType(section.type)}
+                                          </div>
                                           {section.title && (
                                              <div className="text-xs text-gray-500 mt-0.5 truncate">
                                                 {section.title}
@@ -340,7 +374,15 @@ const ScriptConfirmation = ({
                            <div className="flex-1 overflow-y-auto">
                               <div className="p-6">
                                  {scriptData.sections.map((section, sectionIndex) => (
-                                    <div key={sectionIndex} className={`mb-8 ${selectedSection !== null && selectedSection !== sectionIndex ? 'hidden' : ''}`}>
+                                    <div
+                                       key={sectionIndex}
+                                       className={`mb-8 ${
+                                          selectedSection !== null &&
+                                          selectedSection !== sectionIndex
+                                             ? 'hidden'
+                                             : ''
+                                       }`}
+                                    >
                                        <div className="mb-4">
                                           <h2 className="text-lg font-semibold text-white mb-1">
                                              {formatSectionType(section.type)}
@@ -351,8 +393,15 @@ const ScriptConfirmation = ({
                                        {section.dialog ? (
                                           <div className="space-y-4">
                                              {section.dialog.map((line, lineIndex) => (
-                                                <div key={lineIndex} className="flex gap-4 items-start">
-                                                   <div className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full min-w-18 text-center`}>
+                                                <div
+                                                   key={lineIndex}
+                                                   className="flex gap-4 items-start"
+                                                >
+                                                   <div
+                                                      className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                         line.speaker
+                                                      )} text-white rounded-full min-w-18 text-center`}
+                                                   >
                                                       {line.speaker}
                                                    </div>
                                                    <div className="flex-1 text-gray-300 leading-relaxed pt-0.5">
@@ -362,7 +411,9 @@ const ScriptConfirmation = ({
                                              ))}
                                           </div>
                                        ) : (
-                                          <div className="text-gray-400 italic">No dialog for this section</div>
+                                          <div className="text-gray-400 italic">
+                                             No dialog for this section
+                                          </div>
                                        )}
                                     </div>
                                  ))}

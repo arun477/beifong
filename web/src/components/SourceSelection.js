@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Check, Loader2, CheckSquare, Square, Calendar, ExternalLink, Sparkles, FileText } from 'lucide-react';
+import {
+   Settings,
+   Check,
+   Loader2,
+   CheckSquare,
+   Square,
+   Calendar,
+   ExternalLink,
+   Sparkles,
+   FileText,
+   HammerIcon,
+} from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 
 const SourceIcon = ({ url }) => {
    const [iconUrl, setIconUrl] = useState(null);
    const [isIconReady, setIsIconReady] = useState(false);
    const defaultIconSvg = (
-      <ExternalLink className="w-4 h-4 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+      <ExternalLink className="w-2.5 h-2.5 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
    );
 
    useEffect(() => {
@@ -42,16 +53,16 @@ const SourceIcon = ({ url }) => {
          isMounted = false;
       };
    }, [url]);
-   
+
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-   
+
    return (
       <img
          src={iconUrl}
          alt="Source icon"
-         className="w-4 h-4 object-contain transition-transform duration-200 group-hover:scale-110"
+         className="w-2.5 h-2.5 object-contain transition-transform duration-200 group-hover:scale-110"
       />
    );
 };
@@ -83,32 +94,27 @@ const SourceSelection = ({
    };
 
    return (
-      <div className="w-full max-w-4xl mx-auto mt-6">
-         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
-            {/* Enhanced Header */}
-            <div className="relative px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
+      <div className="w-full max-w-2xl mx-auto mt-2">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-md overflow-hidden shadow-lg border border-gray-700/50 transition-all duration-300 hover:shadow-xl">
+            {/* Header */}
+            <div className="relative px-2 py-1.5 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                <div className="relative">
                   <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
-                           <FileText className="w-5 h-5 text-emerald-400" />
+                     <div className="flex items-center gap-1.5">
+                        <div className="p-0.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-sm">
+                           <FileText className="w-2.5 h-2.5 text-emerald-400" />
                         </div>
                         <div>
-                           <h3 className="text-lg font-semibold text-white">
-                              Select Sources
-                           </h3>
-                           <p className="text-sm text-gray-400 mt-0.5">
-                              Choose the sources you want to include in your podcast
-                           </p>
+                           <h3 className="text-sm font-semibold text-white">Select Sources</h3>
+                           <p className="text-xs text-gray-400">Choose sources</p>
                         </div>
                      </div>
-                     <div className="flex items-center gap-3">
-                        <div className="text-sm text-emerald-400 bg-emerald-500/20 px-3 py-1.5 rounded-lg border border-emerald-500/30">
+                     <div className="flex items-center">
+                        <div className="text-xs text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded-sm border border-emerald-500/30">
                            <span className="font-medium">{selectedIndices.length}</span>
-                           <span className="text-gray-300 mx-1">of</span>
+                           <span className="text-gray-300 mx-0.5">of</span>
                            <span className="font-medium">{sources.length}</span>
-                           <span className="text-gray-300 ml-1">selected</span>
                         </div>
                      </div>
                   </div>
@@ -116,105 +122,132 @@ const SourceSelection = ({
             </div>
 
             {/* Sources List */}
-            <div className="p-6">
-               <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="p-2">
+               <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
                   {sources.map((source, index) => (
                      <div
                         key={index}
-                        className={`group relative p-4 rounded-xl border transition-all duration-300 cursor-pointer ${
+                        className={`group relative p-1.5 rounded-md border transition-all duration-300 cursor-pointer ${
                            selectedIndices.includes(index)
-                              ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/5'
+                              ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/30 shadow-md'
                               : 'bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-gray-700/30 hover:border-gray-600/50 hover:bg-gradient-to-r hover:from-gray-700/50 hover:to-gray-600/50'
                         }`}
                         onClick={() => !isProcessing && onToggleSelection(index)}
                      >
                         {/* Selection indicator */}
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-1.5">
                            <div className="flex-shrink-0 pt-0.5">
                               {selectedIndices.includes(index) ? (
-                                 <CheckSquare className="w-5 h-5 text-emerald-400" />
+                                 <CheckSquare className="w-2.5 h-2.5 text-emerald-400" />
                               ) : (
-                                 <Square className="w-5 h-5 text-gray-500 group-hover:text-gray-400" />
+                                 <Square className="w-2.5 h-2.5 text-gray-500 group-hover:text-gray-400" />
                               )}
                            </div>
 
                            {/* Content */}
                            <div className="flex-1 min-w-0">
-                              {/* Title and number */}
-                              <div className="flex items-start justify-between gap-3">
-                                 <h4 className={`text-sm font-medium leading-relaxed ${
-                                    selectedIndices.includes(index) ? 'text-white' : 'text-gray-300 group-hover:text-white'
-                                 } transition-colors duration-200`}>
-                                    <span className="text-emerald-400 font-semibold">{index + 1}.</span> {source.title}
+                              {/* Title */}
+                              <div className="flex items-start justify-between gap-2">
+                                 <h4
+                                    className={`text-xs font-medium leading-tight ${
+                                       selectedIndices.includes(index)
+                                          ? 'text-white'
+                                          : 'text-gray-300 group-hover:text-white'
+                                    } transition-colors duration-200`}
+                                 >
+                                    <span className="text-emerald-400 font-semibold">
+                                       {index + 1}.
+                                    </span>{' '}
+                                    {source.title}
                                  </h4>
                               </div>
 
                               {/* Metadata row */}
-                              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                 {/* Source name with background */}
-                                 <div className="bg-gray-800/50 border border-gray-700/50 px-2 py-1 rounded-md">
-                                    <span className="text-xs text-gray-400 font-medium">
-                                       {source.source_name || source.source_id || 'Unknown Source'}
-                                    </span>
+                              <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
+                                 {/* Source name */}
+                                 <div className="relative group/source">
+                                    <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
+                                       <Sparkles className="w-2.5 h-2.5 text-blue-400" />
+                                       <span
+                                          style={{ fontSize: '8px' }}
+                                          className="text-xs text-gray-400 font-medium"
+                                       >
+                                          Source
+                                       </span>
+                                    </div>
+                                    {/* Hover tooltip */}
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg border border-gray-700 opacity-0 group-hover/source:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                       {source.source_name || source.source_id || 'Unknown'}
+                                    </div>
                                  </div>
 
-                                 {/* Tool indicator with tooltip - same size as others */}
+                                 {/* Tool indicator */}
                                  {source.tool_used && (
                                     <div className="relative group/tool">
-                                       <div className="bg-gradient-to-r from-blue-500/15 to-purple-500/15 border border-blue-500/25 px-2 py-1 rounded-md flex items-center gap-1">
-                                          <Settings className="w-3 h-3 text-blue-400" />
-                                          <span className="text-xs text-blue-300 font-medium">Tool</span>
+                                       <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
+                                          <HammerIcon className="w-2.5 h-2.5 text-blue-400" />
+                                          <span
+                                             style={{ fontSize: '8px' }}
+                                             className="text-xs text-gray-400 font-medium"
+                                          >
+                                             Tool
+                                          </span>
                                        </div>
-                                       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 border border-gray-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover/tool:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
-                                          <div className="font-medium">{source.tool_used}</div>
-                                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                       {/* Hover tooltip */}
+                                       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg border border-gray-700 opacity-0 group-hover/tool:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                                          {source.tool_used}
                                        </div>
                                     </div>
                                  )}
 
                                  {/* Published date */}
                                  {formatDate(source.published_date) && (
-                                    <div className="bg-gray-800/50 border border-gray-700/50 px-2 py-1 rounded-md flex items-center gap-1">
-                                       <Calendar className="w-3 h-3 text-gray-400" />
-                                       <span className="text-xs text-gray-400">
+                                    <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
+                                       <Calendar className="w-2.5 h-2.5 text-blue-400" />
+                                       <span
+                                          style={{ fontSize: '8px' }}
+                                          className="text-xs text-gray-400"
+                                       >
                                           {formatDate(source.published_date)}
                                        </span>
                                     </div>
                                  )}
 
-                                 {/* External link with favicon */}
+                                 {/* External link */}
                                  {source.url && (
                                     <a
                                        href={source.url}
                                        target="_blank"
                                        rel="noopener noreferrer"
-                                       onClick={(e) => e.stopPropagation()}
-                                       className="group/link bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 hover:border-emerald-400/50 px-2 py-1 rounded-md flex items-center gap-1 transition-all duration-200 hover:scale-105"
-                                       title={`Visit ${new URL(source.url).hostname}`}
+                                       onClick={e => e.stopPropagation()}
+                                       className="px-1 py-0.5 rounded-sm flex items-center gap-0.5"
+                                       title={`Link ${new URL(source.url).hostname}`}
                                     >
                                        <SourceIcon url={source.url} />
-                                       <span className="text-xs text-emerald-300 font-medium">Visit</span>
+                                       <span
+                                          style={{ fontSize: '8px' }}
+                                          className="text-xs text-emerald-300 font-medium"
+                                       >
+                                          Link
+                                       </span>
                                     </a>
                                  )}
                               </div>
 
-                              {/* Description - more compact */}
+                              {/* Description */}
                               {source.description && (
-                                 <p className="text-xs text-gray-500 mt-2 leading-snug line-clamp-2">
+                                 <p className="text-xs text-gray-500 mt-0.5 leading-tight line-clamp-1">
                                     {source.description}
                                  </p>
                               )}
                            </div>
                         </div>
-
-                        {/* Subtle shine effect on hover */}
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                      </div>
                   ))}
                </div>
 
                {/* Language Selector */}
-               <div className="mt-6">
+               <div className="mt-2">
                   <LanguageSelector
                      languages={languages}
                      selectedLanguage={selectedLanguage}
@@ -224,14 +257,14 @@ const SourceSelection = ({
                </div>
             </div>
 
-            {/* Enhanced Actions Section */}
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+            {/* Actions Section */}
+            <div className="px-2 py-1.5 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                <div className="flex items-center justify-between">
                   <button
                      type="button"
                      onClick={onToggleSelectAll}
                      disabled={isProcessing}
-                     className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                     className={`flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-sm transition-all duration-200 ${
                         isProcessing
                            ? 'text-gray-500 cursor-not-allowed bg-gray-800/50'
                            : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400/50'
@@ -239,12 +272,12 @@ const SourceSelection = ({
                   >
                      {selectedIndices.length === sources.length ? (
                         <>
-                           <Square className="w-4 h-4" />
+                           <Square className="w-2.5 h-2.5" />
                            Deselect All
                         </>
                      ) : (
                         <>
-                           <CheckSquare className="w-4 h-4" />
+                           <CheckSquare className="w-2.5 h-2.5" />
                            Select All
                         </>
                      )}
@@ -253,7 +286,7 @@ const SourceSelection = ({
                   <button
                      onClick={onConfirm}
                      disabled={isProcessing || selectedIndices.length === 0}
-                     className={`group flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
+                     className={`group flex items-center justify-center gap-1 px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-medium rounded-md transition-all duration-200 hover:scale-105 hover:shadow-md border border-emerald-500/30 ${
                         isProcessing || selectedIndices.length === 0
                            ? 'opacity-70 cursor-not-allowed'
                            : ''
@@ -261,26 +294,27 @@ const SourceSelection = ({
                   >
                      {isProcessing ? (
                         <>
-                           <Loader2 className="w-5 h-5 animate-spin" />
+                           <Loader2 className="w-3 h-3 animate-spin" />
                            <span>Processing...</span>
                         </>
                      ) : (
                         <>
-                           <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                           <span>Confirm Selection</span>
+                           <Check className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                           <span>Confirm</span>
                         </>
                      )}
                   </button>
                </div>
 
-               {/* Additional info */}
-               <div className="mt-3 text-center">
+               {/* Info */}
+               <div className="mt-1 text-center">
                   <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
-                     <Sparkles className="w-4 h-4" />
-                     {selectedIndices.length > 0 
-                        ? `Ready to create podcast from ${selectedIndices.length} selected source${selectedIndices.length > 1 ? 's' : ''}`
-                        : 'Select at least one source to continue'
-                     }
+                     <Sparkles className="w-2.5 h-2.5" />
+                     {selectedIndices.length > 0
+                        ? `${selectedIndices.length} source${
+                             selectedIndices.length > 1 ? 's' : ''
+                          } selected`
+                        : 'Select sources to continue'}
                   </p>
                </div>
             </div>
