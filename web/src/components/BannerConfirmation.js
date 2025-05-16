@@ -1,170 +1,358 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+   Check,
+   X,
+   Loader2,
+   Maximize2,
+   Info,
+   ChevronLeft,
+   ChevronRight,
+   Pause,
+   Play,
+   Eye,
+   Sparkles,
+} from 'lucide-react';
+import api from '../services/api';
 
-// Custom SVG icons as components
-const IconCheck = () => (
-  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-  </svg>
-);
+const BannerConfirmation = ({
+   bannerUrl,
+   topic,
+   onApprove,
+   onReject,
+   isProcessing,
+   bannerImages,
+}) => {
+   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+   const [imageError, setImageError] = useState(false);
+   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+   const [isAnimating, setIsAnimating] = useState(false);
+   const [isPaused, setIsPaused] = useState(false);
+   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
 
-const IconX = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
+   const API_BASE_URL = api.API_BASE_URL;
 
-const IconLoader = () => (
-  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="2" x2="12" y2="6"></line>
-    <line x1="12" y1="18" x2="12" y2="22"></line>
-    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-    <line x1="2" y1="12" x2="6" y2="12"></line>
-    <line x1="18" y1="12" x2="22" y2="12"></line>
-    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-  </svg>
-);
+   const constructImageUrl = imageName => {
+      return imageName ? `${API_BASE_URL}/podcast_img/${imageName}` : '';
+   };
 
-const IconMaximize = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-  </svg>
-);
+   const imagesToShow =
+      bannerImages && bannerImages.length > 0
+         ? bannerImages.map(constructImageUrl)
+         : bannerUrl
+         ? [bannerUrl]
+         : [];
 
-const IconInfo = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="12" y1="16" x2="12" y2="12"></line>
-    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-  </svg>
-);
+   const hasMultipleImages = imagesToShow.length > 1;
+   const currentImage = imagesToShow[currentImageIndex] || '';
 
-const BannerConfirmation = ({ bannerUrl, topic, onApprove, onReject, isProcessing }) => {
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
+   // Auto-advance images when there are multiple
+   useEffect(() => {
+      if (!hasMultipleImages || isPaused || isProcessing || !autoPlayEnabled) return;
 
-  const handleImageError = () => {
-    setImageError(true);
-  };
+      const interval = setInterval(() => {
+         setIsAnimating(true);
+         setTimeout(() => {
+            setCurrentImageIndex(prev => (prev + 1) % imagesToShow.length);
+            setIsAnimating(false);
+         }, 300);
+      }, 5000);
 
-  return (
-    <div className="fade-in mb-4 max-w-md mx-auto">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg overflow-hidden shadow-xl border border-gray-700 transition-all">
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-700 flex justify-between items-center">
-          <h3 className="text-sm font-medium text-white">Podcast Banner Preview</h3>
-        </div>
+      return () => clearInterval(interval);
+   }, [hasMultipleImages, isPaused, isProcessing, autoPlayEnabled, imagesToShow.length]);
 
-        {/* Banner Image */}
-        <div className="p-4 flex items-center justify-center relative">
-          {isProcessing && (
-            <div className="absolute inset-0 bg-gray-900/70 flex items-center justify-center z-10 rounded-md">
-              <div className="text-white">
-                <IconLoader />
-              </div>
+   const handleImageError = () => {
+      setImageError(true);
+   };
+
+   const goToImage = index => {
+      if (index === currentImageIndex || isAnimating) return;
+      setIsAnimating(true);
+      setTimeout(() => {
+         setCurrentImageIndex(index);
+         setIsAnimating(false);
+      }, 300);
+   };
+
+   const goToPrevious = () => {
+      const newIndex = currentImageIndex === 0 ? imagesToShow.length - 1 : currentImageIndex - 1;
+      goToImage(newIndex);
+   };
+
+   const goToNext = () => {
+      const newIndex = (currentImageIndex + 1) % imagesToShow.length;
+      goToImage(newIndex);
+   };
+
+   const toggleAutoPlay = () => {
+      setAutoPlayEnabled(!autoPlayEnabled);
+   };
+
+   return (
+      <div className="w-full max-w-2xl mx-auto">
+         <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
+            {/* Header with gradient and visual enhancement */}
+            <div className="relative px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
+               <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+               <div className="relative flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                     <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
+                        <Sparkles className="w-5 h-5 text-emerald-400" />
+                     </div>
+                     <div>
+                        <h3 className="text-lg font-semibold text-white">
+                           Banner{hasMultipleImages ? ' Collection' : ''} Preview
+                        </h3>
+                        <p className="text-sm text-gray-400">{topic}</p>
+                     </div>
+                  </div>
+                  {hasMultipleImages && (
+                     <div className="flex items-center gap-4">
+                        <div className="text-sm text-gray-300 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/30">
+                           {currentImageIndex + 1} of {imagesToShow.length}
+                        </div>
+                        <button
+                           onClick={toggleAutoPlay}
+                           className="p-2 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded-lg"
+                           title={autoPlayEnabled ? 'Pause slideshow' : 'Play slideshow'}
+                        >
+                           {autoPlayEnabled ? <Pause size={18} /> : <Play size={18} />}
+                        </button>
+                     </div>
+                  )}
+               </div>
             </div>
-          )}
-          
-          {imageError ? (
-            <div className="h-40 w-full flex items-center justify-center bg-gray-800 rounded text-gray-400">
-              <span className="mr-2"><IconInfo /></span>
-              <span>Failed to load image</span>
-            </div>
-          ) : (
-            <div className="relative group">
-              <img
-                src={bannerUrl}
-                alt={`Podcast banner for ${topic}`}
-                className="max-h-40 rounded shadow-md transition-transform"
-                onError={handleImageError}
-              />
-              <button
-                onClick={() => setIsPreviewOpen(true)}
-                className="absolute inset-0 w-full h-full bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label="View full size banner"
-              >
-                <div className="text-white">
-                  <IconMaximize />
-                </div>
-              </button>
-            </div>
-          )}
-        </div>
 
-        {/* Banner Info */}
-        <div className="px-4 pb-4 text-center">
-          <div className="text-sm text-gray-300 font-medium mb-1">{topic}</div>
-          <div className="text-xs text-gray-400">Click the image to view in full size</div>
-        </div>
+            {/* Banner Image Container - Now much larger and rectangular */}
+            <div className="relative px-6 py-6">
+               {isProcessing && (
+                  <div className="absolute inset-6 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl border border-gray-700/30">
+                     <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                        <p className="text-white font-medium">Processing banner...</p>
+                     </div>
+                  </div>
+               )}
 
-        {/* Actions */}
-        <div className="px-4 py-3 bg-gradient-to-r from-gray-800 to-gray-900 flex justify-between">
-          <button
-            onClick={onReject}
-            disabled={isProcessing}
-            className="text-sm px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded transition flex items-center"
-            aria-disabled={isProcessing}
-          >
-            <span className="mr-1.5"><IconX /></span>
-            Reject
-          </button>
-          
-          <button
-            onClick={onApprove}
-            disabled={isProcessing}
-            className={`text-sm px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded transition flex items-center ${
-              isProcessing ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
-            aria-disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <>
-                <span className="mr-1.5">
-                  <IconLoader />
-                </span>
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <span className="mr-1.5">
-                  <IconCheck />
-                </span>
-                <span>Approve Banner</span>
-              </>
-            )}
-          </button>
-        </div>
+               <div
+                  className="relative group cursor-pointer"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                  onClick={() => setIsPreviewOpen(true)}
+               >
+                  {imageError || !currentImage ? (
+                     <div className="aspect-video w-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl border border-gray-600/30 text-gray-400">
+                        <div className="flex flex-col items-center gap-3">
+                           <Info className="w-8 h-8" />
+                           <p className="text-sm font-medium">Failed to load banner</p>
+                        </div>
+                     </div>
+                  ) : (
+                     <div className="relative overflow-hidden rounded-xl shadow-lg">
+                        {/* Main Image with better aspect ratio */}
+                        <div className="aspect-video w-full relative overflow-hidden">
+                           <img
+                              src={currentImage}
+                              alt={`Podcast banner ${
+                                 hasMultipleImages ? `${currentImageIndex + 1} ` : ''
+                              }for ${topic}`}
+                              className={`w-full h-full object-cover transition-all duration-500 ease-out ${
+                                 isAnimating ? 'opacity-0 scale-105' : 'opacity-100 scale-100'
+                              } group-hover:scale-105`}
+                              onError={handleImageError}
+                           />
+
+                           {/* Premium shimmer effect overlay when animating */}
+                           {isAnimating && (
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_1s_ease-in-out] rounded-xl" />
+                           )}
+
+                           {/* Hover overlay with premium gradient */}
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+
+                           {/* Expand icon in center */}
+                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                              <div className="bg-black/50 backdrop-blur-sm p-4 rounded-full border border-white/20">
+                                 <Maximize2 className="w-6 h-6 text-white" />
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Navigation Arrows for Multiple Images */}
+                        {hasMultipleImages && (
+                           <>
+                              <button
+                                 onClick={e => {
+                                    e.stopPropagation();
+                                    goToPrevious();
+                                 }}
+                                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white p-3 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                                 aria-label="Previous banner"
+                              >
+                                 <ChevronLeft className="w-5 h-5" />
+                              </button>
+                              <button
+                                 onClick={e => {
+                                    e.stopPropagation();
+                                    goToNext();
+                                 }}
+                                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white p-3 rounded-full border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+                                 aria-label="Next banner"
+                              >
+                                 <ChevronRight className="w-5 h-5" />
+                              </button>
+                           </>
+                        )}
+                     </div>
+                  )}
+               </div>
+
+               {/* Image Indicators with enhanced styling */}
+               {hasMultipleImages && (
+                  <div className="flex justify-center gap-2 mt-4">
+                     {imagesToShow.map((_, index) => (
+                        <button
+                           key={index}
+                           onClick={() => goToImage(index)}
+                           className={`transition-all duration-300 rounded-full ${
+                              index === currentImageIndex
+                                 ? 'w-8 h-3 bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/25'
+                                 : 'w-3 h-3 bg-gray-600 hover:bg-gray-500 hover:scale-125'
+                           }`}
+                           aria-label={`Go to banner ${index + 1}`}
+                        />
+                     ))}
+                  </div>
+               )}
+            </div>
+
+            {/* Premium Actions Section */}
+            <div className="px-6 py-4 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+               <div className="flex gap-4 justify-center">
+                  <button
+                     onClick={onReject}
+                     disabled={isProcessing}
+                     className="group flex-1 max-w-40 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                     aria-disabled={isProcessing}
+                  >
+                     <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                     Reject
+                  </button>
+
+                  <button
+                     onClick={onApprove}
+                     disabled={isProcessing}
+                     className={`group flex-1 max-w-56 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
+                        isProcessing ? 'opacity-70 cursor-not-allowed' : ''
+                     }`}
+                     aria-disabled={isProcessing}
+                  >
+                     {isProcessing ? (
+                        <>
+                           <Loader2 className="w-5 h-5 animate-spin" />
+                           <span>Processing...</span>
+                        </>
+                     ) : (
+                        <>
+                           <Check className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                           <span>Approve Banner{hasMultipleImages ? 's' : ''}</span>
+                        </>
+                     )}
+                  </button>
+               </div>
+
+               {/* Additional info */}
+               <div className="mt-3 text-center">
+                  <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
+                     <Eye className="w-4 h-4" />
+                     {hasMultipleImages
+                        ? 'Click any banner to view in full size'
+                        : 'Click banner to view in full size'}
+                  </p>
+               </div>
+            </div>
+         </div>
+
+         {/* Enhanced Full Size Preview Modal */}
+         {isPreviewOpen && (
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+               <div className="max-w-7xl max-h-screen overflow-auto relative">
+                  {/* Close Button */}
+                  <button
+                     onClick={() => setIsPreviewOpen(false)}
+                     className="absolute top-6 right-6 bg-black/60 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/80 transition-all duration-200 hover:scale-110 border border-white/10 z-10"
+                     aria-label="Close full preview"
+                  >
+                     <X className="w-6 h-6" />
+                  </button>
+
+                  {/* Navigation in Full View */}
+                  {hasMultipleImages && (
+                     <>
+                        <button
+                           onClick={goToPrevious}
+                           className="absolute left-6 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white p-4 rounded-full transition-all duration-200 hover:scale-110 border border-white/10 z-10"
+                           aria-label="Previous banner"
+                        >
+                           <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button
+                           onClick={goToNext}
+                           className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/60 backdrop-blur-sm hover:bg-black/80 text-white p-4 rounded-full transition-all duration-200 hover:scale-110 border border-white/10 z-10"
+                           aria-label="Next banner"
+                        >
+                           <ChevronRight className="w-6 h-6" />
+                        </button>
+
+                        {/* Enhanced Image Counter */}
+                        <div className="absolute top-6 left-6 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm border border-white/10 z-10">
+                           <span className="font-medium">{currentImageIndex + 1}</span>
+                           <span className="text-gray-300 mx-1">of</span>
+                           <span className="font-medium">{imagesToShow.length}</span>
+                        </div>
+                     </>
+                  )}
+
+                  <img
+                     src={currentImage}
+                     alt={`Full size podcast banner ${
+                        hasMultipleImages ? `${currentImageIndex + 1} ` : ''
+                     }for ${topic}`}
+                     className="max-w-full h-auto shadow-2xl rounded-lg transition-all duration-300"
+                  />
+
+                  {/* Enhanced Thumbnail Strip */}
+                  {hasMultipleImages && imagesToShow.length > 1 && (
+                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                        {imagesToShow.map((image, index) => (
+                           <button
+                              key={index}
+                              onClick={() => goToImage(index)}
+                              className={`transition-all duration-200 rounded-lg overflow-hidden border-2 ${
+                                 index === currentImageIndex
+                                    ? 'border-emerald-500 scale-110 shadow-lg shadow-emerald-500/25'
+                                    : 'border-transparent hover:scale-105 opacity-70 hover:opacity-100'
+                              }`}
+                           >
+                              <img
+                                 src={image}
+                                 alt={`Thumbnail ${index + 1}`}
+                                 className="w-20 h-12 object-cover"
+                              />
+                           </button>
+                        ))}
+                     </div>
+                  )}
+               </div>
+            </div>
+         )}
       </div>
-
-      {/* Full Size Preview Modal */}
-      {isPreviewOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="max-w-4xl max-h-screen overflow-auto relative">
-            <button
-              onClick={() => setIsPreviewOpen(false)}
-              className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-colors"
-              aria-label="Close full preview"
-            >
-              <IconX />
-            </button>
-            <img
-              src={bannerUrl}
-              alt={`Full size podcast banner for ${topic}`}
-              className="max-w-full h-auto shadow-2xl rounded"
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+   );
 };
 
-// Set default props
 BannerConfirmation.defaultProps = {
-  onReject: () => {},
-  isProcessing: false
+   onReject: () => {},
+   isProcessing: false,
+   bannerImages: [],
 };
 
 export default BannerConfirmation;

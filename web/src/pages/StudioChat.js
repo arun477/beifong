@@ -819,6 +819,7 @@ const PodcastSession = () => {
                            {sessionState.show_banner_for_confirmation &&
                               sessionState.banner_url && (
                                  <BannerConfirmation
+                                    bannerImages={sessionState.banner_images}
                                     bannerUrl={bannerUrlFull}
                                     topic={podcastInfo.title}
                                     onApprove={() => handleBannerConfirm(true)}

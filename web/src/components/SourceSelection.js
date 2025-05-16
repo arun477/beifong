@@ -79,8 +79,6 @@ const SourceSelection = ({
    selectedLanguage,
    onSelectLanguage,
 }) => {
-   console.log('sources', sources);
-
    const getToolIcon = () => {
       return(
          <Wrench className="w-3 h-3" />
