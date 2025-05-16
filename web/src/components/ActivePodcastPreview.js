@@ -1,5 +1,63 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Image, Video, FileText, Volume2, ChevronLeft, ChevronRight, Play, X, Users, Calendar, Sparkles, Globe, ExternalLink } from 'lucide-react';
+
+// Import api for base URL
 import api from '../services/api';
+
+// SourceIcon component for favicons
+const SourceIcon = ({ url }) => {
+   const [iconUrl, setIconUrl] = useState(null);
+   const [isIconReady, setIsIconReady] = useState(false);
+   const defaultIconSvg = (
+      <ExternalLink className="w-3 h-3 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
+   );
+
+   useEffect(() => {
+      let isMounted = true;
+      const preloadFavicon = () => {
+         try {
+            const domain = new URL(url).hostname;
+            const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+            const img = new Image();
+            img.src = faviconUrl;
+            img.onload = () => {
+               if (isMounted) {
+                  setIconUrl(faviconUrl);
+                  setIsIconReady(true);
+               }
+            };
+            img.onerror = () => {
+               if (isMounted) {
+                  setIconUrl(null);
+                  setIsIconReady(true);
+               }
+            };
+         } catch (e) {
+            if (isMounted) {
+               setIconUrl(null);
+               setIsIconReady(true);
+            }
+         }
+      };
+
+      preloadFavicon();
+      return () => {
+         isMounted = false;
+      };
+   }, [url]);
+   
+   if (!isIconReady || !iconUrl) {
+      return defaultIconSvg;
+   }
+   
+   return (
+      <img
+         src={iconUrl}
+         alt="Source icon"
+         className="w-3 h-3 object-contain transition-transform duration-200 group-hover:scale-110"
+      />
+   );
+};
 
 const ActivePodcastPreview = React.memo(
    ({
@@ -10,18 +68,33 @@ const ActivePodcastPreview = React.memo(
       webSearchRecording,
       sessionId,
       onClose,
+      bannerImages,
+      generatedScript, // Note: camelCase to match parent component
+      sources // Add sources prop
    }) => {
       const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
       const [activeTab, setActiveTab] = useState('banner');
+      const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
       const bannerRef = useRef(null);
+      const sourcesRef = useRef(null);
       const recordingRef = useRef(null);
       const scriptRef = useRef(null);
       const audioRef = useRef(null);
+
+      // Prepare banner images array with proper API URL construction
+      const allBannerImages = bannerImages && bannerImages.length > 0 
+         ? bannerImages.map(img => `${api.API_BASE_URL}/podcast_img/${img}`)
+         : bannerUrl ? [bannerUrl] : [];
+
+      // Use structured script data if available
+      const scriptData = generatedScript || null;
+      const hasStructuredScript = scriptData && scriptData.sections;
 
       const scrollToSection = sectionId => {
          setActiveTab(sectionId);
          const refs = {
             banner: bannerRef,
+            sources: sourcesRef,
             recording: recordingRef,
             script: scriptRef,
             audio: audioRef,
@@ -37,108 +110,116 @@ const ActivePodcastPreview = React.memo(
          return preview;
       };
 
+      // Get script preview from structured data
+      const getStructuredScriptPreview = () => {
+         if (!hasStructuredScript || !scriptData.sections.length) return null;
+         const firstSection = scriptData.sections[0];
+         if (firstSection.dialog && firstSection.dialog.length > 0) {
+            return firstSection.dialog.slice(0, 3);
+         }
+         return null;
+      };
+
+      // Get unique speakers
+      const getSpeakers = () => {
+         if (!hasStructuredScript) return [];
+         const speakers = new Set();
+         scriptData.sections.forEach(section => {
+            if (section.dialog) {
+               section.dialog.forEach(line => speakers.add(line.speaker));
+            }
+         });
+         return Array.from(speakers);
+      };
+
+      // Get total lines count
+      const getTotalLines = () => {
+         if (!hasStructuredScript) return null;
+         return scriptData.sections.reduce((total, section) => total + (section.dialog ? section.dialog.length : 0), 0);
+      };
+
+      const handleBannerPrevious = () => {
+         setCurrentBannerIndex(prev => prev === 0 ? allBannerImages.length - 1 : prev - 1);
+      };
+
+      const handleBannerNext = () => {
+         setCurrentBannerIndex(prev => (prev + 1) % allBannerImages.length);
+      };
+
       let recordingUrl = null;
       if (webSearchRecording && sessionId) {
          const filename = webSearchRecording.split('/').pop();
          recordingUrl = `${api.API_BASE_URL}/stream-recording/${sessionId}/${filename}`;
-      } else if (webSearchRecording) {
-         console.warn('SessionId is missing when constructing recording URL');
       }
 
-      const SectionHeader = ({ title, icon, id }) => (
+      const SectionHeader = ({ title, icon, id, subtitle }) => (
          <div
             ref={
                id === 'banner'
                   ? bannerRef
+                  : id === 'sources'
+                  ? sourcesRef
                   : id === 'recording'
                   ? recordingRef
                   : id === 'script'
                   ? scriptRef
                   : audioRef
             }
-            className="flex items-center text-xs text-gray-400 font-medium mb-2 mt-4 first:mt-0 pt-1"
+            className="mb-4"
          >
-            {icon}
-            <span>{title}</span>
+            <div className="flex items-center gap-2 mb-2">
+               <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
+                  {React.cloneElement(icon, { className: "w-4 h-4 text-emerald-400" })}
+               </div>
+               <div>
+                  <h3 className="text-sm font-semibold text-white">{title}</h3>
+                  {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+               </div>
+            </div>
          </div>
       );
 
-      const EmptyContent = ({ message = 'No content yet' }) => (
-         <div className="w-full h-20 bg-[#121824] rounded-sm border border-dashed border-gray-600 flex items-center justify-center">
+      const EmptyContent = ({ message = 'No content yet', icon: Icon }) => (
+         <div className="w-full h-24 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/50 flex flex-col items-center justify-center">
+            {Icon && <Icon className="w-6 h-6 text-gray-500 mb-1" />}
             <p className="text-xs text-gray-500">{message}</p>
          </div>
       );
 
-      const BannerIcon = ({ className }) => (
-         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-               strokeLinecap="round"
-               strokeLinejoin="round"
-               strokeWidth={2}
-               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-         </svg>
-      );
-
-      const VideoIcon = ({ className }) => (
-         <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className={className}
-         >
-            <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm4.555 2.168A1 1 0 006 9v2a1 1 0 001.555.832l3-1.5a1 1 0 000-1.664l-3-1.5z" />
-         </svg>
-      );
-
-      const ScriptIcon = ({ className }) => (
-         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-               strokeLinecap="round"
-               strokeLinejoin="round"
-               strokeWidth={2}
-               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-         </svg>
-      );
-
-      const AudioIcon = ({ className }) => (
-         <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-               strokeLinecap="round"
-               strokeLinejoin="round"
-               strokeWidth={2}
-               d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 017.072 0m-9.9-2.828a9 9 0 0112.728 0M6 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
-            />
-         </svg>
-      );
-
       const TabNav = () => (
-         <div className="flex items-center justify-between px-2 py-2 border-b border-gray-700 bg-gray-800 sticky top-0 z-10">
+         <div className="flex items-center justify-around px-4 py-3 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur sticky top-0 z-10">
             <NavigationButton
                isActive={activeTab === 'banner'}
                onClick={() => scrollToSection('banner')}
-               icon={<BannerIcon className="h-4 w-4" />}
+               icon={<Image />}
                label="Banner"
             />
+            {sources && sources.length > 0 && (
+               <NavigationButton
+                  isActive={activeTab === 'sources'}
+                  onClick={() => scrollToSection('sources')}
+                  icon={<Globe />}
+                  label="Sources"
+               />
+            )}
             {recordingUrl && (
                <NavigationButton
                   isActive={activeTab === 'recording'}
                   onClick={() => scrollToSection('recording')}
-                  icon={<VideoIcon className="h-4 w-4" />}
+                  icon={<Video />}
                   label="Search"
                />
             )}
             <NavigationButton
                isActive={activeTab === 'script'}
                onClick={() => scrollToSection('script')}
-               icon={<ScriptIcon className="h-4 w-4" />}
+               icon={<FileText />}
                label="Script"
             />
             <NavigationButton
                isActive={activeTab === 'audio'}
                onClick={() => scrollToSection('audio')}
-               icon={<AudioIcon className="h-4 w-4" />}
+               icon={<Volume2 />}
                label="Audio"
             />
          </div>
@@ -147,164 +228,369 @@ const ActivePodcastPreview = React.memo(
       const NavigationButton = ({ isActive, onClick, icon, label }) => (
          <button
             onClick={onClick}
-            className={`flex flex-col items-center px-2 py-1 rounded-md transition ${
+            className={`flex flex-col items-center px-3 py-2 rounded-lg transition-all duration-200 ${
                isActive
-                  ? 'text-emerald-400 bg-gray-700'
-                  : 'text-gray-400 hover:text-emerald-300 hover:bg-gray-700/50'
+                  ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30'
+                  : 'text-gray-400 hover:text-emerald-300 hover:bg-gray-700/30'
             }`}
          >
             {React.cloneElement(icon, {
-               className: `${icon.props.className} ${
-                  isActive ? 'text-emerald-400' : 'text-gray-400'
-               }`,
+               className: `w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-gray-400'}`
             })}
-            <span className="text-xs mt-1">{label}</span>
+            <span className="text-xs mt-1 font-medium">{label}</span>
          </button>
       );
 
+      const SpeakerColors = {
+         ALEX: 'from-slate-600 to-slate-700',
+         MORGAN: 'from-gray-600 to-gray-700',
+         default: 'from-zinc-600 to-zinc-700'
+      };
+
+      const getSpeakerColor = (speaker) => {
+         return SpeakerColors[speaker] || SpeakerColors.default;
+      };
+
       return (
-         <div className="h-full flex flex-col relative bg-gray-900">
+         <div className="h-full flex flex-col relative bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800">
             {!showRecordingPlayer && (
                <>
-                  <div className="px-4 py-3 border-b border-gray-700">
-                     <div className="inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium bg-gray-800 text-emerald-300 border border-gray-700">
-                        <span className="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-500"></span>
-                        AI Podcast Studio
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-700/30">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                           <div className="inline-flex items-center px-2 py-1 rounded-lg bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></div>
+                              <span className="text-xs font-medium text-emerald-300">Active</span>
+                           </div>
+                        </div>
+                        {onClose && (
+                           <button
+                              onClick={onClose}
+                              className="p-1.5 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                           >
+                              <X className="w-4 h-4" />
+                           </button>
+                        )}
+                     </div>
+                     <div className="mt-2">
+                        <h2 className="text-sm font-semibold text-white truncate">{podcastTitle}</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">Live Preview</p>
                      </div>
                   </div>
+
                   <TabNav />
-                  <div className="overflow-y-auto flex-1 custom-scrollbar p-4">
-                     <SectionHeader
-                        title="Banner"
-                        icon={<BannerIcon className="h-3.5 w-3.5 mr-1 text-emerald-500" />}
-                        id="banner"
-                     />
-                     {bannerUrl ? (
-                        <div className="overflow-hidden rounded-sm border border-gray-700 mb-5">
-                           <img
-                              src={bannerUrl}
-                              alt={`${podcastTitle} Banner`}
-                              className="w-full object-cover"
+
+                  <div className="overflow-y-auto flex-1 custom-scrollbar px-4 py-4 space-y-6">
+                     {/* Banner Section */}
+                     <div>
+                        <SectionHeader
+                           title="Podcast Banner"
+                           icon={<Image />}
+                           id="banner"
+                           subtitle={allBannerImages.length > 1 ? `${allBannerImages.length} banners available` : undefined}
+                        />
+                        {allBannerImages.length > 0 ? (
+                           <div className="relative group">
+                              <div className="aspect-video overflow-hidden rounded-xl border border-gray-700/30 bg-gray-800/50">
+                                 <img
+                                    src={allBannerImages[currentBannerIndex]}
+                                    alt={`${podcastTitle} Banner ${currentBannerIndex + 1}`}
+                                    className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                                 />
+                              </div>
+                              {allBannerImages.length > 1 && (
+                                 <>
+                                    <button
+                                       onClick={handleBannerPrevious}
+                                       className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    >
+                                       <ChevronLeft className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                       onClick={handleBannerNext}
+                                       className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200"
+                                    >
+                                       <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+                                       {allBannerImages.map((_, index) => (
+                                          <button
+                                             key={index}
+                                             onClick={() => setCurrentBannerIndex(index)}
+                                             className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                                                index === currentBannerIndex
+                                                   ? 'bg-emerald-500 scale-125'
+                                                   : 'bg-white/50 hover:bg-white/75'
+                                             }`}
+                                          />
+                                       ))}
+                                    </div>
+                                 </>
+                              )}
+                           </div>
+                        ) : (
+                           <EmptyContent message="No banner yet" icon={Image} />
+                        )}
+                     </div>
+
+                     {/* Sources Section */}
+                     {sources && sources.length > 0 && (
+                        <div>
+                           <SectionHeader
+                              title="Research Sources"
+                              icon={<Globe />}
+                              id="sources"
+                              subtitle={`${sources.length} sources used for podcast creation`}
                            />
-                        </div>
-                     ) : (
-                        <div className="mb-5">
-                           <EmptyContent message="No banner yet" />
+                           <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 overflow-hidden">
+                              {/* Sources summary header */}
+                              <div className="p-3 border-b border-gray-700/30 bg-gray-800/30">
+                                 <div className="flex items-center justify-between">
+                                    <div className="text-xs text-gray-300">
+                                       Research materials
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                       {sources.length} sources
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              {/* Scrollable sources content */}
+                              <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
+                                 <div className="space-y-3">
+                                    {sources.map((source, index) => (
+                                       <div key={index} className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+                                          <div className="flex items-start gap-2">
+                                             <div className="flex-shrink-0 pt-0.5">
+                                                {source.url && <SourceIcon url={source.url} />}
+                                             </div>
+                                             <div className="flex-1 min-w-0">
+                                                <h4 className="text-xs font-medium text-white truncate">
+                                                   <span className="text-emerald-400 mr-1">{index + 1}.</span>
+                                                   {source.title}
+                                                </h4>
+                                                {source.url && (
+                                                   <a
+                                                      href={source.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-xs text-emerald-400 hover:text-emerald-300 truncate block mt-1"
+                                                   >
+                                                      {new URL(source.url).hostname}
+                                                   </a>
+                                                )}
+                                                {source.description && (
+                                                   <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+                                                      {source.description}
+                                                   </p>
+                                                )}
+                                                {source.published_date && (
+                                                   <div className="flex items-center gap-1 mt-1">
+                                                      <Calendar className="w-3 h-3 text-gray-500" />
+                                                      <span className="text-xs text-gray-500">
+                                                         {new Date(source.published_date).toLocaleDateString()}
+                                                      </span>
+                                                   </div>
+                                                )}
+                                             </div>
+                                          </div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                              
+                              {/* Footer indicator */}
+                              <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
+                                 <div className="flex items-center gap-2 text-emerald-400">
+                                    <Globe className="w-3 h-3" />
+                                    <span className="text-xs">All research sources used in podcast creation</span>
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                      )}
+
+                     {/* Recording Section */}
                      {recordingUrl && (
-                        <>
+                        <div>
                            <SectionHeader
                               title="Web Search Recording"
-                              icon={<VideoIcon className="h-3.5 w-3.5 mr-1 text-emerald-500" />}
+                              icon={<Video />}
                               id="recording"
+                              subtitle="AI research process captured"
                            />
-
                            <button
                               onClick={() => setShowRecordingPlayer(true)}
-                              className="w-full bg-[#121824] hover:bg-gray-800 rounded-sm border border-gray-700 p-2 flex items-center justify-between transition-colors mb-5"
+                              className="w-full group bg-gradient-to-r from-gray-800/50 to-gray-700/50 hover:from-gray-700/50 hover:to-gray-600/50 rounded-xl border border-gray-700/30 p-4 flex items-center justify-between transition-all duration-200 hover:border-gray-600/50"
                            >
-                              <span className="text-xs text-gray-300 flex items-center">
-                                 <svg
-                                    className="h-4 w-4 mr-1.5 text-emerald-400"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                 >
-                                    <path
-                                       fillRule="evenodd"
-                                       d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                                       clipRule="evenodd"
-                                    />
-                                 </svg>
-                                 View search recording
-                              </span>
-                              <svg
-                                 className="h-3 w-3 text-gray-500"
-                                 viewBox="0 0 20 20"
-                                 fill="currentColor"
-                              >
-                                 <path
-                                    fillRule="evenodd"
-                                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                    clipRule="evenodd"
-                                 />
-                              </svg>
+                              <div className="flex items-center gap-3">
+                                 <div className="p-2 bg-emerald-500/20 rounded-lg group-hover:bg-emerald-500/30 transition-colors">
+                                    <Play className="w-5 h-5 text-emerald-400" />
+                                 </div>
+                                 <div className="text-left">
+                                    <p className="text-sm font-medium text-white">View Search Recording</p>
+                                    <p className="text-xs text-gray-400">Watch how AI gathered information</p>
+                                 </div>
+                              </div>
+                              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-400 transition-colors" />
                            </button>
-                        </>
-                     )}
-                     <SectionHeader
-                        title="Script"
-                        icon={<ScriptIcon className="h-3.5 w-3.5 mr-1 text-emerald-500" />}
-                        id="script"
-                     />
-                     {scriptContent ? (
-                        <div className="bg-[#121824] p-3 rounded-sm border border-gray-700 max-h-36 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent mb-5">
-                           <pre className="text-xs text-gray-300 whitespace-pre-wrap break-words">
-                              {formatScriptPreview(scriptContent)}
-                           </pre>
-                        </div>
-                     ) : (
-                        <div className="mb-5">
-                           <EmptyContent message="No script yet" />
                         </div>
                      )}
-                     <SectionHeader
-                        title="Audio"
-                        icon={<AudioIcon className="h-3.5 w-3.5 mr-1 text-emerald-500" />}
-                        id="audio"
-                     />
-                     {audioUrl ? (
-                        <div className="bg-[#121824] p-2 rounded-sm border border-gray-700">
-                           <audio controls src={audioUrl} className="w-full h-10">
-                              Your browser does not support the audio element.
-                           </audio>
-                        </div>
-                     ) : (
-                        <EmptyContent message="No audio yet" />
-                     )}
+
+                     {/* Script Section */}
+                     <div>
+                        <SectionHeader
+                           title="Podcast Script"
+                           icon={<FileText />}
+                           id="script"
+                           subtitle={hasStructuredScript ? 
+                              `${scriptData.sections.length} sections • ${getSpeakers().length} speakers • ${getTotalLines()} lines` :
+                              'Generated podcast script'
+                           }
+                        />
+                        {hasStructuredScript ? (
+                           <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 overflow-hidden">
+                              {/* Script summary header */}
+                              <div className="p-3 border-b border-gray-700/30 bg-gray-800/30">
+                                 <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs text-gray-300">
+                                       <Users className="w-3 h-3" />
+                                       <span>{getSpeakers().length} speakers</span>
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                       {getTotalLines()} dialogue lines
+                                    </div>
+                                 </div>
+                              </div>
+                              
+                              {/* Scrollable script content - Full content */}
+                              <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
+                                 <div className="space-y-3">
+                                    {scriptData.sections.map((section, sectionIndex) => (
+                                       <div key={sectionIndex}>
+                                          {/* Section header */}
+                                          <div className="mb-2">
+                                             <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
+                                                {section.type}
+                                                {section.title && ` - ${section.title}`}
+                                             </h4>
+                                             <div className="h-px bg-gradient-to-r from-emerald-500/30 to-transparent mt-1" />
+                                          </div>
+                                          
+                                          {/* Section dialogue */}
+                                          {section.dialog && (
+                                             <div className="space-y-2">
+                                                {section.dialog.map((line, lineIndex) => (
+                                                   <div key={lineIndex} className="space-y-1">
+                                                      <div className={`inline-block px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full`}>
+                                                         {line.speaker}
+                                                      </div>
+                                                      <p className="text-xs text-gray-300 leading-relaxed pl-1">
+                                                         {line.text}
+                                                      </p>
+                                                   </div>
+                                                ))}
+                                             </div>
+                                          )}
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                              
+                              {/* Footer indicator */}
+                              <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
+                                 <div className="flex items-center gap-2 text-emerald-400">
+                                    <Sparkles className="w-3 h-3" />
+                                    <span className="text-xs">Complete structured script with all sections</span>
+                                 </div>
+                              </div>
+                           </div>
+                        ) : scriptContent ? (
+                           <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 overflow-hidden">
+                              <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
+                                 <pre className="text-xs text-gray-300 whitespace-pre-wrap break-words font-mono leading-relaxed">
+                                    {scriptContent}
+                                 </pre>
+                              </div>
+                              <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
+                                 <div className="flex items-center gap-2 text-emerald-400">
+                                    <FileText className="w-3 h-3" />
+                                    <span className="text-xs">Complete script content • Scroll to view all</span>
+                                 </div>
+                              </div>
+                           </div>
+                        ) : (
+                           <EmptyContent message="No script yet" icon={FileText} />
+                        )}
+                     </div>
+
+                     {/* Audio Section */}
+                     <div>
+                        <SectionHeader
+                           title="Podcast Audio"
+                           icon={<Volume2 />}
+                           id="audio"
+                           subtitle="High-quality podcast audio"
+                        />
+                        {audioUrl ? (
+                           <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 p-4">
+                              <audio controls src={audioUrl} className="w-full h-12">
+                                 Your browser does not support the audio element.
+                              </audio>
+                           </div>
+                        ) : (
+                           <EmptyContent message="No audio yet" icon={Volume2} />
+                        )}
+                     </div>
                   </div>
+
+                  {/* Bottom Audio Player */}
                   {audioUrl && (
-                     <div className="border-t border-gray-700 p-2 bg-gray-800/90 backdrop-blur-sm">
-                        <div className="flex items-center justify-between px-2 py-0.5">
-                           <div className="flex items-center">
-                              <AudioIcon className="h-3.5 w-3.5 text-emerald-400 mr-2" />
-                              <span className="text-xs text-gray-300 truncate max-w-[120px]">
-                                 {podcastTitle}
-                              </span>
+                     <div className="border-t border-gray-700/30 p-3 bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm">
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-emerald-500/20 rounded-lg">
+                                 <Volume2 className="w-3 h-3 text-emerald-400" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                 <p className="text-xs font-medium text-white truncate">
+                                    {podcastTitle}
+                                 </p>
+                                 <p className="text-xs text-gray-400">Ready</p>
+                              </div>
                            </div>
                            <button
                               onClick={() => scrollToSection('audio')}
-                              className="text-xs text-emerald-400 hover:text-emerald-300"
+                              className="px-2 py-1 text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-all duration-200 border border-emerald-500/30"
                            >
-                              View
+                              Play
                            </button>
                         </div>
                      </div>
                   )}
                </>
             )}
+
+            {/* Recording Player Modal */}
             {showRecordingPlayer && recordingUrl && (
-               <div
-                  className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 z-40 flex flex-col"
-                  style={{ animation: 'fadeIn 0.2s ease-out forwards' }}
-               >
+               <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-40 flex flex-col animate-fadeIn">
                   <div className="w-full h-full flex flex-col">
-                     <div className="p-4 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-                        <div className="flex items-center">
-                           <VideoIcon className="h-5 w-5 text-emerald-500 mr-2" />
-                           <p className="text-xs text-white">Web Search Recording</p>
+                     <div className="p-6 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-emerald-500/20 rounded-lg">
+                              <Video className="w-5 h-5 text-emerald-400" />
+                           </div>
+                           <div>
+                              <h3 className="text-lg font-semibold text-white">Web Search Recording</h3>
+                              <p className="text-sm text-gray-400">AI research process</p>
+                           </div>
                         </div>
                         <button
                            onClick={() => setShowRecordingPlayer(false)}
-                           className="text-gray-400 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
+                           className="p-2 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-all duration-200"
                         >
-                           <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path
-                                 fillRule="evenodd"
-                                 d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                 clipRule="evenodd"
-                              />
-                           </svg>
+                           <X className="w-6 h-6" />
                         </button>
                      </div>
                      <div className="relative w-full bg-black flex-grow">
@@ -317,15 +603,14 @@ const ActivePodcastPreview = React.memo(
                            Your browser does not support the video tag.
                         </video>
                      </div>
-                     <div className="p-4 border-t border-gray-700 flex-shrink-0">
-                        <p className="text-xs text-gray-400 mb-3">
-                           This recording shows the AI searching the web for information to include
-                           in your podcast.
+                     <div className="p-6 border-t border-gray-700/30 flex-shrink-0">
+                        <p className="text-sm text-gray-400 mb-4">
+                           This recording shows the AI searching the web for information to include in your podcast.
                         </p>
                         <div className="flex justify-end">
                            <button
                               onClick={() => setShowRecordingPlayer(false)}
-                              className="text-xs px-4 py-1 bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium rounded-md transition"
+                              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-lg transition-all duration-200"
                            >
                               Close
                            </button>
@@ -334,29 +619,25 @@ const ActivePodcastPreview = React.memo(
                   </div>
                </div>
             )}
+
             <style jsx>{`
                @keyframes fadeIn {
-                  from {
-                     opacity: 0;
-                  }
-                  to {
-                     opacity: 1;
-                  }
+                  from { opacity: 0; }
+                  to { opacity: 1; }
                }
-
+               .animate-fadeIn {
+                  animation: fadeIn 0.2s ease-out forwards;
+               }
                .custom-scrollbar {
                   scrollbar-width: thin;
                   scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
                }
-
                .custom-scrollbar::-webkit-scrollbar {
                   width: 4px;
                }
-
                .custom-scrollbar::-webkit-scrollbar-track {
                   background: transparent;
                }
-
                .custom-scrollbar::-webkit-scrollbar-thumb {
                   background-color: rgba(75, 85, 99, 0.5);
                   border-radius: 20px;

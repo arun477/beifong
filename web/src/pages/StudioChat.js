@@ -987,6 +987,9 @@ const PodcastSession = () => {
                   </button>
                </div>
                <ActivePodcastPreview
+                  sources={sessionState.search_results}
+                  bannerImages={sessionState.banner_images || []}
+                  generatedScript={sessionState.generated_script || null}
                   podcastTitle={podcastInfo.title}
                   bannerUrl={bannerUrlFull}
                   audioUrl={audioUrlFull}
