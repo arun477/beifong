@@ -805,7 +805,7 @@ const PodcastSession = () => {
                                     onSelectLanguage={handleLanguageSelection}
                                  />
                               )}
-                           {(sessionState.show_script_for_confirmation || true) &&
+                           {(sessionState.show_script_for_confirmation) &&
                               sessionState.generated_script && (
                                  <ScriptConfirmation
                                     generated_script={sessionState.generated_script}
