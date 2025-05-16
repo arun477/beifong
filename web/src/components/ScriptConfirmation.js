@@ -81,11 +81,11 @@ const ScriptConfirmation = ({
    const scriptData = generated_script || { sections: [] };
    const hasStructuredScript = generated_script && generated_script.sections;
 
-   // Speaker color mapping for consistent styling
+   // Speaker color mapping for consistent styling - using subtle grays
    const speakerColors = {
-      ALEX: 'from-emerald-500 to-teal-500',
-      MORGAN: 'from-purple-500 to-pink-500',
-      default: 'from-blue-500 to-indigo-500'
+      ALEX: 'from-slate-600 to-slate-700',
+      MORGAN: 'from-gray-600 to-gray-700',
+      default: 'from-zinc-600 to-zinc-700'
    };
 
    const getSpeakerColor = (speaker) => {
@@ -155,23 +155,31 @@ const ScriptConfirmation = ({
                {/* Enhanced Header */}
                <div className="relative px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-                  <div className="relative flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
-                           <FileText className="w-5 h-5 text-emerald-400" />
-                        </div>
-                        <div>
-                           <h3 className="text-lg font-semibold text-white">
-                              Podcast Script Preview
-                           </h3>
-                           <div className="flex items-center gap-4 mt-1">
-                              {hasStructuredScript && scriptData.title && (
-                                 <p className="text-sm text-gray-400">"{scriptData.title}"</p>
-                              )}
+                  <div className="relative">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                           <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
+                              <FileText className="w-5 h-5 text-emerald-400" />
+                           </div>
+                           <div>
+                              <h3 className="text-lg font-semibold text-white">
+                                 Podcast Script Preview
+                              </h3>
                            </div>
                         </div>
+                        <button
+                           onClick={onToggleModal}
+                           disabled={isProcessing}
+                           className="group flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                           <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                           View Full Script
+                        </button>
                      </div>
-                     <div className="flex items-center gap-4">
+                     <div className="flex items-center gap-4 mt-2 ml-14">
+                        {hasStructuredScript && scriptData.title && (
+                           <p className="text-sm text-gray-400">"{scriptData.title}"</p>
+                        )}
                         {hasStructuredScript && (
                            <div className="flex items-center gap-3 text-xs text-gray-400">
                               <span className="flex items-center gap-1">
@@ -184,14 +192,6 @@ const ScriptConfirmation = ({
                               </span>
                            </div>
                         )}
-                        <button
-                           onClick={onToggleModal}
-                           disabled={isProcessing}
-                           className="group flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                           <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                           View Full
-                        </button>
                      </div>
                   </div>
                </div>
@@ -282,9 +282,9 @@ const ScriptConfirmation = ({
          {/* Enhanced Full Script Modal */}
          {isModalOpen && (
             <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl">
                   {/* Modal Header */}
-                  <div className="px-6 py-4 border-b border-gray-700/30 flex items-center justify-between">
+                  <div className="px-6 py-4 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
                      <div>
                         <h3 className="text-xl font-semibold text-white">Complete Podcast Script</h3>
                         {hasStructuredScript && scriptData.title && (
@@ -305,7 +305,7 @@ const ScriptConfirmation = ({
                      {hasStructuredScript ? (
                         <div className="flex h-full">
                            {/* Section Navigation */}
-                           <div className="w-64 border-r border-gray-700/30 bg-gray-800/30 overflow-y-auto">
+                           <div className="w-64 border-r border-gray-700/30 bg-gray-800/30 overflow-y-auto flex-shrink-0">
                               <div className="p-4">
                                  <h4 className="text-sm font-medium text-gray-300 mb-3">Sections</h4>
                                  <div className="space-y-2">
@@ -337,67 +337,69 @@ const ScriptConfirmation = ({
                            </div>
 
                            {/* Script Content */}
-                           <div className="flex-1 overflow-y-auto p-6">
-                              {scriptData.sections.map((section, sectionIndex) => (
-                                 <div key={sectionIndex} className={`mb-8 ${selectedSection !== null && selectedSection !== sectionIndex ? 'hidden' : ''}`}>
-                                    <div className="mb-4">
-                                       <h2 className="text-lg font-semibold text-white mb-1">
-                                          {formatSectionType(section.type)}
-                                          {section.title && ` - ${section.title}`}
-                                       </h2>
-                                       <div className="h-px bg-gradient-to-r from-emerald-500/50 to-transparent" />
+                           <div className="flex-1 overflow-y-auto">
+                              <div className="p-6">
+                                 {scriptData.sections.map((section, sectionIndex) => (
+                                    <div key={sectionIndex} className={`mb-8 ${selectedSection !== null && selectedSection !== sectionIndex ? 'hidden' : ''}`}>
+                                       <div className="mb-4">
+                                          <h2 className="text-lg font-semibold text-white mb-1">
+                                             {formatSectionType(section.type)}
+                                             {section.title && ` - ${section.title}`}
+                                          </h2>
+                                          <div className="h-px bg-gradient-to-r from-emerald-500/50 to-transparent" />
+                                       </div>
+                                       {section.dialog ? (
+                                          <div className="space-y-4">
+                                             {section.dialog.map((line, lineIndex) => (
+                                                <div key={lineIndex} className="flex gap-4 items-start">
+                                                   <div className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full min-w-18 text-center`}>
+                                                      {line.speaker}
+                                                   </div>
+                                                   <div className="flex-1 text-gray-300 leading-relaxed pt-0.5">
+                                                      {line.text}
+                                                   </div>
+                                                </div>
+                                             ))}
+                                          </div>
+                                       ) : (
+                                          <div className="text-gray-400 italic">No dialog for this section</div>
+                                       )}
                                     </div>
-                                    {section.dialog ? (
-                                       <div className="space-y-4">
-                                          {section.dialog.map((line, lineIndex) => (
-                                             <div key={lineIndex} className="flex gap-4 items-start">
-                                                <div className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full min-w-18 text-center`}>
-                                                   {line.speaker}
+                                 ))}
+
+                                 {/* Sources Section */}
+                                 {scriptData.sources && scriptData.sources.length > 0 && (
+                                    <div className="mt-8 pt-6 border-t border-gray-700/30">
+                                       <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                          <Globe className="w-5 h-5" />
+                                          Sources
+                                       </h3>
+                                       <div className="space-y-3">
+                                          {scriptData.sources.map((source, index) => (
+                                             <a
+                                                key={index}
+                                                href={source}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="group flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/30 hover:border-gray-600/50 hover:bg-gray-700/30 transition-all duration-200"
+                                             >
+                                                <div className="flex-shrink-0">
+                                                   <SourceIcon url={source} />
                                                 </div>
-                                                <div className="flex-1 text-gray-300 leading-relaxed pt-0.5">
-                                                   {line.text}
+                                                <div className="flex-1 min-w-0">
+                                                   <div className="text-emerald-400 group-hover:text-emerald-300 text-sm font-medium truncate">
+                                                      {new URL(source).hostname}
+                                                   </div>
+                                                   <div className="text-gray-500 text-xs truncate mt-0.5">
+                                                      {source}
+                                                   </div>
                                                 </div>
-                                             </div>
+                                             </a>
                                           ))}
                                        </div>
-                                    ) : (
-                                       <div className="text-gray-400 italic">No dialog for this section</div>
-                                    )}
-                                 </div>
-                              ))}
-
-                              {/* Sources Section */}
-                              {scriptData.sources && scriptData.sources.length > 0 && (
-                                 <div className="mt-8 pt-6 border-t border-gray-700/30">
-                                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                                       <Globe className="w-5 h-5" />
-                                       Sources
-                                    </h3>
-                                    <div className="space-y-3">
-                                       {scriptData.sources.map((source, index) => (
-                                          <a
-                                             key={index}
-                                             href={source}
-                                             target="_blank"
-                                             rel="noopener noreferrer"
-                                             className="group flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg border border-gray-700/30 hover:border-gray-600/50 hover:bg-gray-700/30 transition-all duration-200"
-                                          >
-                                             <div className="flex-shrink-0">
-                                                <SourceIcon url={source} />
-                                             </div>
-                                             <div className="flex-1 min-w-0">
-                                                <div className="text-emerald-400 group-hover:text-emerald-300 text-sm font-medium truncate">
-                                                   {new URL(source).hostname}
-                                                </div>
-                                                <div className="text-gray-500 text-xs truncate mt-0.5">
-                                                   {source}
-                                                </div>
-                                             </div>
-                                          </a>
-                                       ))}
                                     </div>
-                                 </div>
-                              )}
+                                 )}
+                              </div>
                            </div>
                         </div>
                      ) : (
@@ -411,7 +413,7 @@ const ScriptConfirmation = ({
                   </div>
 
                   {/* Modal Footer */}
-                  <div className="px-6 py-4 border-t border-gray-700/30 flex justify-end">
+                  <div className="px-6 py-4 border-t border-gray-700/30 flex justify-end flex-shrink-0">
                      <button
                         onClick={() => {
                            onToggleModal();
