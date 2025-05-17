@@ -69,6 +69,8 @@ INITIAL_SESSION_STATE = {
     "title": "Untitled",
     "created_at": "",
     "finished": False,
+    "show_banner_for_confirmation": False,
+    "show_audio_for_confirmation": False,
 }
 
 STORAGE = SqliteStorage(table_name="podcast_sessions", db_file=get_agent_session_db_path())

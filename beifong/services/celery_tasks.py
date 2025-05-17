@@ -44,6 +44,7 @@ def agent_chat(self, session_id, message):
             instructions=AGENT_INSTRUCTIONS,
             description=AGENT_DESCRIPTION,
             session_state=INITIAL_SESSION_STATE,
+            session_id=session_id,
             tools=[
                 search_agent_run,
                 scrape_agent_run,
