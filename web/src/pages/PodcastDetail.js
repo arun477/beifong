@@ -609,109 +609,91 @@ const PodcastDetail = () => {
                )}
             </div>
 
-            {/* Full Script Modal */}
-            {/* Script Sidebar */}
             {isFullScriptOpen && hasScript && (
-               <div className="fixed inset-y-0 right-0 z-50 flex">
-                  {/* Backdrop - clicking this closes the sidebar */}
-                  <div
-                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-                     onClick={() => setIsFullScriptOpen(false)}
-                     style={{
-                        animation: 'fadeIn 0.2s ease-out forwards',
-                     }}
-                  ></div>
+   <div className="fixed inset-y-0 right-0 z-50 flex">
+      {/* Backdrop - clicking this closes the sidebar */}
+      <div
+         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+         onClick={() => setIsFullScriptOpen(false)}
+         style={{
+            animation: 'fadeIn 0.2s ease-out forwards',
+         }}
+      ></div>
 
-                  {/* Sidebar panel with inline animation */}
-                  <div
-                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
-                     style={{
-                        animation: 'slideInRight 0.3s ease-out forwards',
-                     }}
-                  >
-                     {/* Header with emerald accent */}
-                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-                        <div className="relative flex items-center justify-between">
-                           <div className="flex items-center min-w-0">
-                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
-                                 <FileText className="w-4 h-4 text-emerald-400" />
-                              </div>
-                              <div className="min-w-0">
-                                 <h2 className="text-lg font-semibold text-white truncate">
-                                    Podcast Script
-                                 </h2>
-                                 <p className="text-xs text-gray-400 truncate">{content.title}</p>
-                              </div>
-                           </div>
-                           <button
-                              onClick={() => setIsFullScriptOpen(false)}
-                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
-                           >
-                              <X className="w-5 h-5" />
-                           </button>
-                        </div>
+      {/* Sidebar panel with inline animation */}
+      <div
+         className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+         style={{
+            animation: 'slideInRight 0.3s ease-out forwards',
+         }}
+      >
+         {/* Header with emerald accent */}
+         <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+            <div className="relative flex items-center justify-between">
+               <div className="flex items-center min-w-0">
+                  <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                     <FileText className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                     <h2 className="text-lg font-semibold text-white truncate">
+                        Podcast Script
+                     </h2>
+                     <p className="text-xs text-gray-400 truncate">{content.title}</p>
+                  </div>
+               </div>
+               <button
+                  onClick={() => setIsFullScriptOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+               >
+                  <X className="w-5 h-5" />
+               </button>
+            </div>
+         </div>
+
+         {/* Content with emerald accents */}
+         <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+            {/* Script sections - always open */}
+            {content.sections.map((section, sectionIndex) => (
+               <div
+                  key={sectionIndex}
+                  className="border-gray-700/20 pb-4 last:border-0"
+               >
+                  {/* Non-interactive section header */}
+                  <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
+                     <div className="flex items-center">
+                        <h3 className="text-sm font-medium text-emerald-400">
+                           {section.type?.charAt(0).toUpperCase() +
+                              section.type?.slice(1)}
+                        </h3>
                      </div>
+                  </div>
 
-                     {/* Content with emerald accents */}
-                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
-                        {/* Script sections with collapsible sections */}
-                        {content.sections.map((section, sectionIndex) => (
-                           <div
-                              key={sectionIndex}
-                              className="  border-gray-700/20 pb-4 last:border-0"
-                           >
+                  {/* Section content - always visible */}
+                  {section.dialog && (
+                     <div className="px-4 pt-2">
+                        {section.dialog.map((line, lineIndex) => (
+                           <div key={lineIndex} className="mb-3 last:mb-0">
                               <div
-                                 className="px-4 py-2 sticky top-0 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm cursor-pointer hover:bg-gray-700/70 transition-colors"
-                                 onClick={() => {
-                                    // Toggle section visibility
-                                    const sections = [...collapsedSections];
-                                    if (sections.includes(sectionIndex)) {
-                                       sections.splice(sections.indexOf(sectionIndex), 1);
-                                    } else {
-                                       sections.push(sectionIndex);
-                                    }
-                                    setCollapsedSections(sections);
-                                 }}
+                                 className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                    line.speaker
+                                 )} text-white rounded mb-1`}
                               >
-                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-medium text-emerald-400">
-                                       {section.type?.charAt(0).toUpperCase() +
-                                          section.type?.slice(1)}
-                                    </h3>
-                                    {collapsedSections.includes(sectionIndex) ? (
-                                       <ChevronDown className="w-4 h-4 text-gray-400" />
-                                    ) : (
-                                       <ChevronUp className="w-4 h-4 text-gray-400" />
-                                    )}
-                                 </div>
+                                 {line.speaker}
                               </div>
-
-                              {/* Section content */}
-                              {!collapsedSections.includes(sectionIndex) && section.dialog && (
-                                 <div className="px-4 pt-2">
-                                    {section.dialog.map((line, lineIndex) => (
-                                       <div key={lineIndex} className="mb-3 last:mb-0">
-                                          <div
-                                             className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
-                                                line.speaker
-                                             )} text-white rounded mb-1`}
-                                          >
-                                             {line.speaker}
-                                          </div>
-                                          <div className="text-gray-300 text-sm leading-relaxed">
-                                             {line.text}
-                                          </div>
-                                       </div>
-                                    ))}
-                                 </div>
-                              )}
+                              <div className="text-gray-300 text-sm leading-relaxed">
+                                 {line.text}
+                              </div>
                            </div>
                         ))}
                      </div>
-                  </div>
+                  )}
                </div>
-            )}
+            ))}
+         </div>
+      </div>
+   </div>
+)}
 
             {isSourcesOpen && hasSources && (
                <div className="fixed inset-y-0 right-0 z-50 flex">
