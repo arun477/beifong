@@ -61,6 +61,7 @@ def agent_chat(self, session_id, message):
         )
         response = _agent.run(message, session_id=session_id)
         print(f"Response generated for session {session_id}")
+        _agent.write_to_storage(session_id=session_id)
         return {
             "session_id": session_id,
             "response": response.content,
