@@ -213,7 +213,8 @@ const PodcastSession = () => {
          setShowRecordingPlayer(false);
          const response = await api.podcastAgent.createSession(null);
          if (response?.data?.session_id) {
-            navigate(`/studio/chat/${response.data.session_id}`, { replace: true });
+            window.location.href = `/studio/chat/${response.data.session_id}`;
+            // navigate(`/studio/chat/${response.data.session_id}`, { replace: true });
             setMessages([
                {
                   role: 'assistant',

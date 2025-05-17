@@ -123,11 +123,11 @@ const SourceSelection = ({
 
             {/* Sources List */}
             <div className="p-2">
-               <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
+               <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
                   {sources.map((source, index) => (
                      <div
                         key={index}
-                        className={`group relative p-1.5 rounded-md border transition-all duration-300 cursor-pointer ${
+                        className={`group relative p-2 rounded-md border transition-all duration-300 cursor-pointer ${
                            selectedIndices.includes(index)
                               ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/30 shadow-md'
                               : 'bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-gray-700/30 hover:border-gray-600/50 hover:bg-gradient-to-r hover:from-gray-700/50 hover:to-gray-600/50'

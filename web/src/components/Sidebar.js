@@ -85,7 +85,8 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    };
 
    const handleSessionSelect = id => {
-      navigate(`/studio/chat/${id}`);
+      window.location.href = `/studio/chat/${id}`;
+      // navigate(`/studio/chat/${id}`);
       if (onSessionSelect) {
          onSessionSelect();
       }
