@@ -1,9 +1,10 @@
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agno.storage.sqlite import SqliteStorage
-from agno.tools.newspaper4k import Newspaper4kTools
 import os
 from dotenv import load_dotenv
+import multiprocessing
+multiprocessing.set_start_method('spawn', force=True)
 from services.celery_app import app, SessionLockedTask
 
 from db.config import get_agent_session_db_path

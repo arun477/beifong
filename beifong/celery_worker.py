@@ -5,7 +5,7 @@ worker_options = [
     "--loglevel=INFO",
     "--concurrency=2",
     "--hostname=beifong_worker@%h",
-    "--pool=threads",
+    "--pool=prefork",
 ]
 
 if __name__ == "__main__":
