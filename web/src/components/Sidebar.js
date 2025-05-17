@@ -434,7 +434,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
             {/* Compact Navigation Links */}
             <div
                className={`overflow-hidden transition-all duration-300 ${
-                  navExpanded ? 'max-h-40 mt-1 opacity-100' : 'max-h-0 opacity-0'
+                  navExpanded ? 'max-h-60 mt-1 opacity-100' : 'max-h-0 opacity-0'
                }`}
             >
                <div className="space-y-0.5 py-0.5">
