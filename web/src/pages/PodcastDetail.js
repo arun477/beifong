@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-   ChevronDown, 
-   ChevronUp, 
-   Eye, 
-   FileText, 
+import {
+   ChevronDown,
+   ChevronUp,
+   Eye,
+   FileText,
    Globe,
    Calendar,
    Volume2,
@@ -17,10 +17,9 @@ import {
    Edit3,
    Trash2,
    Info,
-   Pause
+   Pause,
 } from 'lucide-react';
 import apiService from '../services/api';
-import SpootIcon from '../icons/Spoot'
 
 const formatTtsEngineName = engine => {
    if (!engine) return '';
@@ -72,17 +71,60 @@ const SourceIcon = ({ url }) => {
          isMounted = false;
       };
    }, [url]);
-   
+
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-   
+
    return (
       <img
          src={iconUrl}
          alt="Source icon"
-         className="w-4 h-4 object-contain transition-transform duration-200 group-hover:scale-110"
+         className="w-4 h-4 object-contain transition-transform duration-200"
       />
+   );
+};
+
+const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
+   const displaySources = sources.slice(0, maxIcons);
+
+   return (
+      <div className="flex -space-x-2 mr-2 relative">
+         {/* Subtle glow behind icons */}
+         <div className="absolute inset-0 bg-emerald-500/10 blur-md rounded-full"></div>
+
+         {displaySources.map((source, index) => {
+            const sourceUrl = typeof source === 'string' ? source : source.url;
+            return (
+               <div
+                  key={index}
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600/50 flex items-center justify-center overflow-hidden relative group"
+                  style={{
+                     zIndex: displaySources.length - index,
+                     boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
+                  }}
+               >
+                  {/* Hover effect - emerald glow */}
+                  <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                  {/* Icon container */}
+                  <div className="relative z-10 w-4 h-4 flex items-center justify-center">
+                     <SourceIcon url={sourceUrl} />
+                  </div>
+               </div>
+            );
+         })}
+
+         {/* Counter badge for extra sources */}
+         {sources.length > maxIcons && (
+            <div
+               className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600/30 to-teal-600/30 border border-emerald-500/30 flex items-center justify-center text-xs font-medium text-emerald-400"
+               style={{ zIndex: 0 }}
+            >
+               +{sources.length - maxIcons}
+            </div>
+         )}
+      </div>
    );
 };
 
@@ -101,7 +143,8 @@ const PodcastDetail = () => {
    const [isSaving, setIsSaving] = useState(false);
    const [actionError, setActionError] = useState(null);
    const [newTitle, setNewTitle] = useState('');
-   
+   const [collapsedSections, setCollapsedSections] = useState([]);
+
    // New states for collapsible sections
    const [isFullScriptOpen, setIsFullScriptOpen] = useState(false);
    const [isSourcesOpen, setIsSourcesOpen] = useState(false);
@@ -234,16 +277,16 @@ const PodcastDetail = () => {
    const speakerColors = {
       ALEX: 'from-slate-600 to-slate-700',
       MORGAN: 'from-gray-600 to-gray-700',
-      default: 'from-zinc-600 to-zinc-700'
+      default: 'from-zinc-600 to-zinc-700',
    };
 
-   const getSpeakerColor = (speaker) => {
+   const getSpeakerColor = speaker => {
       return speakerColors[speaker] || speakerColors.default;
    };
 
    if (loading) {
       return (
-         <div className="min-h-screen flex items-center justify-center bg-gray-900">
+         <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
                <div className="w-12 h-12 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                <p className="text-gray-400">Loading podcast...</p>
@@ -254,7 +297,7 @@ const PodcastDetail = () => {
 
    if (error) {
       return (
-         <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-l-4 border-red-500 p-4 rounded-sm shadow-sm mb-4 text-red-400">
                {error}
             </div>
@@ -289,7 +332,10 @@ const PodcastDetail = () => {
          {/* Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div
+               className="absolute bottom-20 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse"
+               style={{ animationDelay: '1s' }}
+            ></div>
          </div>
 
          <div className="max-w-lg mx-auto relative z-10">
@@ -315,7 +361,6 @@ const PodcastDetail = () => {
 
             {/* Ultra Compact Card */}
             <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
-               
                {/* Compact Header with Banner */}
                <div className="relative">
                   {/* Banner as header background if available */}
@@ -329,18 +374,26 @@ const PodcastDetail = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
                      </div>
                   )}
-                  
+
                   {/* Header content overlay */}
-                  <div className={`${hasBanner ? 'absolute bottom-0 left-0 right-0' : ''} px-4 py-3 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30`}>
+                  <div
+                     className={`${
+                        hasBanner ? 'absolute bottom-0 left-0 right-0' : ''
+                     } px-4 py-3 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30`}
+                  >
                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                      <div className="relative flex justify-between items-center">
                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                           <div className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
-                              isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
-                           }`}>
-                              <Volume2 className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
-                                 isPlaying ? 'scale-110' : ''
-                              }`} />
+                           <div
+                              className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
+                                 isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+                              }`}
+                           >
+                              <Volume2
+                                 className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
+                                    isPlaying ? 'scale-110' : ''
+                                 }`}
+                              />
                            </div>
                            <div className="min-w-0">
                               <h3 className="text-base font-semibold text-white truncate">
@@ -393,12 +446,6 @@ const PodcastDetail = () => {
                            <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
                         </div>
                      )}
-                     {hasSources && (
-                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-gray-900/80 to-gray-800/80 text-gray-400 border border-gray-700/50">
-                           <ExternalLink className="w-3 h-3 mr-1 text-emerald-500" />
-                           <span>{sources.length} source{sources.length !== 1 ? 's' : ''}</span>
-                        </div>
-                     )}
                   </div>
                </div>
 
@@ -413,9 +460,7 @@ const PodcastDetail = () => {
                                  <div
                                     key={index}
                                     className={`bg-gradient-to-t from-emerald-600/30 to-teal-400/30 rounded-full transition-all duration-300 ${
-                                       isPlaying 
-                                          ? 'animate-pulse' 
-                                          : 'opacity-40'
+                                       isPlaying ? 'animate-pulse' : 'opacity-40'
                                     }`}
                                     style={{
                                        width: '2px',
@@ -436,9 +481,9 @@ const PodcastDetail = () => {
                                  <span className="text-xs">{audioError}</span>
                               </div>
                            ) : (
-                              <audio 
+                              <audio
                                  ref={audioRef}
-                                 controls 
+                                 controls
                                  className="w-full h-8"
                                  src={streamingAudioUrl}
                                  onPlay={() => setIsPlaying(true)}
@@ -466,9 +511,11 @@ const PodcastDetail = () => {
                      {/* Compact Audio Info */}
                      <div className="mt-2 text-center">
                         <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
-                           <Sparkles className={`w-3 h-3 transition-all duration-300 ${
-                              isPlaying ? 'text-emerald-400' : ''
-                           }`} />
+                           <Sparkles
+                              className={`w-3 h-3 transition-all duration-300 ${
+                                 isPlaying ? 'text-emerald-400' : ''
+                              }`}
+                           />
                            High-quality podcast audio
                            {isPlaying && (
                               <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded">
@@ -486,19 +533,34 @@ const PodcastDetail = () => {
                      {hasScript && (
                         <button
                            onClick={() => setIsFullScriptOpen(true)}
-                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30"
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
                         >
-                           <FileText className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                           Script
+                           {/* Subtle background glow on hover */}
+                           <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                           {/* Icon with emerald accent */}
+                           <div className="p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                              <FileText className="w-3 h-3 text-emerald-400" />
+                           </div>
+
+                           {/* Text */}
+                           <span className="relative z-10">Script</span>
                         </button>
                      )}
+
                      {hasSources && (
                         <button
                            onClick={() => setIsSourcesOpen(true)}
-                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-lg transition-all duration-200 hover:scale-105 border border-gray-600/30"
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
                         >
-                           <Globe className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                           Sources
+                           {/* Subtle background glow on hover */}
+                           <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                           {/* Icon stack */}
+                           <StackedSourceIcons sources={sources} />
+
+                           {/* Text */}
+                           <span className="relative z-10">Sources</span>
                         </button>
                      )}
                   </div>
@@ -508,7 +570,9 @@ const PodcastDetail = () => {
                      <div className="mt-2 text-center">
                         <div className="flex justify-center text-xs text-gray-500 gap-2">
                            <span className="flex items-center gap-1">
-                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">Space</kbd>
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">
+                                 Space
+                              </kbd>
                               Play
                            </span>
                            <span className="flex items-center gap-1">
@@ -528,50 +592,114 @@ const PodcastDetail = () => {
                {isPlaying && hasAudio && (
                   <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl">
                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
-                        <div className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                        <div className="absolute inset-8 border border-teal-400/10 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-                        <div className="absolute inset-16 border border-emerald-300/10 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                        <div
+                           className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping"
+                           style={{ animationDuration: '3s' }}
+                        />
+                        <div
+                           className="absolute inset-8 border border-teal-400/10 rounded-full animate-ping"
+                           style={{ animationDuration: '2s', animationDelay: '0.5s' }}
+                        />
+                        <div
+                           className="absolute inset-16 border border-emerald-300/10 rounded-full animate-ping"
+                           style={{ animationDuration: '4s', animationDelay: '1s' }}
+                        />
                      </div>
                   </div>
                )}
             </div>
 
             {/* Full Script Modal */}
-            {isFullScriptOpen && (
-               <div className="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-                  <div className="bg-gray-900/95 backdrop-blur-xl rounded-3xl border border-gray-700/50 w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl">
-                     {/* Modal Header */}
-                     <div className="px-8 py-6 border-b border-gray-700/30 flex items-center justify-between backdrop-blur-sm">
-                        <div>
-                           <h3 className="text-2xl font-bold text-white">Complete Podcast Script</h3>
-                           <p className="text-sm text-gray-400 mt-1">{content.title}</p>
+            {/* Script Sidebar */}
+            {isFullScriptOpen && hasScript && (
+               <div className="fixed inset-y-0 right-0 z-50 flex">
+                  {/* Backdrop - clicking this closes the sidebar */}
+                  <div
+                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                     onClick={() => setIsFullScriptOpen(false)}
+                     style={{
+                        animation: 'fadeIn 0.2s ease-out forwards',
+                     }}
+                  ></div>
+
+                  {/* Sidebar panel with inline animation */}
+                  <div
+                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+                     style={{
+                        animation: 'slideInRight 0.3s ease-out forwards',
+                     }}
+                  >
+                     {/* Header with emerald accent */}
+                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                        <div className="relative flex items-center justify-between">
+                           <div className="flex items-center min-w-0">
+                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                 <FileText className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <div className="min-w-0">
+                                 <h2 className="text-lg font-semibold text-white truncate">
+                                    Podcast Script
+                                 </h2>
+                                 <p className="text-xs text-gray-400 truncate">{content.title}</p>
+                              </div>
+                           </div>
+                           <button
+                              onClick={() => setIsFullScriptOpen(false)}
+                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+                           >
+                              <X className="w-5 h-5" />
+                           </button>
                         </div>
-                        <button
-                           onClick={() => setIsFullScriptOpen(false)}
-                           className="p-3 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-xl transition-all duration-200 backdrop-blur-sm"
-                        >
-                           <X className="w-6 h-6" />
-                        </button>
                      </div>
 
-                     {/* Script Content */}
-                     <div className="flex-1 overflow-y-auto p-8">
+                     {/* Content with emerald accents */}
+                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                        {/* Script sections with collapsible sections */}
                         {content.sections.map((section, sectionIndex) => (
-                           <div key={sectionIndex} className="mb-12">
-                              <div className="mb-6">
-                                 <h2 className="text-xl font-bold text-white mb-2">
-                                    {section.type?.charAt(0).toUpperCase() + section.type?.slice(1)}
-                                 </h2>
-                                 <div className="h-px bg-gradient-to-r from-emerald-500/60 via-emerald-500/30 to-transparent" />
+                           <div
+                              key={sectionIndex}
+                              className="  border-gray-700/20 pb-4 last:border-0"
+                           >
+                              <div
+                                 className="px-4 py-2 sticky top-0 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm cursor-pointer hover:bg-gray-700/70 transition-colors"
+                                 onClick={() => {
+                                    // Toggle section visibility
+                                    const sections = [...collapsedSections];
+                                    if (sections.includes(sectionIndex)) {
+                                       sections.splice(sections.indexOf(sectionIndex), 1);
+                                    } else {
+                                       sections.push(sectionIndex);
+                                    }
+                                    setCollapsedSections(sections);
+                                 }}
+                              >
+                                 <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-medium text-emerald-400">
+                                       {section.type?.charAt(0).toUpperCase() +
+                                          section.type?.slice(1)}
+                                    </h3>
+                                    {collapsedSections.includes(sectionIndex) ? (
+                                       <ChevronDown className="w-4 h-4 text-gray-400" />
+                                    ) : (
+                                       <ChevronUp className="w-4 h-4 text-gray-400" />
+                                    )}
+                                 </div>
                               </div>
-                              {section.dialog && (
-                                 <div className="space-y-6">
+
+                              {/* Section content */}
+                              {!collapsedSections.includes(sectionIndex) && section.dialog && (
+                                 <div className="px-4 pt-2">
                                     {section.dialog.map((line, lineIndex) => (
-                                       <div key={lineIndex} className="flex gap-6 items-start">
-                                          <div className={`flex-shrink-0 px-4 py-2 text-sm font-semibold bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full min-w-24 text-center backdrop-blur-sm border border-gray-600/30`}>
+                                       <div key={lineIndex} className="mb-3 last:mb-0">
+                                          <div
+                                             className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                line.speaker
+                                             )} text-white rounded mb-1`}
+                                          >
                                              {line.speaker}
                                           </div>
-                                          <div className="flex-1 text-gray-300 leading-relaxed pt-1 text-lg">
+                                          <div className="text-gray-300 text-sm leading-relaxed">
                                              {line.text}
                                           </div>
                                        </div>
@@ -580,107 +708,91 @@ const PodcastDetail = () => {
                               )}
                            </div>
                         ))}
-
-                        {/* Sources in Modal */}
-                        {hasSources && (
-                           <div className="mt-12 pt-8 border-t border-gray-700/30">
-                              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                                 <Globe className="w-6 h-6" />
-                                 Sources
-                              </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                 {sources.map((source, index) => {
-                                    const sourceUrl = typeof source === 'string' ? source : source.url;
-                                    const sourceTitle = typeof source === 'string' ? sourceUrl : source.title;
-                                    return (
-                                       <a
-                                          key={index}
-                                          href={sourceUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="group flex items-center gap-4 p-4 bg-gray-800/30 rounded-xl border border-gray-700/30 hover:border-gray-600/50 hover:bg-gray-700/30 transition-all duration-200 backdrop-blur-sm"
-                                       >
-                                          <div className="flex-shrink-0">
-                                             <SourceIcon url={sourceUrl} />
-                                          </div>
-                                          <div className="flex-1 min-w-0">
-                                             <div className="text-emerald-400 group-hover:text-emerald-300 text-sm font-medium truncate">
-                                                {new URL(sourceUrl).hostname}
-                                             </div>
-                                             <div className="text-gray-500 text-xs truncate mt-1">
-                                                {sourceUrl}
-                                             </div>
-                                          </div>
-                                       </a>
-                                    );
-                                 })}
-                              </div>
-                           </div>
-                        )}
                      </div>
                   </div>
                </div>
             )}
 
-            {/* Sources Modal */}
             {isSourcesOpen && hasSources && (
-               <div className="fixed inset-0 bg-black/90 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-                  <div className="bg-gray-900/95 backdrop-blur-xl rounded-3xl border border-gray-700/50 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl">
-                     {/* Modal Header */}
-                     <div className="px-8 py-6 border-b border-gray-700/30 flex items-center justify-between backdrop-blur-sm">
-                        <div>
-                           <h3 className="text-2xl font-bold text-white">Podcast Sources</h3>
-                           <p className="text-sm text-gray-400 mt-1">{sources.length} external references</p>
+               <div className="fixed inset-y-0 right-0 z-50 flex">
+                  {/* Backdrop - clicking this closes the sidebar */}
+                  <div
+                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                     onClick={() => setIsSourcesOpen(false)}
+                     style={{
+                        animation: 'fadeIn 0.2s ease-out forwards',
+                     }}
+                  ></div>
+
+                  {/* Sidebar panel with inline animation */}
+                  <div
+                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+                     style={{
+                        animation: 'slideInRight 0.3s ease-out forwards',
+                     }}
+                  >
+                     {/* Header with emerald accent */}
+                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm">
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                        <div className="relative flex items-center justify-between">
+                           <div className="flex items-center">
+                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3">
+                                 <Globe className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <h2 className="text-lg font-semibold text-white">Sources</h2>
+                           </div>
+                           <button
+                              onClick={() => setIsSourcesOpen(false)}
+                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded"
+                           >
+                              <X className="w-5 h-5" />
+                           </button>
                         </div>
-                        <button
-                           onClick={() => setIsSourcesOpen(false)}
-                           className="p-3 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-xl transition-all duration-200 backdrop-blur-sm"
-                        >
-                           <X className="w-6 h-6" />
-                        </button>
                      </div>
 
-                     {/* Sources Content */}
-                     <div className="flex-1 overflow-y-auto p-8">
-                        <div className="grid grid-cols-1 gap-4">
-                           {sources.map((source, index) => {
-                              const sourceUrl = typeof source === 'string' ? source : source.url;
-                              const sourceTitle = typeof source === 'string' ? sourceUrl : source.title;
-                              let hostname = '';
-                              try {
-                                 hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
-                              } catch (e) {
-                                 hostname = 'Unknown';
-                              }
-                              return (
-                                 <a
-                                    key={index}
-                                    href={sourceUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="group block p-6 bg-gray-800/30 rounded-2xl border border-gray-700/30 hover:border-gray-600/50 hover:bg-gray-700/30 transition-all duration-200 backdrop-blur-sm"
-                                 >
-                                    <div className="flex items-start gap-4">
-                                       <div className="flex-shrink-0 p-2 bg-gray-700/50 rounded-lg">
+                     {/* Content with emerald accents */}
+                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                        {sources.map((source, index) => {
+                           const sourceUrl = typeof source === 'string' ? source : source.url;
+                           let hostname = '';
+                           try {
+                              hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
+                           } catch (e) {
+                              hostname = 'Unknown Source';
+                           }
+
+                           return (
+                              <a
+                                 key={index}
+                                 href={sourceUrl}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="block px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
+                              >
+                                 <div className="flex items-start">
+                                    <div className="flex-shrink-0 pt-1">
+                                       <div className="p-1.5 bg-gradient-to-br from-gray-800 to-gray-700 rounded-lg flex items-center justify-center group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-200">
                                           <SourceIcon url={sourceUrl} />
                                        </div>
-                                       <div className="flex-1 min-w-0">
-                                          <div className="text-emerald-400 group-hover:text-emerald-300 font-semibold truncate">
-                                             {hostname}
-                                          </div>
-                                          <div className="text-gray-300 text-sm truncate mt-1">
-                                             {sourceUrl}
-                                          </div>
-                                          <div className="flex items-center gap-2 mt-3 text-gray-500 text-xs">
-                                             <span>Click to visit source</span>
-                                             <ExternalLink className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" />
-                                          </div>
+                                    </div>
+                                    <div className="ml-3 flex-1 min-w-0">
+                                       <h3 className="font-medium text-emerald-400 group-hover:text-emerald-300 transition-colors truncate">
+                                          {hostname}
+                                       </h3>
+                                       <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+                                          {sourceUrl}
+                                       </p>
+                                       <div className="mt-2 flex items-center text-xs text-gray-500">
+                                          <ExternalLink className="w-3 h-3 mr-1 text-emerald-500/70 group-hover:translate-x-0.5 transition-transform duration-200" />
+                                          <span className="group-hover:text-gray-400 transition-colors">
+                                             View source
+                                          </span>
                                        </div>
                                     </div>
-                                 </a>
-                              );
-                           })}
-                        </div>
+                                 </div>
+                              </a>
+                           );
+                        })}
                      </div>
                   </div>
                </div>
@@ -758,6 +870,25 @@ const PodcastDetail = () => {
                </div>
             )}
          </div>
+         <style jsx>{`
+            @keyframes slideInRight {
+               from {
+                  transform: translateX(100%);
+               }
+               to {
+                  transform: translateX(0);
+               }
+            }
+
+            @keyframes fadeIn {
+               from {
+                  opacity: 0;
+               }
+               to {
+                  opacity: 1;
+               }
+            }
+         `}</style>
       </div>
    );
 };
