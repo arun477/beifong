@@ -12,9 +12,7 @@ import requests
 
 load_dotenv()
 
-IMAGE_GENERATION_AGENT_DESCRIPTION = (
-    "You are an AI agent that can generate images using DALL-E."
-)
+IMAGE_GENERATION_AGENT_DESCRIPTION = "You are an AI agent that can generate images using DALL-E."
 IMAGE_GENERATION_AGENT_INSTRUCTIONS = dedent("""
                                              When the user asks you to create an image, use the `create_image` tool to create the image.
                                              Create a modern, eye-catching podcast cover images that represents a podcast given podcast topic.
@@ -30,16 +28,6 @@ IMAGE_GENERATION_AGENT_INSTRUCTIONS = dedent("""
                                             - Create a clean, professional design suitable for a podcast
                                             - AGAIN, DO NOT INCLUDE ANY TEXT
                                         """)
-
-
-image_agent = Agent(
-    model=OpenAIChat(id="gpt-4o"),
-    tools=[DalleTools()],
-    description=IMAGE_GENERATION_AGENT_DESCRIPTION,
-    instructions=IMAGE_GENERATION_AGENT_INSTRUCTIONS,
-    markdown=True,
-    show_tool_calls=True,
-)
 
 
 def download_images(image_urls):
@@ -79,9 +67,16 @@ def image_generation_agent_run(agent: Agent, query: str) -> str:
     print("Image Generation Agent input: ", query)
 
     try:
-        image_agent.run(
-            f"query: {query},\n podcast script: {json.dumps(agent.session_state['generated_script'])}"
+        image_agent = Agent(
+            model=OpenAIChat(id="gpt-4o"),
+            tools=[DalleTools()],
+            description=IMAGE_GENERATION_AGENT_DESCRIPTION,
+            instructions=IMAGE_GENERATION_AGENT_INSTRUCTIONS,
+            markdown=True,
+            show_tool_calls=True,
+            session_id=agent.session_id
         )
+        image_agent.run(f"query: {query},\n podcast script: {json.dumps(agent.session_state['generated_script'])}", session_id=agent.session_id)
         images = image_agent.get_images()
         image_urls = []
         if images and isinstance(images, list):

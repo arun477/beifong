@@ -14,9 +14,7 @@ load_dotenv()
 class ReturnItem(BaseModel):
     url: str = Field(..., description="The URL of the search result")
     title: str = Field(..., description="The title of the search result")
-    description: str = Field(
-        ..., description="A brief description or summary of the search result content"
-    )
+    description: str = Field(..., description="A brief description or summary of the search result content")
     source_name: str = Field(
         ...,
         description="The name/type of the source (e.g., 'wikipedia', 'general', or any reputable source tag)",
@@ -35,9 +33,7 @@ class SearchResults(BaseModel):
     items: List[ReturnItem] = Field(..., description="A list of search result items")
 
 
-SEARCH_AGENT_DESCRIPTION = (
-    "You are a helpful assistant that can search the web for information."
-)
+SEARCH_AGENT_DESCRIPTION = "You are a helpful assistant that can search the web for information."
 SEARCH_AGENT_INSTRUCTIONS = dedent("""
     You are a helpful assistant that can search the web for information.
     For a given topic, your job is to search the web and return the top 5 sources about the topic.
@@ -51,19 +47,6 @@ SEARCH_AGENT_INSTRUCTIONS = dedent("""
     IMPORTANT: If returned sources are not of high quality or not relevant to the asked topic, don't include them in the returned sources.
     """)
 
-search_agent = Agent(
-    model=OpenAIChat(id="gpt-4o-mini"),
-    instructions=SEARCH_AGENT_INSTRUCTIONS,
-    description=SEARCH_AGENT_DESCRIPTION,
-    use_json_mode=True,
-    response_model=SearchResults,
-    tools=[
-        google_news_discovery_run,
-        DuckDuckGoTools(),
-        wikipedia_search, 
-        ],
-)
-
 
 def search_agent_run(agent: Agent, query: str) -> str:
     """
@@ -75,19 +58,20 @@ def search_agent_run(agent: Agent, query: str) -> str:
         A formatted string response with the search results (link and gist only)
     """
     print("Search Agent Input:", query)
-    response = search_agent.run(query)
+    search_agent = Agent(
+        model=OpenAIChat(id="gpt-4o-mini"),
+        instructions=SEARCH_AGENT_INSTRUCTIONS,
+        description=SEARCH_AGENT_DESCRIPTION,
+        use_json_mode=True,
+        response_model=SearchResults,
+        tools=[
+            google_news_discovery_run,
+            DuckDuckGoTools(),
+            wikipedia_search,
+        ],
+        session_id=agent.session_id,
+    )
+    response = search_agent.run(query, session_id=agent.session_id)
     response_dict = response.to_dict()
     agent.session_state["search_results"] = response_dict["content"]["items"]
     return f"Found {len(response_dict['content']['items'])} sources about {query} {'and added to the search_results' if agent.session_state['search_results'] else ''}"
-
-
-
-# class MockAgent():
-#     def __init__(self):
-#         self.session_state = {
-#             'search_results': []
-#         }
-        
-# agent = MockAgent()
-# search_agent_run(agent, "Recent Bluesmart startup scam")
-# print(agent.session_state)

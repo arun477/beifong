@@ -10,9 +10,7 @@ load_dotenv()
 
 
 class Dialog(BaseModel):
-    speaker: str = Field(
-        ..., description="The speaker name (SHOULD BE 'ALEX' OR 'MORGAN')"
-    )
+    speaker: str = Field(..., description="The speaker name (SHOULD BE 'ALEX' OR 'MORGAN')")
     text: str = Field(
         ...,
         description="The spoken text content for this speaker based on the requested langauge, default is English",
@@ -20,22 +18,14 @@ class Dialog(BaseModel):
 
 
 class Section(BaseModel):
-    type: str = Field(
-        ..., description="The section type (intro, headlines, article, outro)"
-    )
-    title: Optional[str] = Field(
-        None, description="Optional title for the section (required for article type)"
-    )
-    dialog: List[Dialog] = Field(
-        ..., description="List of dialog exchanges between speakers"
-    )
+    type: str = Field(..., description="The section type (intro, headlines, article, outro)")
+    title: Optional[str] = Field(None, description="Optional title for the section (required for article type)")
+    dialog: List[Dialog] = Field(..., description="List of dialog exchanges between speakers")
 
 
 class PodcastScript(BaseModel):
     title: str = Field(..., description="The podcast episode title with date")
-    sections: List[Section] = Field(
-        ..., description="List of podcast sections (intro, headlines, articles, outro)"
-    )
+    sections: List[Section] = Field(..., description="List of podcast sections (intro, headlines, articles, outro)")
 
 
 PODCAST_AGENT_DESCRIPTION = "You are a helpful assistant that can generate engaging podcast scripts for the given sources."
@@ -68,14 +58,6 @@ PODCAST_AGENT_INSTRUCTIONS = dedent("""
     IMPORTNAT:
         - MAKE SURE PODCAST SCRIPS ARE AT LEAST 15 MINUTES LONG WHICH MEANS YOU NEED TO HAVE DETAILED DISCUSSIONS OFFCOURSE KEEP IT INTERESTING AND ENGAGING.
     """)
-
-podcast_script_agent = Agent(
-    model=OpenAIChat(id="gpt-4o-mini"),
-    instructions=PODCAST_AGENT_INSTRUCTIONS,
-    description=PODCAST_AGENT_DESCRIPTION,
-    use_json_mode=True,
-    response_model=PodcastScript,
-)
 
 
 def format_search_results_for_podcast(
@@ -120,24 +102,27 @@ def podcast_script_agent_run(
         Response status
     """
     print("Podcast Script Agent Input:", query)
-    content_texts, sources = format_search_results_for_podcast(
-        agent.session_state.get("search_results", [])
-    )
+    content_texts, sources = format_search_results_for_podcast(agent.session_state.get("search_results", []))
     if not content_texts:
         return "No confirmed sources found to generate podcast script."
 
+    podcast_script_agent = Agent(
+        model=OpenAIChat(id="gpt-4o-mini"),
+        instructions=PODCAST_AGENT_INSTRUCTIONS,
+        description=PODCAST_AGENT_DESCRIPTION,
+        use_json_mode=True,
+        response_model=PodcastScript,
+        session_id=agent.session_id,
+    )
     response = podcast_script_agent.run(
-        f"query: {query}\n language_name: {language_name}\n content_texts: {content_texts}\n, IMPORTANT: texts should be in {language_name} language."
+        f"query: {query}\n language_name: {language_name}\n content_texts: {content_texts}\n, IMPORTANT: texts should be in {language_name} language.",
+        session_id=agent.session_id,
     )
     response_dict = response.to_dict()
     response_dict = response_dict["content"]
     response_dict["sources"] = sources
     agent.session_state["generated_script"] = response_dict
 
-    if not agent.session_state["generated_script"] and not agent.session_state[
-        "generated_script"
-    ].get("sections"):
+    if not agent.session_state["generated_script"] and not agent.session_state["generated_script"].get("sections"):
         return "Failed to generate podcast script."
-    return (
-        f"Generated podcast script for '{query}' with {len(sources)} confirmed sources."
-    )
+    return f"Generated podcast script for '{query}' with {len(sources)} confirmed sources."

@@ -26,14 +26,14 @@ def resample_audio_scipy(audio, original_sr, target_sr):
     """Resample audio to match target sample rate using scipy."""
     if original_sr == target_sr:
         return audio
-    
+
     # Calculate the resampling ratio
     resampling_ratio = target_sr / original_sr
-    
+
     # Use scipy's resample function for high-quality resampling
     num_samples = int(len(audio) * resampling_ratio)
     resampled = signal.resample(audio, num_samples)
-    
+
     return resampled
 
 
@@ -45,9 +45,7 @@ def create_silence_audio(silence_duration: float, sampling_rate: int) -> np.ndar
     return np.zeros(int(sampling_rate * silence_duration), dtype=np.float32)
 
 
-def combine_audio_segments(
-    audio_segments: List[np.ndarray], silence_duration: float, sampling_rate: int
-) -> np.ndarray:
+def combine_audio_segments(audio_segments: List[np.ndarray], silence_duration: float, sampling_rate: int) -> np.ndarray:
     """Combine multiple audio segments with silence between them."""
     if not audio_segments:
         return np.zeros(0, dtype=np.float32)
@@ -196,9 +194,7 @@ def create_podcast(
         Path to the generated audio file or None if generation failed
     """
     if tts_engine.lower() != "openai":
-        print(
-            f"Only OpenAI TTS engine is available in this standalone version. Requested: {tts_engine}"
-        )
+        print(f"Only OpenAI TTS engine is available in this standalone version. Requested: {tts_engine}")
         return None
     try:
         api_key = load_api_key("OPENAI_API_KEY")
@@ -248,13 +244,9 @@ def create_podcast(
                 sampling_rate_detected = segment_rate
                 print(f"Using sample rate: {sampling_rate_detected} Hz")
             elif sampling_rate_detected != segment_rate:
-                print(
-                    f"Sample rate mismatch: {sampling_rate_detected} vs {segment_rate}"
-                )
+                print(f"Sample rate mismatch: {sampling_rate_detected} vs {segment_rate}")
                 try:
-                    segment_audio = resample_audio(
-                        segment_audio, segment_rate, sampling_rate_detected
-                    )
+                    segment_audio = resample_audio(segment_audio, segment_rate, sampling_rate_detected)
                     print(f"Resampled to {sampling_rate_detected} Hz")
                 except Exception as e:
                     sampling_rate_detected = segment_rate
@@ -269,44 +261,42 @@ def create_podcast(
         print("Could not determine sample rate")
         return None
     print(f"Combining {len(generated_segments)} audio segments")
-    full_audio = combine_audio_segments(
-        generated_segments, silence_duration, sampling_rate_detected
-    )
+    full_audio = combine_audio_segments(generated_segments, silence_duration, sampling_rate_detected)
     if full_audio.size == 0:
         print("Combined audio is empty")
         return None
-    
+
     try:
         if os.path.exists(INTRO_MUSIC_FILE):
             intro_music, intro_sr = sf.read(INTRO_MUSIC_FILE)
             print(f"Loaded intro music: {len(intro_music) / intro_sr:.1f} seconds")
-            
+
             if intro_music.ndim == 2:
                 intro_music = np.mean(intro_music, axis=1)
-            
+
             if intro_sr != sampling_rate_detected:
                 intro_music = resample_audio_scipy(intro_music, intro_sr, sampling_rate_detected)
-            
+
             full_audio = np.concatenate([intro_music, full_audio])
             print("Added intro music")
-        
+
         if os.path.exists(OUTRO_MUSIC_FILE):
             outro_music, outro_sr = sf.read(OUTRO_MUSIC_FILE)
             print(f"Loaded outro music: {len(outro_music) / outro_sr:.1f} seconds")
-            
+
             if outro_music.ndim == 2:
                 outro_music = np.mean(outro_music, axis=1)
-            
+
             if outro_sr != sampling_rate_detected:
                 outro_music = resample_audio_scipy(outro_music, outro_sr, sampling_rate_detected)
-            
+
             full_audio = np.concatenate([full_audio, outro_music])
             print("Added outro music")
-            
+
     except Exception as e:
         print(f"Could not add intro/outro music: {e}")
         print("Continuing without background music")
-    
+
     print(f"Writing audio to {output_path}")
     try:
         sf.write(output_path, full_audio, sampling_rate_detected)
@@ -333,9 +323,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
         A message with the result of audio generation
     """
     script_data = agent.session_state.get("generated_script", {})
-    if not script_data or (
-        isinstance(script_data, dict) and not script_data.get("sections")
-    ):
+    if not script_data or (isinstance(script_data, dict) and not script_data.get("sections")):
         error_msg = "Cannot generate audio: No podcast script data found. Please generate a script first."
         print(error_msg)
         return error_msg
@@ -356,17 +344,13 @@ def audio_generate_agent_run(agent: Agent) -> str:
                     text = dialog.get("text", "")
 
                     if text and speaker in speaker_map:
-                        script_entries.append(
-                            {"text": text, "speaker": speaker_map[speaker]}
-                        )
+                        script_entries.append({"text": text, "speaker": speaker_map[speaker]})
             if not script_entries:
                 error_msg = "Cannot generate audio: No dialog found in the script."
                 print(error_msg)
                 return error_msg
 
-            selected_language = agent.session_state.get(
-                "selected_language", {"code": "en", "name": "English"}
-            )
+            selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
             language_code = selected_language.get("code", "en")
             language_name = selected_language.get("name", "English")
             tts_engine = "openai"
@@ -374,9 +358,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
                 error_msg = "Cannot generate audio: OpenAI API key not found."
                 print(error_msg)
                 return error_msg
-            print(
-                f"Generating podcast audio using {tts_engine} TTS engine in {language_name} language"
-            )
+            print(f"Generating podcast audio using {tts_engine} TTS engine in {language_name} language")
             full_audio_path = create_podcast(
                 script=script_entries,
                 output_path=audio_path,
@@ -384,9 +366,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
                 language_code=language_code,
             )
             if not full_audio_path:
-                error_msg = (
-                    f"Failed to generate podcast audio with {tts_engine} TTS engine."
-                )
+                error_msg = f"Failed to generate podcast audio with {tts_engine} TTS engine."
                 print(error_msg)
                 return error_msg
 

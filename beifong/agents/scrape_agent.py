@@ -21,9 +21,7 @@ class ScrapedContent(BaseModel):
     )
 
 
-SCRAPE_AGENT_DESCRIPTION = (
-    "You are a helpful assistant that can scrape the URL for full content."
-)
+SCRAPE_AGENT_DESCRIPTION = "You are a helpful assistant that can scrape the URL for full content."
 SCRAPE_AGENT_INSTRUCTIONS = dedent("""
     You are a content verification and formatting assistant.
     
@@ -44,14 +42,6 @@ SCRAPE_AGENT_INSTRUCTIONS = dedent("""
     
     IMPORTANT: Focus on quality over quantity. It's better to return fewer high-quality, relevant pieces than many low-quality ones.
     """)
-
-scrape_agent = Agent(
-    model=OpenAIChat(id="gpt-4o-mini"),
-    instructions=SCRAPE_AGENT_INSTRUCTIONS,
-    description=SCRAPE_AGENT_DESCRIPTION,
-    use_json_mode=True,
-    response_model=ScrapedContent,
-)
 
 
 def crawl_urls_batch(search_results):
@@ -87,7 +77,7 @@ def crawl_urls_batch(search_results):
     return updated_search_results, successful_scrapes, failed_scrapes
 
 
-def verify_content_with_agent(query, search_results, use_agent=True):
+def verify_content_with_agent(agent, query, search_results, use_agent=True):
     if not use_agent:
         return search_results
     verified_search_results = []
@@ -100,18 +90,23 @@ def verify_content_with_agent(query, search_results, use_agent=True):
         }
         search_result["agent_verified"] = False
         try:
+            scrape_agent = Agent(
+                model=OpenAIChat(id="gpt-4o-mini"),
+                instructions=SCRAPE_AGENT_INSTRUCTIONS,
+                description=SCRAPE_AGENT_DESCRIPTION,
+                use_json_mode=True,
+                session_id=agent.session_id,
+                response_model=ScrapedContent,
+            )
             response = scrape_agent.run(
                 f"Query: {query}\n"
                 f"Verify and format this scraped content. "
-                f"Keep content relevant to the query and ensure quality: {content_for_verification}"
+                f"Keep content relevant to the query and ensure quality: {content_for_verification}",
+                session_id=agent.session_id
             )
             verified_item = response.to_dict()["content"]
-            search_result["full_text"] = verified_item.get(
-                "full_text", search_result["full_text"]
-            )
-            search_result["published_date"] = verified_item.get(
-                "published_date", search_result["published_date"]
-            )
+            search_result["full_text"] = verified_item.get("full_text", search_result["full_text"])
+            search_result["published_date"] = verified_item.get("published_date", search_result["published_date"])
             search_result["agent_verified"] = True
         except Exception as _:
             pass
@@ -133,6 +128,6 @@ def scrape_agent_run(
     """
     print("Scrape Agent Input:", query)
     updated_results, _, _ = crawl_urls_batch(agent.session_state["search_results"])
-    verified_results = verify_content_with_agent(query, updated_results, use_agent=False)
+    verified_results = verify_content_with_agent(agent, query, updated_results, use_agent=False)
     agent.session_state["search_results"] = verified_results
     return f"Scraped {len(agent.session_state['search_results'])} sources with full content relevant to '{query}'{' and updated the full text and published date in the search_results items' if agent.session_state['search_results'] else ''}."
