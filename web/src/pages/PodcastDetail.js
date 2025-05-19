@@ -387,7 +387,23 @@ const PodcastDetail = () => {
 
    return (
       <div className="min-h-screen py-4 px-4 relative overflow-hidden">
-         {/* Background effects */}
+         {/* Banner Image Background */}
+         {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
+            <div className="fixed inset-0 w-full h-full z-0">
+               {/* Current banner as background */}
+               <div className="absolute inset-0 w-full h-full opacity-40">
+                  <img 
+                     src={`${apiService.API_BASE_URL}/podcast_img/${podcast.banner_images[currentBannerIndex]}`}
+                     alt="Background"
+                     className="w-full h-full object-cover blur-xl transition-opacity duration-1000 ease-in-out bg-banner-background"
+                  />
+                  {/* Gradient overlay for better readability */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-gray-900/90 via-gray-900/80 to-gray-900/95" />
+               </div>
+            </div>
+         )}
+         
+         {/* Standard Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
             <div
@@ -396,7 +412,7 @@ const PodcastDetail = () => {
             ></div>
          </div>
 
-         <div className="max-w-lg mx-auto relative z-10">
+         <div className="max-w-lg mx-auto relative z-10 backdrop-blur-lg bg-gray-900/20 p-1 rounded-3xl">
             {/* Back Button */}
             <button
                onClick={handleGoBack}
@@ -647,7 +663,7 @@ const PodcastDetail = () => {
                                  isPlaying ? 'text-emerald-400' : ''
                               }`}
                            />
-                           Podcast audio
+                           High-quality podcast audio
                            {isPlaying && (
                               <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded">
                                  ♪ Playing
@@ -1002,6 +1018,17 @@ const PodcastDetail = () => {
                to {
                   opacity: 1;
                }
+            }
+            
+            /* Subtle background glow effect */
+            @keyframes subtle-background-glow {
+               0% { filter: brightness(1) saturate(0.8); }
+               50% { filter: brightness(1.1) saturate(1); }
+               100% { filter: brightness(1) saturate(0.8); }
+            }
+            
+            .bg-banner-background {
+               animation: subtle-background-glow 10s infinite ease-in-out;
             }
          `}</style>
       </div>
