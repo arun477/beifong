@@ -20,10 +20,10 @@ import {
    Pause,
    ChevronLeft,
    ChevronRight,
-   Image,
 } from 'lucide-react';
 import apiService from '../services/api';
 
+// Existing helper functions
 const formatTtsEngineName = engine => {
    if (!engine) return '';
    return engine;
@@ -131,103 +131,6 @@ const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
    );
 };
 
-const BannerCarousel = ({ bannerImages, title }) => {
-   const [currentIndex, setCurrentIndex] = useState(0);
-   const [isTransitioning, setIsTransitioning] = useState(false);
-   const totalImages = bannerImages.length;
-
-   const nextImage = () => {
-      if (isTransitioning) return;
-      setIsTransitioning(true);
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % totalImages);
-      setTimeout(() => setIsTransitioning(false), 500);
-   };
-
-   const prevImage = () => {
-      if (isTransitioning) return;
-      setIsTransitioning(true);
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + totalImages) % totalImages);
-      setTimeout(() => setIsTransitioning(false), 500);
-   };
-
-   useEffect(() => {
-      // Auto-rotate banners every 5 seconds
-      const interval = setInterval(() => {
-         nextImage();
-      }, 5000);
-      
-      return () => clearInterval(interval);
-   }, [currentIndex, isTransitioning]);
-
-   if (!bannerImages || bannerImages.length === 0) {
-      return null;
-   }
-
-   return (
-      <div className="h-80 relative overflow-hidden group">
-         {/* Current banner with fade transition */}
-         <div
-            className={`absolute inset-0 transition-opacity duration-500 ${
-               isTransitioning ? 'opacity-0' : 'opacity-100'
-            }`}
-         >
-            <img
-               src={`${apiService.API_BASE_URL}/podcast_img/${bannerImages[currentIndex]}`}
-               alt={`${title || 'Podcast'} - Banner ${currentIndex + 1}`}
-               className="w-full h-full object-cover"
-            />
-         </div>
-         
-         {/* Gradient overlay */}
-         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
-         
-         {/* Navigation buttons - only visible on hover */}
-         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <button
-               onClick={prevImage}
-               className="p-2 bg-black/30 backdrop-blur-sm rounded-full text-white hover:bg-emerald-500/40 transition-all duration-300 transform hover:scale-110"
-               aria-label="Previous image"
-            >
-               <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
-               onClick={nextImage}
-               className="p-2 bg-black/30 backdrop-blur-sm rounded-full text-white hover:bg-emerald-500/40 transition-all duration-300 transform hover:scale-110"
-               aria-label="Next image"
-            >
-               <ChevronRight className="w-6 h-6" />
-            </button>
-         </div>
-         
-         {/* Indicators */}
-         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {bannerImages.map((_, index) => (
-               <button
-                  key={index}
-                  onClick={() => {
-                     setIsTransitioning(true);
-                     setCurrentIndex(index);
-                     setTimeout(() => setIsTransitioning(false), 500);
-                  }}
-                  aria-label={`Go to image ${index + 1}`}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                     currentIndex === index
-                        ? 'bg-emerald-400 w-6'
-                        : 'bg-gray-400/50 hover:bg-gray-300/70'
-                  }`}
-               />
-            ))}
-         </div>
-         
-         {/* Image counter */}
-         <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-            <Image className="w-3 h-3" />
-            {currentIndex + 1}/{totalImages}
-         </div>
-      </div>
-   );
-};
-
 const PodcastDetail = () => {
    const { identifier } = useParams();
    const navigate = useNavigate();
@@ -243,11 +146,12 @@ const PodcastDetail = () => {
    const [isSaving, setIsSaving] = useState(false);
    const [actionError, setActionError] = useState(null);
    const [newTitle, setNewTitle] = useState('');
-   const [collapsedSections, setCollapsedSections] = useState([]);
-
-   // New states for collapsible sections
    const [isFullScriptOpen, setIsFullScriptOpen] = useState(false);
    const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+   
+   // New state for carousel
+   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+   const carouselIntervalRef = useRef(null);
 
    useEffect(() => {
       const fetchPodcast = async () => {
@@ -272,8 +176,60 @@ const PodcastDetail = () => {
       setWaveform(initialWaveform);
       return () => {
          if (animationRef.current) cancelAnimationFrame(animationRef.current);
+         if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
       };
    }, [identifier]);
+
+   // Auto-advance carousel
+   useEffect(() => {
+      if (podcast && podcast.banner_images && podcast.banner_images.length > 1) {
+         carouselIntervalRef.current = setInterval(() => {
+            setCurrentBannerIndex(prevIndex => 
+               prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+            );
+         }, 5000); // Change image every 5 seconds
+      }
+      
+      return () => {
+         if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      };
+   }, [podcast]);
+
+   const nextBanner = () => {
+      if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
+      
+      // Reset the interval when manually changing
+      if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      
+      setCurrentBannerIndex(prevIndex => 
+         prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+      );
+      
+      // Restart the interval
+      carouselIntervalRef.current = setInterval(() => {
+         setCurrentBannerIndex(prevIndex => 
+            prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+         );
+      }, 5000);
+   };
+
+   const prevBanner = () => {
+      if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
+      
+      // Reset the interval when manually changing
+      if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      
+      setCurrentBannerIndex(prevIndex => 
+         prevIndex === 0 ? podcast.banner_images.length - 1 : prevIndex - 1
+      );
+      
+      // Restart the interval
+      carouselIntervalRef.current = setInterval(() => {
+         setCurrentBannerIndex(prevIndex => 
+            prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+         );
+      }, 5000);
+   };
 
    useEffect(() => {
       const handleKeyPress = e => {
@@ -418,7 +374,8 @@ const PodcastDetail = () => {
    const { podcast: podcastData, content, audio_url, sources } = podcast;
    const hasAudio = podcastData.audio_generated && audio_url;
    const hasBanner = !!podcastData.banner_img;
-   const hasBannerImages = podcast.banner_images && podcast.banner_images.length > 0;
+   const bannerImages = podcast.banner_images || [];
+   const hasBannerCarousel = Array.isArray(bannerImages) && bannerImages.length > 0;
    const hasSources = Array.isArray(sources) && sources.length > 0;
    const hasScript = content && content.sections && content.sections.length > 0;
    let streamingAudioUrl = '';
@@ -462,83 +419,149 @@ const PodcastDetail = () => {
 
             {/* Ultra Compact Card */}
             <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
-               {/* Compact Header with Banner */}
-               <div className="relative">
-                  {/* Banner as header background - now using banner carousel if multiple images exist */}
-                  {hasBannerImages ? (
-                     <BannerCarousel 
-                        bannerImages={podcast.banner_images} 
-                        title={content.title || 'Podcast'} 
-                     />
-                  ) : hasBanner ? (
-                     <div className="h-80 relative overflow-hidden">
-                        <img
-                           src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
-                           alt={content.title || 'Podcast'}
-                           className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
-                     </div>
-                  ) : null}
-
-                  {/* Header content overlay */}
-                  <div
-                     className={`${
-                        hasBanner || hasBannerImages ? 'absolute bottom-0 left-0 right-0' : ''
-                     } px-4 py-3 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30`}
-                  >
-                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-                     <div className="relative flex justify-between items-center">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                           <div
-                              className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
-                                 isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+               {/* Banner Carousel */}
+               {hasBannerCarousel && (
+                  <div className="h-80 relative overflow-hidden mb-16">
+                     {/* Carousel Container */}
+                     <div className="h-full w-full relative">
+                        {bannerImages.map((image, index) => (
+                           <div 
+                              key={index}
+                              className={`absolute inset-0 transition-opacity duration-500 ${
+                                 currentBannerIndex === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
                               }`}
                            >
-                              <Volume2
-                                 className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
-                                    isPlaying ? 'scale-110' : ''
-                                 }`}
+                              <img
+                                 src={`${apiService.API_BASE_URL}/podcast_img/${image}`}
+                                 alt={`Banner ${index + 1}`}
+                                 className="w-full h-full object-cover transition-transform duration-700 ease-in-out"
+                                 style={{ 
+                                    transform: currentBannerIndex === index ? 'scale(1)' : 'scale(1.1)',
+                                 }}
                               />
                            </div>
-                           <div className="min-w-0">
-                              <h3 className="text-base font-semibold text-white truncate">
-                                 {content.title || `Podcast - ${formatDate(podcastData.date)}`}
-                              </h3>
-                              <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                                 <Calendar className="w-3 h-3" />
-                                 {formatDate(podcastData.date)}
-                                 {isPlaying && (
-                                    <span className="flex items-center gap-1 text-emerald-400 ml-1">
-                                       <Play className="w-2.5 h-2.5" />
-                                       <span className="text-xs">Playing</span>
-                                    </span>
-                                 )}
-                              </p>
+                        ))}
+                        
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/30 z-20" />
+                        
+                        {/* Navigation Buttons */}
+                        {bannerImages.length > 1 && (
+                           <>
+                              <button 
+                                 onClick={prevBanner}
+                                 className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
+                              >
+                                 <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+                              </button>
+                              <button 
+                                 onClick={nextBanner}
+                                 className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
+                              >
+                                 <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                              </button>
+                           </>
+                        )}
+                        
+                        {/* Indicators */}
+                        {bannerImages.length > 1 && (
+                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+                              {bannerImages.map((_, index) => (
+                                 <button
+                                    key={index}
+                                    onClick={() => {
+                                       setCurrentBannerIndex(index);
+                                       // Reset interval
+                                       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+                                       carouselIntervalRef.current = setInterval(() => {
+                                          setCurrentBannerIndex(prevIndex => 
+                                             prevIndex === bannerImages.length - 1 ? 0 : prevIndex + 1
+                                          );
+                                       }, 5000);
+                                    }}
+                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                       currentBannerIndex === index
+                                          ? 'bg-emerald-400 w-6'
+                                          : 'bg-white/30 hover:bg-white/50'
+                                    }`}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                 />
+                              ))}
                            </div>
+                        )}
+                     </div>
+                  </div>
+               )}
+               
+               {/* Fallback to single banner if no carousel but has banner */}
+               {!hasBannerCarousel && hasBanner && (
+                  <div className="h-80 relative overflow-hidden mb-16">
+                     <img
+                        src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
+                        alt={content.title || 'Podcast'}
+                        className="w-full h-full object-cover"
+                     />
+                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
+                  </div>
+               )}
+
+               {/* Header content overlay */}
+               <div
+                  className={`${
+                     hasBanner || hasBannerCarousel ? 'absolute top-64 left-0 right-0 z-30' : ''
+                  } px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-900/90 backdrop-blur-md border-b border-gray-700/30`}
+               >
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                  <div className="relative flex justify-between items-center">
+                     <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div
+                           className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
+                              isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+                           }`}
+                        >
+                           <Volume2
+                              className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
+                                 isPlaying ? 'scale-110' : ''
+                              }`}
+                           />
                         </div>
-                        <div className="flex gap-1">
-                           <button
-                              onClick={() => setShowEditModal(true)}
-                              className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
-                              title="Edit Title"
-                           >
-                              <Edit3 className="w-3.5 h-3.5" />
-                           </button>
-                           <button
-                              onClick={handleDelete}
-                              className="p-1.5 text-gray-400 hover:text-red-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
-                              title="Delete Podcast"
-                           >
-                              <Trash2 className="w-3.5 h-3.5" />
-                           </button>
+                        <div className="min-w-0">
+                           <h3 className="text-base font-semibold text-white truncate">
+                              {content.title || `Podcast - ${formatDate(podcastData.date)}`}
+                           </h3>
+                           <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(podcastData.date)}
+                              {isPlaying && (
+                                 <span className="flex items-center gap-1 text-emerald-400 ml-1">
+                                    <Play className="w-2.5 h-2.5" />
+                                    <span className="text-xs">Playing</span>
+                                 </span>
+                              )}
+                           </p>
                         </div>
+                     </div>
+                     <div className="flex gap-1">
+                        <button
+                           onClick={() => setShowEditModal(true)}
+                           className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
+                           title="Edit Title"
+                        >
+                           <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                           onClick={handleDelete}
+                           className="p-1.5 text-gray-400 hover:text-red-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
+                           title="Delete Podcast"
+                        >
+                           <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                      </div>
                   </div>
                </div>
 
                {/* Compact Metadata Tags */}
-               <div className="px-4 py-2">
+               <div className="px-4 py-2 mt-16">
                   <div className="flex flex-wrap justify-center gap-1.5">
                      {podcastData.language_code && (
                         <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50">
@@ -552,15 +575,11 @@ const PodcastDetail = () => {
                            <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
                         </div>
                      )}
-                     {hasBannerImages && (
-                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-900/80 to-amber-800/80 text-amber-200 border border-amber-800/50">
-                           <Image className="w-3 h-3 mr-1" />
-                           <span>{podcast.banner_images.length} Images</span>
-                        </div>
-                     )}
                   </div>
                </div>
 
+               {/* Rest of the component remains the same... */}
+               
                {/* Compact Audio Section */}
                {hasAudio && (
                   <div className="px-4 py-3">
@@ -628,7 +647,7 @@ const PodcastDetail = () => {
                                  isPlaying ? 'text-emerald-400' : ''
                               }`}
                            />
-                           High-quality podcast audio
+                           Podcast audio
                            {isPlaying && (
                               <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded">
                                  ♪ Playing
@@ -721,92 +740,94 @@ const PodcastDetail = () => {
                )}
             </div>
 
+            {/* Script Sidebar */}
             {isFullScriptOpen && hasScript && (
-   <div className="fixed inset-y-0 right-0 z-50 flex">
-      {/* Backdrop - clicking this closes the sidebar */}
-      <div
-         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-         onClick={() => setIsFullScriptOpen(false)}
-         style={{
-            animation: 'fadeIn 0.2s ease-out forwards',
-         }}
-      ></div>
+               <div className="fixed inset-y-0 right-0 z-50 flex">
+                  {/* Backdrop - clicking this closes the sidebar */}
+                  <div
+                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                     onClick={() => setIsFullScriptOpen(false)}
+                     style={{
+                        animation: 'fadeIn 0.2s ease-out forwards',
+                     }}
+                  ></div>
 
-      {/* Sidebar panel with inline animation */}
-      <div
-         className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
-         style={{
-            animation: 'slideInRight 0.3s ease-out forwards',
-         }}
-      >
-         {/* Header with emerald accent */}
-         <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-            <div className="relative flex items-center justify-between">
-               <div className="flex items-center min-w-0">
-                  <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
-                     <FileText className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div className="min-w-0">
-                     <h2 className="text-lg font-semibold text-white truncate">
-                        Podcast Script
-                     </h2>
-                     <p className="text-xs text-gray-400 truncate">{content.title}</p>
-                  </div>
-               </div>
-               <button
-                  onClick={() => setIsFullScriptOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
-               >
-                  <X className="w-5 h-5" />
-               </button>
-            </div>
-         </div>
-
-         {/* Content with emerald accents */}
-         <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
-            {/* Script sections - always open */}
-            {content.sections.map((section, sectionIndex) => (
-               <div
-                  key={sectionIndex}
-                  className="border-gray-700/20 pb-4 last:border-0"
-               >
-                  {/* Non-interactive section header */}
-                  <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
-                     <div className="flex items-center">
-                        <h3 className="text-sm font-medium text-emerald-400">
-                           {section.type?.charAt(0).toUpperCase() +
-                              section.type?.slice(1)}
-                        </h3>
+                  {/* Sidebar panel with inline animation */}
+                  <div
+                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+                     style={{
+                        animation: 'slideInRight 0.3s ease-out forwards',
+                     }}
+                  >
+                     {/* Header with emerald accent */}
+                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                        <div className="relative flex items-center justify-between">
+                           <div className="flex items-center min-w-0">
+                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                 <FileText className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <div className="min-w-0">
+                                 <h2 className="text-lg font-semibold text-white truncate">
+                                    Podcast Script
+                                 </h2>
+                                 <p className="text-xs text-gray-400 truncate">{content.title}</p>
+                              </div>
+                           </div>
+                           <button
+                              onClick={() => setIsFullScriptOpen(false)}
+                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+                           >
+                              <X className="w-5 h-5" />
+                           </button>
+                        </div>
                      </div>
-                  </div>
 
-                  {/* Section content - always visible */}
-                  {section.dialog && (
-                     <div className="px-4 pt-2">
-                        {section.dialog.map((line, lineIndex) => (
-                           <div key={lineIndex} className="mb-3 last:mb-0">
-                              <div
-                                 className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
-                                    line.speaker
-                                 )} text-white rounded mb-1`}
-                              >
-                                 {line.speaker}
+                     {/* Content with emerald accents */}
+                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                        {/* Script sections - always open */}
+                        {content.sections.map((section, sectionIndex) => (
+                           <div
+                              key={sectionIndex}
+                              className="border-gray-700/20 pb-4 last:border-0"
+                           >
+                              {/* Non-interactive section header */}
+                              <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
+                                 <div className="flex items-center">
+                                    <h3 className="text-sm font-medium text-emerald-400">
+                                       {section.type?.charAt(0).toUpperCase() +
+                                          section.type?.slice(1)}
+                                    </h3>
+                                 </div>
                               </div>
-                              <div className="text-gray-300 text-sm leading-relaxed">
-                                 {line.text}
-                              </div>
+
+                              {/* Section content - always visible */}
+                              {section.dialog && (
+                                 <div className="px-4 pt-2">
+                                    {section.dialog.map((line, lineIndex) => (
+                                       <div key={lineIndex} className="mb-3 last:mb-0">
+                                          <div
+                                             className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                line.speaker
+                                             )} text-white rounded mb-1`}
+                                          >
+                                             {line.speaker}
+                                          </div>
+                                          <div className="text-gray-300 text-sm leading-relaxed">
+                                             {line.text}
+                                          </div>
+                                       </div>
+                                    ))}
+                                 </div>
+                              )}
                            </div>
                         ))}
                      </div>
-                  )}
+                  </div>
                </div>
-            ))}
-         </div>
-      </div>
-   </div>
-)}
+            )}
 
+            {/* Sources Sidebar */}
             {isSourcesOpen && hasSources && (
                <div className="fixed inset-y-0 right-0 z-50 flex">
                   {/* Backdrop - clicking this closes the sidebar */}
