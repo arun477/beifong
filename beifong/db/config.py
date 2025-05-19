@@ -13,6 +13,7 @@ DEFAULT_DB_PATHS = {
     "faiss_index_db": "databases/faiss/article_index.faiss",
     "faiss_mapping_file": "databases/faiss/article_id_map.npy",
     "internal_sessions_db": "databases/internal_sessions.db",
+    "social_media_db": "databases/social_media.db",
 }
 
 
@@ -50,6 +51,9 @@ def get_faiss_db_path():
 
 def get_internal_sessions_db_path():
     return get_db_path("internal_sessions_db")
+
+def get_social_media_db_path():
+    return get_db_path("social_media_db")
 
 
 DB_PATH = "databases"

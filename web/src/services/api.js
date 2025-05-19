@@ -179,6 +179,19 @@ const endpoints = {
       getAudioUrl: filename => `${API_BASE_URL}/audio/${filename}`,
    },
 
+   socialMedia: {
+      getAll: (params = {}) => api.get('/api/social-media/', { params }),
+      getById: postId => api.get(`/api/social-media/${postId}`),
+      getStats: () => api.get('/api/social-media/stats'),
+      getTopPosts: (limit = 20, platform = null) => 
+         api.get('/api/social-media/top', { params: { limit, platform } }),
+      getRecentPosts: (limit = 20, platform = null, search = null) => 
+         api.get('/api/social-media/recent', { params: { limit, platform, search } }),
+      getPlatforms: () => api.get('/api/social-media/platforms/list'),
+      getAuthors: (limit = 100, search = null) => 
+         api.get('/api/social-media/authors/list', { params: { limit, search } }),
+   },
+
    API_BASE_URL: API_BASE_URL,
 };
 

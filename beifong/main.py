@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 import uvicorn
 import os
 import aiofiles
-from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
+from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router, social_media_router
 from services.db_init import init_databases
 
 # Load environment variables for configuration
@@ -59,6 +59,7 @@ app.include_router(podcast_router.router, prefix="/api/podcasts", tags=["podcast
 app.include_router(task_router.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(podcast_config_router.router, prefix="/api/podcast-configs", tags=["podcast-configs"])
 app.include_router(async_podcast_agent_router.router, prefix="/api/podcast-agent", tags=["podcast-agent"])
+app.include_router(social_media_router.router, prefix="/api/social-media", tags=["social-media"])
 
 
 @app.get("/api")
