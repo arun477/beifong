@@ -43,7 +43,8 @@ AGENT_INSTRUCTIONS = [
     "6a. Once image generation successfully generated switch on the image UI state and so user will see if the generated image is fine or not, you just ask user to confirm the image through UI. show_banner_for_confirmation will take care of it."
     "7. Once you got the confirmation from the user (throug UI) let's immediatly call the audio generation agent to generate the audio for the given podcast script.",
     "7a. Once audio generation successfully generated switch on the audio UI state and so user will see if the generated audio is fine or not, you just ask user to confirm the audio through UI. show_audio_for_confirmation will take care of it."
-    "8. Once you got the confirmation from the user (throug UI) let's immediatly call the mark_session_finished tool to mark the session as finished and if finish is successful then no further conversation are allowed and only new session can be started.",
+    "8. Once you got the confirmation from the user for audio (throug UI) let's immediatly call the mark_session_finished tool to mark the session as finished and if finish is successful then no further conversation are allowed and only new session can be started.",
+    "8a. It's important mark_session_finished should be called only when we have all the stages search->selection->script->image->audio are completed."
     "APPENDIX:",
     "1. You can enable appropriate UI states using the ui_manager tool, which takes [state_type, active] as input, and it takes care of the appropriate UI state for activating appropriate UI state.",
     f"1a. Available UI state types: {TOGGLE_UI_STATES}",

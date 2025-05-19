@@ -1,5 +1,103 @@
 from agno.agent import Agent
 from datetime import datetime
+from db.config import get_podcasts_db_path, DB_PATH
+import os
+import sqlite3
+import json
+
+
+def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
+    try:
+        if agent.session_state.get("podcast_id"):
+            return (
+                True,
+                f"Podcast already saved with ID: {agent.session_state['podcast_id']}",
+                agent.session_state["podcast_id"],
+            )
+        tts_engine = agent.session_state.get("tts_engine", "openai")
+        podcast_info = agent.session_state.get("podcast_info", {})
+        generated_script = agent.session_state.get("generated_script", {})
+        banner_url = agent.session_state.get("banner_url")
+        banner_images = json.dumps(agent.session_state.get("banner_images", []))
+        audio_url = agent.session_state.get("audio_url")
+        selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
+        language_code = selected_language.get("code", "en")
+        if not generated_script or not isinstance(generated_script, dict):
+            return (
+                False,
+                "Cannot complete podcast: Generated script is missing or invalid.",
+                None,
+            )
+        if "title" not in generated_script:
+            generated_script["title"] = podcast_info.get("topic", "Untitled Podcast")
+        if "sections" not in generated_script or not isinstance(generated_script["sections"], list):
+            return (
+                False,
+                "Cannot complete podcast: Generated script is missing required 'sections' array.",
+                None,
+            )
+        sources = []
+        if "sources" in generated_script and generated_script["sources"]:
+            for source in generated_script["sources"]:
+                if isinstance(source, str):
+                    sources.append(source)
+                elif isinstance(source, dict) and "url" in source:
+                    sources.append(source["url"])
+                elif isinstance(source, dict) and "link" in source:
+                    sources.append(source["link"])
+        generated_script["sources"] = sources
+        db_path = get_podcasts_db_path()
+        db_directory = DB_PATH
+        os.makedirs(db_directory, exist_ok=True)
+
+        conn = sqlite3.connect(db_path)
+        content_json = json.dumps(generated_script)
+        sources_json = json.dumps(sources) if sources else None
+        current_time = datetime.now().isoformat()
+        query = """
+            INSERT INTO podcasts (
+                title, 
+                date, 
+                content_json, 
+                audio_generated, 
+                audio_path,
+                banner_img_path, 
+                tts_engine, 
+                language_code, 
+                sources_json,
+                created_at,
+                banner_images
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+        conn.execute(
+            query,
+            (
+                generated_script.get("title", "Untitled Podcast"),
+                datetime.now().strftime("%Y-%m-%d"),
+                content_json,
+                1 if audio_url else 0,
+                audio_url,
+                banner_url,
+                tts_engine,
+                language_code,
+                sources_json,
+                current_time,
+                banner_images,
+            ),
+        )
+        conn.commit()
+
+        cursor = conn.execute("SELECT last_insert_rowid()")
+        podcast_id = cursor.fetchone()
+        podcast_id = podcast_id[0] if podcast_id else None
+        cursor.close()
+        conn.close()
+
+        agent.session_state["podcast_id"] = podcast_id
+        return True, f"Podcast successfully saved with ID: {podcast_id}", podcast_id
+    except Exception as e:
+        print(f"Error saving podcast to database: {e}")
+        return False, f"Error saving podcast to database: {str(e)}", None
 
 
 def update_language(agent: Agent, language_code: str) -> str:
@@ -40,6 +138,33 @@ def update_chat_title(agent: Agent, title: str) -> str:
     return f"Chat title updated to: {title}"
 
 
+def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
+    """
+    Toggle the podcast_generated flag.
+    When set to true, this indicates the podcast creation process is complete and
+    the UI should show the final presentation view with all components.
+    If status is True, also saves the podcast to the podcasts database.
+    """
+    if status:
+        agent.session_state["podcast_generated"] = status
+        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+        if status:
+            try:
+                success, message, podcast_id = _save_podcast_to_database_sync(agent)
+                if success and podcast_id:
+                    agent.session_state["podcast_id"] = podcast_id
+                    return f"Podcast generated and saved to database with ID: {podcast_id}. You can now access it from the Podcasts section."
+                else:
+                    return f"Podcast generated, but there was an issue with saving: {message}"
+            except Exception as e:
+                print(f"Error saving podcast to database: {e}")
+                return f"Podcast generated, but there was an error saving it to the database: {str(e)}"
+    else:
+        agent.session_state["podcast_generated"] = status
+        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+    return f"Podcast generated status changed to: {status}"
+
+
 def mark_session_finished(agent: Agent) -> str:
     """
     Mark the session as finished.
@@ -58,4 +183,5 @@ def mark_session_finished(agent: Agent) -> str:
         return "Audio is not generated yet."
     agent.session_state["finished"] = True
     agent.session_state["stage"] = "complete"
-    return "Session marked as finished and No further conversation are allowed and only new session can be started."
+    toggle_podcast_generated(agent, True)
+    return "Session marked as finished and generated podcast stored into podcasts database and No further conversation are allowed and only new session can be started."

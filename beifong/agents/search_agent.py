@@ -73,5 +73,6 @@ def search_agent_run(agent: Agent, query: str) -> str:
     )
     response = search_agent.run(query, session_id=agent.session_id)
     response_dict = response.to_dict()
+    agent.session_state['stage'] = 'search'
     agent.session_state["search_results"] = response_dict["content"]["items"]
     return f"Found {len(response_dict['content']['items'])} sources about {query} {'and added to the search_results' if agent.session_state['search_results'] else ''}"

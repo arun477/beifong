@@ -45,3 +45,10 @@ def get_agent_session_db_path():
 
 def get_faiss_db_path():
     return get_db_path("faiss_index_db"), get_db_path("faiss_mapping_file")
+
+
+DB_PATH = "databases"
+PODCAST_DIR = "podcasts"
+PODCAST_IMG_DIR = PODCAST_DIR + "/images"
+PODCAST_AUIDO_DIR = PODCAST_DIR + "/audio"
+PODCAST_RECORDINGS_DIR = PODCAST_DIR + "/recordings"

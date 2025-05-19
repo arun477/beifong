@@ -90,4 +90,5 @@ def image_generation_agent_run(agent: Agent, query: str) -> str:
     except Exception as e:
         print(f"Error in Image Generation Agent: {e}")
         return "Error in Image Generation Agent"
+    agent.session_state['stage'] = 'image'
     return "Required banner images for the podcast are generated successfully."

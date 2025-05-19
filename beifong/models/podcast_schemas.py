@@ -49,6 +49,7 @@ class PodcastDetail(BaseModel):
     content: PodcastContent
     audio_url: Optional[str] = None
     sources: Optional[List[Union[PodcastSource, str]]] = None
+    banner_images: Optional[List[str]] = None
 
 
 class PodcastCreate(BaseModel):

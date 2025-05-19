@@ -18,6 +18,9 @@ import {
    Trash2,
    Info,
    Pause,
+   ChevronLeft,
+   ChevronRight,
+   Image,
 } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -124,6 +127,103 @@ const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
                +{sources.length - maxIcons}
             </div>
          )}
+      </div>
+   );
+};
+
+const BannerCarousel = ({ bannerImages, title }) => {
+   const [currentIndex, setCurrentIndex] = useState(0);
+   const [isTransitioning, setIsTransitioning] = useState(false);
+   const totalImages = bannerImages.length;
+
+   const nextImage = () => {
+      if (isTransitioning) return;
+      setIsTransitioning(true);
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % totalImages);
+      setTimeout(() => setIsTransitioning(false), 500);
+   };
+
+   const prevImage = () => {
+      if (isTransitioning) return;
+      setIsTransitioning(true);
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + totalImages) % totalImages);
+      setTimeout(() => setIsTransitioning(false), 500);
+   };
+
+   useEffect(() => {
+      // Auto-rotate banners every 5 seconds
+      const interval = setInterval(() => {
+         nextImage();
+      }, 5000);
+      
+      return () => clearInterval(interval);
+   }, [currentIndex, isTransitioning]);
+
+   if (!bannerImages || bannerImages.length === 0) {
+      return null;
+   }
+
+   return (
+      <div className="h-80 relative overflow-hidden group">
+         {/* Current banner with fade transition */}
+         <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+               isTransitioning ? 'opacity-0' : 'opacity-100'
+            }`}
+         >
+            <img
+               src={`${apiService.API_BASE_URL}/podcast_img/${bannerImages[currentIndex]}`}
+               alt={`${title || 'Podcast'} - Banner ${currentIndex + 1}`}
+               className="w-full h-full object-cover"
+            />
+         </div>
+         
+         {/* Gradient overlay */}
+         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
+         
+         {/* Navigation buttons - only visible on hover */}
+         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button
+               onClick={prevImage}
+               className="p-2 bg-black/30 backdrop-blur-sm rounded-full text-white hover:bg-emerald-500/40 transition-all duration-300 transform hover:scale-110"
+               aria-label="Previous image"
+            >
+               <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+               onClick={nextImage}
+               className="p-2 bg-black/30 backdrop-blur-sm rounded-full text-white hover:bg-emerald-500/40 transition-all duration-300 transform hover:scale-110"
+               aria-label="Next image"
+            >
+               <ChevronRight className="w-6 h-6" />
+            </button>
+         </div>
+         
+         {/* Indicators */}
+         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {bannerImages.map((_, index) => (
+               <button
+                  key={index}
+                  onClick={() => {
+                     setIsTransitioning(true);
+                     setCurrentIndex(index);
+                     setTimeout(() => setIsTransitioning(false), 500);
+                  }}
+                  aria-label={`Go to image ${index + 1}`}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                     currentIndex === index
+                        ? 'bg-emerald-400 w-6'
+                        : 'bg-gray-400/50 hover:bg-gray-300/70'
+                  }`}
+               />
+            ))}
+         </div>
+         
+         {/* Image counter */}
+         <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+            <Image className="w-3 h-3" />
+            {currentIndex + 1}/{totalImages}
+         </div>
       </div>
    );
 };
@@ -318,6 +418,7 @@ const PodcastDetail = () => {
    const { podcast: podcastData, content, audio_url, sources } = podcast;
    const hasAudio = podcastData.audio_generated && audio_url;
    const hasBanner = !!podcastData.banner_img;
+   const hasBannerImages = podcast.banner_images && podcast.banner_images.length > 0;
    const hasSources = Array.isArray(sources) && sources.length > 0;
    const hasScript = content && content.sections && content.sections.length > 0;
    let streamingAudioUrl = '';
@@ -328,7 +429,7 @@ const PodcastDetail = () => {
    }
 
    return (
-      <div className="min-h-screen  py-4 px-4 relative overflow-hidden">
+      <div className="min-h-screen py-4 px-4 relative overflow-hidden">
          {/* Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -363,8 +464,13 @@ const PodcastDetail = () => {
             <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
                {/* Compact Header with Banner */}
                <div className="relative">
-                  {/* Banner as header background if available */}
-                  {hasBanner && (
+                  {/* Banner as header background - now using banner carousel if multiple images exist */}
+                  {hasBannerImages ? (
+                     <BannerCarousel 
+                        bannerImages={podcast.banner_images} 
+                        title={content.title || 'Podcast'} 
+                     />
+                  ) : hasBanner ? (
                      <div className="h-80 relative overflow-hidden">
                         <img
                            src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
@@ -373,12 +479,12 @@ const PodcastDetail = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
                      </div>
-                  )}
+                  ) : null}
 
                   {/* Header content overlay */}
                   <div
                      className={`${
-                        hasBanner ? 'absolute bottom-0 left-0 right-0' : ''
+                        hasBanner || hasBannerImages ? 'absolute bottom-0 left-0 right-0' : ''
                      } px-4 py-3 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30`}
                   >
                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
@@ -444,6 +550,12 @@ const PodcastDetail = () => {
                         <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-900/80 to-purple-800/80 text-purple-200 border border-purple-800/50">
                            <Sparkles className="w-3 h-3 mr-1" />
                            <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
+                        </div>
+                     )}
+                     {hasBannerImages && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-amber-900/80 to-amber-800/80 text-amber-200 border border-amber-800/50">
+                           <Image className="w-3 h-3 mr-1" />
+                           <span>{podcast.banner_images.length} Images</span>
                         </div>
                      )}
                   </div>

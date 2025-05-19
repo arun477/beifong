@@ -174,6 +174,7 @@ def init_podcasts_db():
             tts_engine TEXT DEFAULT 'elevenlabs',
             language_code TEXT DEFAULT 'en',
             sources_json TEXT,
+            banner_images TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)

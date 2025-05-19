@@ -331,6 +331,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
         podcast_title = script_data.get("title", "Your Podcast")
     else:
         podcast_title = "Your Podcast"
+    agent.session_state["stage"] = "audio"
     audio_dir = PODCAST_AUDIO_FOLDER
     audio_filename = f"podcast_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
     audio_path = os.path.join(audio_dir, audio_filename)

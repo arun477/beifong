@@ -293,7 +293,7 @@ const PodcastSession = () => {
       if (parsedState) {
          setSessionState(parsedState);
          setCurrentStage(parsedState.stage || currentStage);
-         if (parsedState.podcast_generated) setShowCompletionModal(true);
+         if (parsedState.podcast_generated) setShowCompletionModal(false);
          if (parsedState.show_recording_player !== undefined) {
             setShowRecordingPlayer(parsedState.show_recording_player);
          }
@@ -593,7 +593,8 @@ const PodcastSession = () => {
       setIsPreviewVisible(prev => !prev);
    }, []);
 
-   const showFinalPresentation = sessionState.podcast_generated === true;
+   const showFinalPresentation = sessionState.podcast_generated === true && sessionState.stage === 'complete' && sessionState.podcast_id;
+   console.log('sessionState.podcast_generated', sessionState.podcast_generated);
 
    const sidebarClass = isMobileSidebarOpen
       ? 'translate-x-0 shadow-lg'

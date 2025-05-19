@@ -122,6 +122,7 @@ def podcast_script_agent_run(
     response_dict = response_dict["content"]
     response_dict["sources"] = sources
     agent.session_state["generated_script"] = response_dict
+    agent.session_state['stage'] = 'script'
 
     if not agent.session_state["generated_script"] and not agent.session_state["generated_script"].get("sections"):
         return "Failed to generate podcast script."

@@ -154,6 +154,11 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
             class: 'bg-orange-900/30 text-orange-300 border-orange-600/30',
             label: 'banner',
          },
+         image: {
+            class: 'bg-orange-900/30 text-orange-300 border-orange-600/30',
+            label: 'image',
+         },
+
          audio: {
             class: 'bg-rose-900/30 text-rose-300 border-rose-600/30',
             label: 'audio',
