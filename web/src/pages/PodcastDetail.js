@@ -389,13 +389,14 @@ const PodcastDetail = () => {
       <div className="min-h-screen py-4 px-4 relative overflow-hidden">
          {/* Banner Image Background */}
          {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
-            <div className="fixed inset-0 w-full h-full z-0">
+                           <div className="fixed inset-0 w-full h-full z-0">
                {/* Current banner as background */}
-               <div className="absolute inset-0 w-full h-full opacity-40">
+               <div className="absolute inset-0 w-full h-full opacity-90">
                   <img 
                      src={`${apiService.API_BASE_URL}/podcast_img/${podcast.banner_images[currentBannerIndex]}`}
                      alt="Background"
-                     className="w-full h-full object-cover blur-xl transition-opacity duration-1000 ease-in-out bg-banner-background"
+                     className="w-full h-full object-cover blur-xl transition-all duration-1500 ease-in-out bg-banner-background"
+                     style={{ transform: 'scale(1.05)' }}
                   />
                   {/* Gradient overlay for better readability */}
                   <div className="absolute inset-0 bg-gradient-to-b from-gray-900/90 via-gray-900/80 to-gray-900/95" />
@@ -412,7 +413,7 @@ const PodcastDetail = () => {
             ></div>
          </div>
 
-         <div className="max-w-lg mx-auto relative z-10 backdrop-blur-lg bg-gray-900/20 p-1 rounded-3xl">
+         <div className="max-w-lg mx-auto relative z-10">
             {/* Back Button */}
             <button
                onClick={handleGoBack}
@@ -434,7 +435,7 @@ const PodcastDetail = () => {
             </button>
 
             {/* Ultra Compact Card */}
-            <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl">
+            <div className="bg-gradient-to-br from-gray-900/80 via-gray-850/80 to-gray-800/80 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl backdrop-blur-lg">
                {/* Banner Carousel */}
                {hasBannerCarousel && (
                   <div className="h-80 relative overflow-hidden mb-16">
@@ -770,7 +771,7 @@ const PodcastDetail = () => {
 
                   {/* Sidebar panel with inline animation */}
                   <div
-                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
                      style={{
                         animation: 'slideInRight 0.3s ease-out forwards',
                      }}
@@ -857,7 +858,7 @@ const PodcastDetail = () => {
 
                   {/* Sidebar panel with inline animation */}
                   <div
-                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 h-full shadow-2xl overflow-hidden border-l border-gray-700/50"
+                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
                      style={{
                         animation: 'slideInRight 0.3s ease-out forwards',
                      }}
