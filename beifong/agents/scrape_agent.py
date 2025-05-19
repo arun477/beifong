@@ -102,7 +102,7 @@ def verify_content_with_agent(agent, query, search_results, use_agent=True):
                 f"Query: {query}\n"
                 f"Verify and format this scraped content. "
                 f"Keep content relevant to the query and ensure quality: {content_for_verification}",
-                session_id=agent.session_id
+                session_id=agent.session_id,
             )
             verified_item = response.to_dict()["content"]
             search_result["full_text"] = verified_item.get("full_text", search_result["full_text"])
@@ -127,7 +127,14 @@ def scrape_agent_run(
         Response status
     """
     print("Scrape Agent Input:", query)
-    updated_results, _, _ = crawl_urls_batch(agent.session_state["search_results"])
+    session_id = agent.session_id
+    from services.internal_session_service import SessionService
+
+    session = SessionService.get_session(session_id)
+    current_state = session["state"]
+    updated_results, _, _ = crawl_urls_batch(current_state["search_results"])
     verified_results = verify_content_with_agent(agent, query, updated_results, use_agent=False)
-    agent.session_state["search_results"] = verified_results
-    return f"Scraped {len(agent.session_state['search_results'])} sources with full content relevant to '{query}'{' and updated the full text and published date in the search_results items' if agent.session_state['search_results'] else ''}."
+    current_state["search_results"] = verified_results
+    SessionService.save_session(session_id, current_state)
+    has_results = "search_results" in current_state and current_state["search_results"]
+    return f"Scraped {len(current_state['search_results'])} sources with full content relevant to '{query}'{' and updated the full text and published date in the search_results items' if has_results else ''}."

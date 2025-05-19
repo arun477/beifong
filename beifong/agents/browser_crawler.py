@@ -124,9 +124,7 @@ class PlaywrightScraper:
                 "final_url": final_url,
                 "title": article.title or "",
                 "authors": article.authors or [],
-                "published_date": article.publish_date.isoformat()
-                if article.publish_date
-                else None,
+                "published_date": article.publish_date.isoformat() if article.publish_date else None,
                 "full_text": article.text or "",
                 "success": True,
             }

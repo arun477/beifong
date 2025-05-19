@@ -101,8 +101,13 @@ def podcast_script_agent_run(
     Returns:
         Response status
     """
+    from services.internal_session_service import SessionService
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
+    
     print("Podcast Script Agent Input:", query)
-    content_texts, sources = format_search_results_for_podcast(agent.session_state.get("search_results", []))
+    content_texts, sources = format_search_results_for_podcast(session_state.get("search_results", []))
     if not content_texts:
         return "No confirmed sources found to generate podcast script."
 
@@ -121,9 +126,10 @@ def podcast_script_agent_run(
     response_dict = response.to_dict()
     response_dict = response_dict["content"]
     response_dict["sources"] = sources
-    agent.session_state["generated_script"] = response_dict
-    agent.session_state['stage'] = 'script'
+    session_state["generated_script"] = response_dict
+    session_state['stage'] = 'script'
+    SessionService.save_session(session_id, session_state)
 
-    if not agent.session_state["generated_script"] and not agent.session_state["generated_script"].get("sections"):
+    if not session_state["generated_script"] and not session_state["generated_script"].get("sections"):
         return "Failed to generate podcast script."
     return f"Generated podcast script for '{query}' with {len(sources)} confirmed sources."

@@ -8,6 +8,7 @@ from textwrap import dedent
 from agents.wikipedia_search import wikipedia_search
 from agents.google_news_discovery import google_news_discovery_run
 
+
 load_dotenv()
 
 
@@ -58,6 +59,11 @@ def search_agent_run(agent: Agent, query: str) -> str:
         A formatted string response with the search results (link and gist only)
     """
     print("Search Agent Input:", query)
+    session_id = agent.session_id
+    from services.internal_session_service import SessionService
+
+    session = SessionService.get_session(session_id)
+    current_state = session["state"]
     search_agent = Agent(
         model=OpenAIChat(id="gpt-4o-mini"),
         instructions=SEARCH_AGENT_INSTRUCTIONS,
@@ -69,10 +75,12 @@ def search_agent_run(agent: Agent, query: str) -> str:
             DuckDuckGoTools(),
             wikipedia_search,
         ],
-        session_id=agent.session_id,
+        session_id=session_id,
     )
-    response = search_agent.run(query, session_id=agent.session_id)
+    response = search_agent.run(query, session_id=session_id)
     response_dict = response.to_dict()
-    agent.session_state['stage'] = 'search'
-    agent.session_state["search_results"] = response_dict["content"]["items"]
-    return f"Found {len(response_dict['content']['items'])} sources about {query} {'and added to the search_results' if agent.session_state['search_results'] else ''}"
+    current_state["stage"] = "search"
+    current_state["search_results"] = response_dict["content"]["items"]
+    SessionService.save_session(session_id, current_state)
+    has_results = "search_results" in current_state and current_state["search_results"]
+    return f"Found {len(response_dict['content']['items'])} sources about {query} {'and added to the search_results' if has_results else ''}"

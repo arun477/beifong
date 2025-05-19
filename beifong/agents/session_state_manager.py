@@ -6,21 +6,21 @@ import sqlite3
 import json
 
 
-def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
+def _save_podcast_to_database_sync(session_state: dict) -> tuple[bool, str, int]:
     try:
-        if agent.session_state.get("podcast_id"):
+        if session_state.get("podcast_id"):
             return (
                 True,
-                f"Podcast already saved with ID: {agent.session_state['podcast_id']}",
-                agent.session_state["podcast_id"],
+                f"Podcast already saved with ID: {session_state['podcast_id']}",
+                session_state["podcast_id"],
             )
-        tts_engine = agent.session_state.get("tts_engine", "openai")
-        podcast_info = agent.session_state.get("podcast_info", {})
-        generated_script = agent.session_state.get("generated_script", {})
-        banner_url = agent.session_state.get("banner_url")
-        banner_images = json.dumps(agent.session_state.get("banner_images", []))
-        audio_url = agent.session_state.get("audio_url")
-        selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
+        tts_engine = session_state.get("tts_engine", "openai")
+        podcast_info = session_state.get("podcast_info", {})
+        generated_script = session_state.get("generated_script", {})
+        banner_url = session_state.get("banner_url")
+        banner_images = json.dumps(session_state.get("banner_images", []))
+        audio_url = session_state.get("audio_url")
+        selected_language = session_state.get("selected_language", {"code": "en", "name": "English"})
         language_code = selected_language.get("code", "en")
         if not generated_script or not isinstance(generated_script, dict):
             return (
@@ -93,7 +93,7 @@ def _save_podcast_to_database_sync(agent: Agent) -> tuple[bool, str, int]:
         cursor.close()
         conn.close()
 
-        agent.session_state["podcast_id"] = podcast_id
+        session_state["podcast_id"] = podcast_id
         return True, f"Podcast successfully saved with ID: {podcast_id}", podcast_id
     except Exception as e:
         print(f"Error saving podcast to database: {e}")
@@ -133,12 +133,18 @@ def update_chat_title(agent: Agent, title: str) -> str:
     Returns:
         Confirmation message
     """
-    agent.session_state["title"] = title
-    agent.session_state["created_at"] = datetime.now().isoformat()
+    from services.internal_session_service import SessionService
+
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    current_state = session["state"]
+    current_state["title"] = title
+    current_state["created_at"] = datetime.now().isoformat()
+    SessionService.save_session(session_id, current_state)
     return f"Chat title updated to: {title}"
 
 
-def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
+def toggle_podcast_generated(session_state: dict, status: bool = False) -> str:
     """
     Toggle the podcast_generated flag.
     When set to true, this indicates the podcast creation process is complete and
@@ -146,13 +152,13 @@ def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
     If status is True, also saves the podcast to the podcasts database.
     """
     if status:
-        agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+        session_state["podcast_generated"] = status
+        session_state["stage"] = "complete" if status else session_state.get("stage")
         if status:
             try:
-                success, message, podcast_id = _save_podcast_to_database_sync(agent)
+                success, message, podcast_id = _save_podcast_to_database_sync(session_state)
                 if success and podcast_id:
-                    agent.session_state["podcast_id"] = podcast_id
+                    session_state["podcast_id"] = podcast_id
                     return f"Podcast generated and saved to database with ID: {podcast_id}. You can now access it from the Podcasts section."
                 else:
                     return f"Podcast generated, but there was an issue with saving: {message}"
@@ -160,8 +166,8 @@ def toggle_podcast_generated(agent: Agent, status: bool = False) -> str:
                 print(f"Error saving podcast to database: {e}")
                 return f"Podcast generated, but there was an error saving it to the database: {str(e)}"
     else:
-        agent.session_state["podcast_generated"] = status
-        agent.session_state["stage"] = "complete" if status else agent.session_state.get("stage")
+        session_state["podcast_generated"] = status
+        session_state["stage"] = "complete" if status else session_state.get("stage")
     return f"Podcast generated status changed to: {status}"
 
 
@@ -174,14 +180,19 @@ def mark_session_finished(agent: Agent) -> str:
     Returns:
         Confirmation message
     """
-    session_state = agent.session_state
+    from services.internal_session_service import SessionService
+
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
     if not session_state.get("generated_script"):
         return "Podcast Script is not generated yet."
     if not session_state.get("banner_url"):
         return "Banner is not generated yet."
     if not session_state.get("audio_url"):
         return "Audio is not generated yet."
-    agent.session_state["finished"] = True
-    agent.session_state["stage"] = "complete"
-    toggle_podcast_generated(agent, True)
+    session_state["finished"] = True
+    session_state["stage"] = "complete"
+    toggle_podcast_generated(session_state, True)
+    SessionService.save_session(session_id, session_state)
     return "Session marked as finished and generated podcast stored into podcasts database and No further conversation are allowed and only new session can be started."

@@ -4,7 +4,8 @@ from agno.storage.sqlite import SqliteStorage
 import os
 from dotenv import load_dotenv
 import multiprocessing
-multiprocessing.set_start_method('spawn', force=True)
+
+multiprocessing.set_start_method("spawn", force=True)
 from services.celery_app import app, SessionLockedTask
 
 from db.config import get_agent_session_db_path
@@ -35,6 +36,9 @@ def agent_chat(self, session_id, message):
         print(f"Processing message for session {session_id}: {message[:50]}...")
         db_file = get_agent_session_db_path()
         os.makedirs(os.path.dirname(db_file), exist_ok=True)
+        from services.internal_session_service import SessionService
+        session_state = SessionService.get_session(session_id).get("state", INITIAL_SESSION_STATE)
+
         _agent = Agent(
             model=OpenAIChat(id=AGENT_MODEL, api_key=os.getenv("OPENAI_API_KEY")),
             storage=SqliteStorage(table_name="podcast_sessions", db_file=db_file),
@@ -44,7 +48,7 @@ def agent_chat(self, session_id, message):
             num_history_runs=30,
             instructions=AGENT_INSTRUCTIONS,
             description=AGENT_DESCRIPTION,
-            session_state=INITIAL_SESSION_STATE,
+            session_state=session_state,
             session_id=session_id,
             tools=[
                 search_agent_run,
@@ -63,11 +67,12 @@ def agent_chat(self, session_id, message):
         response = _agent.run(message, session_id=session_id)
         print(f"Response generated for session {session_id}")
         _agent.write_to_storage(session_id=session_id)
+        session_state = SessionService.get_session(session_id).get("state", INITIAL_SESSION_STATE)
         return {
             "session_id": session_id,
             "response": response.content,
             "stage": _agent.session_state.get("stage", "unknown"),
-            "session_state": json.dumps(_agent.session_state),
+            "session_state": json.dumps(session_state),
             "is_processing": False,
             "process_type": None,
         }

@@ -322,7 +322,11 @@ def audio_generate_agent_run(agent: Agent) -> str:
     Returns:
         A message with the result of audio generation
     """
-    script_data = agent.session_state.get("generated_script", {})
+    from services.internal_session_service import SessionService
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
+    script_data = session_state.get("generated_script", {})
     if not script_data or (isinstance(script_data, dict) and not script_data.get("sections")):
         error_msg = "Cannot generate audio: No podcast script data found. Please generate a script first."
         print(error_msg)
@@ -331,7 +335,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
         podcast_title = script_data.get("title", "Your Podcast")
     else:
         podcast_title = "Your Podcast"
-    agent.session_state["stage"] = "audio"
+    session_state["stage"] = "audio"
     audio_dir = PODCAST_AUDIO_FOLDER
     audio_filename = f"podcast_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
     audio_path = os.path.join(audio_dir, audio_filename)
@@ -351,7 +355,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
                 print(error_msg)
                 return error_msg
 
-            selected_language = agent.session_state.get("selected_language", {"code": "en", "name": "English"})
+            selected_language = session_state.get("selected_language", {"code": "en", "name": "English"})
             language_code = selected_language.get("code", "en")
             language_name = selected_language.get("name", "English")
             tts_engine = "openai"
@@ -372,8 +376,9 @@ def audio_generate_agent_run(agent: Agent) -> str:
                 return error_msg
 
             audio_url = f"{os.path.basename(full_audio_path)}"
-            agent.session_state["audio_url"] = audio_url
-            agent.session_state["show_audio_for_confirmation"] = True
+            session_state["audio_url"] = audio_url
+            session_state["show_audio_for_confirmation"] = True
+            SessionService.save_session(session_id, session_state)
             print(f"Successfully generated podcast audio: {full_audio_path}")
             return f"I've generated the audio for your '{podcast_title}' podcast using {tts_engine.capitalize()} voices in {language_name}. You can listen to it in the player below. What do you think? If it sounds good, click 'Sounds Great!' to complete your podcast."
         else:

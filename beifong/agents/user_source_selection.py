@@ -17,9 +17,14 @@ def user_source_selection_run(
     Returns:
         Response status
     """
-    for i, src in enumerate(agent.session_state["search_results"]):
+    from services.internal_session_service import SessionService
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
+    for i, src in enumerate(session_state["search_results"]):
         if (i+1) in selected_sources:
             src["confirmed"] = True
         else:
             src["confirmed"] = False
+    SessionService.save_session(session_id, session_state)
     return f"Updated selected sources to {selected_sources}."

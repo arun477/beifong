@@ -14,6 +14,7 @@ from db.agent_config import (
 )
 from services.celery_tasks import agent_chat
 from dotenv import load_dotenv
+from services.internal_session_service import SessionService
 
 load_dotenv()
 
@@ -171,8 +172,9 @@ class PodcastAgentService:
                     "session_state": "{}",
                     "is_processing": False,
                 }
-            session_data = json.loads(row["session_data"]) if isinstance(row["session_data"], str) else row["session_data"]
-            session_state = session_data.get("session_state", {})
+
+            session = SessionService.get_session(session_id)
+            session_state = session.get("state", {})
             return {
                 "session_id": session_id,
                 "response": "",
@@ -222,8 +224,8 @@ class PodcastAgentService:
                     sessions = []
                     for row in rows:
                         try:
-                            session_data = json.loads(row["session_data"]) if isinstance(row["session_data"], str) else row["session_data"]
-                            session_state = session_data.get("session_state", {})
+                            session = SessionService.get_session(row["session_id"])
+                            session_state = session.get("state", {})
                             title = session_state.get("title", "Untitled Podcast")
                             stage = session_state.get("stage", "welcome")
                             updated_at = row["updated_at"]
@@ -253,12 +255,13 @@ class PodcastAgentService:
                 if not row:
                     return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"error": f"Session with ID {session_id} not found"})
                 try:
-                    session_data = json.loads(row["session_data"]) if isinstance(row["session_data"], str) else row["session_data"]
-                    stage = session_data.get("session_state", {}).get("stage")
-                    is_completed = stage == "complete" or session_data.get("session_state", {}).get("podcast_generated", False)
-                    banner_url = session_data.get("session_state", {}).get("banner_url")
-                    audio_url = session_data.get("session_state", {}).get("audio_url")
-                    web_search_recording = session_data.get("session_state", {}).get("web_search_recording")
+                    session = SessionService.get_session(session_id)
+                    session_state = session.get("state", {})
+                    stage = session_state.get("stage")
+                    is_completed = stage == "complete" or session_state.get("podcast_generated", False)
+                    banner_url = session_state.get("banner_url")
+                    audio_url = session_state.get("audio_url")
+                    web_search_recording = session_state.get("web_search_recording")
                     await conn.execute("DELETE FROM podcast_sessions WHERE session_id = ?", (session_id,))
                     await conn.commit()
                     if is_completed:
@@ -301,16 +304,14 @@ class PodcastAgentService:
             print(f"Error deleting session: {e}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Failed to delete session: {str(e)}"})
 
-    async def _get_chat_messages(self, row):
+    async def _get_chat_messages(self, row, session_id):
         formatted_messages = []
         session_state = {}
         if row["session_data"]:
             try:
-                if isinstance(row["session_data"], str):
-                    session_state = json.loads(row["session_data"])["session_state"]
-                else:
-                    session_state = row["session_data"]["session_state"]
-            except json.JSONDecodeError as e:
+                session = SessionService.get_session(session_id)
+                session_state = session.get("state", {})
+            except Exception as e:
                 print(f"Error parsing session_data: {e}")
 
         if row["memory"]:
@@ -349,7 +350,7 @@ class PodcastAgentService:
                     row = await cursor.fetchone()
                 if not row:
                     return {"session_id": session_id, "messages": [], "state": "{}", "is_processing": False, "process_type": None}
-                formatted_messages, session_state = await self._get_chat_messages(row)
+                formatted_messages, session_state = await self._get_chat_messages(row, session_id)
 
             task_id = await self.get_active_task(session_id)
             is_processing = bool(task_id)

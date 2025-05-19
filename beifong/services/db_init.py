@@ -251,6 +251,23 @@ async def init_agent_session_db():
     pass
 
 
+def init_internal_sessions_db():
+    """Initialize the internal sessions database."""
+    db_path = get_db_path("internal_sessions_db")
+    with db_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS session_state (
+            session_id TEXT PRIMARY KEY,
+            state JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_state_session_id ON session_state(session_id)")
+        conn.commit()
+    print("Internal sessions database initialized.")
+
+
 async def init_databases():
     """Initialize all databases."""
     print("Initializing all databases...")
@@ -261,6 +278,7 @@ async def init_databases():
     init_tracking_db()
     init_podcasts_db()
     init_tasks_db()
+    init_internal_sessions_db()
     print("All databases initialized.")
 
 

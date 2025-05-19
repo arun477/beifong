@@ -64,6 +64,11 @@ def image_generation_agent_run(agent: Agent, query: str) -> str:
     Returns:
         Response status
     """
+    from services.internal_session_service import SessionService
+
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
     print("Image Generation Agent input: ", query)
 
     try:
@@ -74,9 +79,9 @@ def image_generation_agent_run(agent: Agent, query: str) -> str:
             instructions=IMAGE_GENERATION_AGENT_INSTRUCTIONS,
             markdown=True,
             show_tool_calls=True,
-            session_id=agent.session_id
+            session_id=agent.session_id,
         )
-        image_agent.run(f"query: {query},\n podcast script: {json.dumps(agent.session_state['generated_script'])}", session_id=agent.session_id)
+        image_agent.run(f"query: {query},\n podcast script: {json.dumps(session_state['generated_script'])}", session_id=agent.session_id)
         images = image_agent.get_images()
         image_urls = []
         if images and isinstance(images, list):
@@ -84,11 +89,12 @@ def image_generation_agent_run(agent: Agent, query: str) -> str:
                 image_url = image_response.url
                 image_urls.append(image_url)
         local_image_filenames = download_images(image_urls)
-        agent.session_state["banner_images"] = local_image_filenames
+        session_state["banner_images"] = local_image_filenames
         if local_image_filenames:
-            agent.session_state["banner_url"] = local_image_filenames[0]
+            session_state["banner_url"] = local_image_filenames[0]
     except Exception as e:
         print(f"Error in Image Generation Agent: {e}")
         return "Error in Image Generation Agent"
-    agent.session_state['stage'] = 'image'
+    session_state["stage"] = "image"
+    SessionService.save_session(session_id, session_state)
     return "Required banner images for the podcast are generated successfully."
