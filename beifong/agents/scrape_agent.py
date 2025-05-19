@@ -2,8 +2,9 @@ from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from agents.browser_crawler import browser_crawler
+from agents.browser_crawler import create_browser_crawler
 from textwrap import dedent
+
 
 load_dotenv()
 
@@ -53,6 +54,7 @@ def crawl_urls_batch(search_results):
             url_to_search_results[url] = []
             unique_urls.append(url)
         url_to_search_results[url].append(search_result)
+    browser_crawler = create_browser_crawler()
     scraped_results = browser_crawler.scrape_urls(unique_urls)
     url_to_scraped = {result["original_url"]: result for result in scraped_results}
     updated_search_results = []

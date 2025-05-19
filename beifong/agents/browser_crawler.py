@@ -137,4 +137,10 @@ class PlaywrightScraper:
             }
 
 
-browser_crawler = PlaywrightScraper()
+def create_browser_crawler(headless=True, timeout=20000, fresh_context_per_url=False):
+    """Factory function to create a new PlaywrightScraper instance."""
+    return PlaywrightScraper(
+        headless=headless,
+        timeout=timeout,
+        fresh_context_per_url=fresh_context_per_url
+    )

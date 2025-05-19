@@ -3,9 +3,9 @@ from services.celery_tasks import app
 worker_options = [
     "worker",
     "--loglevel=INFO",
-    "--concurrency=2",
+    "--concurrency=4",
     "--hostname=beifong_worker@%h",
-    "--pool=prefork",
+    "--pool=threads",
 ]
 
 if __name__ == "__main__":

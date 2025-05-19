@@ -1,6 +1,3 @@
-from gnews import GNews
-import json
-
 
 def search_news(google_news, keyword):
     resutls = google_news.get_news(keyword)
@@ -22,6 +19,9 @@ def google_news_discovery_run(
     max_results: int = 5,
     top_news: bool = False,
 ) -> str:
+    from gnews import GNews
+    import json
+    
     """
     This is a wrapper function for the google news.
 

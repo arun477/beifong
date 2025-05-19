@@ -1,7 +1,4 @@
 from agno.agent import Agent
-import requests
-import html
-import json
 
 
 def wikipedia_search(agent: Agent, query: str, srlimit: int = 5) -> str:
@@ -17,6 +14,10 @@ def wikipedia_search(agent: Agent, query: str, srlimit: int = 5) -> str:
     Returns:
         A formatted string response with the search results (link and gist only)
     """
+    import requests
+    import html
+    import json
+    
     print("Wikipedia Search Input:", query)
     try:
         search_url = "https://en.wikipedia.org/w/api.php"
