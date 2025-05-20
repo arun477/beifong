@@ -64,3 +64,8 @@ async def get_session_history(session_id: str):
 async def delete_session(session_id: str):
     """Delete a podcast session and all its data"""
     return await podcast_agent_service.delete_session(session_id)
+
+@router.get("/languages")
+async def get_supported_languages():
+    """Get the list of supported languages"""
+    return await podcast_agent_service.get_supported_languages()

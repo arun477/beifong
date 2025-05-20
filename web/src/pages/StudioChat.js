@@ -31,22 +31,12 @@ const PodcastSession = () => {
    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
    const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
    const [selectedLanguageCode, setSelectedLanguageCode] = useState('en');
-   const [availableLanguages, setAvailableLanguages] = useState([
-      { code: 'en', name: 'English' },
-      { code: 'zh', name: 'Chinese (Mandarin)' },
-      { code: 'hi', name: 'Hindi' },
-      { code: 'es', name: 'Spanish' },
-      { code: 'fr', name: 'French' },
-      { code: 'ar', name: 'Arabic' },
-      { code: 'bn', name: 'Bengali' },
-      { code: 'ru', name: 'Russian' },
-      { code: 'pt', name: 'Portuguese' },
-      { code: 'id', name: 'Indonesian' },
-   ]);
+   const [availableLanguages, setAvailableLanguages] = useState([{ code: 'en', name: 'English' }]);
    const chatContainerRef = useRef(null);
    const pollTimerRef = useRef(null);
    const messagesEndRef = useRef(null);
    const inputRef = useRef(null);
+
 
    useEffect(() => {
       if (sessionId) {
@@ -90,6 +80,17 @@ const PodcastSession = () => {
          setSelectedLanguageCode(sessionState.selected_language.code);
       }
    }, [sessionState]);
+
+   const getLanguages = async () => {
+      try {
+         const response = await api.podcastAgent.languages();
+         if (response?.data && response.data?.languages?.length > 0) {
+            setAvailableLanguages(response.data.languages);
+         }
+      } catch (error) {
+         console.error('Error fetching languages:', error);
+      }
+   };
 
    const parseSessionState = stateString => {
       if (!stateString) return null;
@@ -147,14 +148,14 @@ const PodcastSession = () => {
                  ]
          );
 
-         // Check if there's any active processing for this session
+         getLanguages();
          if (historyData.data.is_processing) {
             console.log(
                `Session ${confirmedSessionId} has active processing: ${historyData.data.process_type}`
             );
             setIsProcessing(true);
             setProcessingType(historyData.data.process_type || 'unknown');
-            
+
             // If we have an active task ID, use it for polling
             if (historyData.data.task_id) {
                setCurrentTaskId(historyData.data.task_id);
@@ -254,7 +255,7 @@ const PodcastSession = () => {
          if (response.data.task_id) {
             setCurrentTaskId(response.data.task_id);
          }
-         
+
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -308,7 +309,7 @@ const PodcastSession = () => {
 
       // Store the current session ID at poll start time to ensure consistency
       const currentSessionId = sessionId;
-      
+
       // If a taskId is provided, update the current task ID
       if (taskId) {
          setCurrentTaskId(taskId);
@@ -446,7 +447,7 @@ const PodcastSession = () => {
          if (response.data.task_id) {
             setCurrentTaskId(response.data.task_id);
          }
-         
+
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -519,7 +520,7 @@ const PodcastSession = () => {
          if (response.data.task_id) {
             setCurrentTaskId(response.data.task_id);
          }
-         
+
          // Set processing state but don't add a "processing" message to the chat
          setIsProcessing(true);
 
@@ -593,7 +594,10 @@ const PodcastSession = () => {
       setIsPreviewVisible(prev => !prev);
    }, []);
 
-   const showFinalPresentation = sessionState.podcast_generated === true && sessionState.stage === 'complete' && sessionState.podcast_id;
+   const showFinalPresentation =
+      sessionState.podcast_generated === true &&
+      sessionState.stage === 'complete' &&
+      sessionState.podcast_id;
    console.log('sessionState.podcast_generated', sessionState.podcast_generated);
 
    const sidebarClass = isMobileSidebarOpen
@@ -781,9 +785,11 @@ const PodcastSession = () => {
                                     {processingType
                                        ? `Processing ${processingType}...`
                                        : 'Processing request...'}
-                                    {currentTaskId && 
-                                       <span className="ml-1 text-xs opacity-60">(Task: {currentTaskId.substring(0, 8)})</span>
-                                    }
+                                    {currentTaskId && (
+                                       <span className="ml-1 text-xs opacity-60">
+                                          (Task: {currentTaskId.substring(0, 8)})
+                                       </span>
+                                    )}
                                  </span>
                               </div>
                            </div>
@@ -807,7 +813,7 @@ const PodcastSession = () => {
                                     onSelectLanguage={handleLanguageSelection}
                                  />
                               )}
-                           {(sessionState.show_script_for_confirmation) &&
+                           {sessionState.show_script_for_confirmation &&
                               sessionState.generated_script && (
                                  <ScriptConfirmation
                                     generated_script={sessionState.generated_script}

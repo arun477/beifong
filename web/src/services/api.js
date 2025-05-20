@@ -150,6 +150,7 @@ const endpoints = {
       getLanguageCodes: () => api.get('/api/podcasts/language-codes'),
    },
    podcastAgent: {
+      languages: () => api.get('/api/podcast-agent/languages'),
       createSession: (sessionId = null) =>
          api.post('/api/podcast-agent/session', {
             session_id: sessionId,
@@ -159,13 +160,11 @@ const endpoints = {
             session_id: sessionId,
             message,
          }),
-      // Updated to include optional task_id parameter
       checkStatus: (sessionId, taskId = null) =>
          api.post('/api/podcast-agent/status', {
             session_id: sessionId,
             task_id: taskId,
          }),
-      // Keep existing endpoints
       getLatestMessage: sessionId =>
          api.get(`/api/podcast-agent/latest_message?session_id=${sessionId}`),
       listSessions: (page = 1, perPage = 10) =>
@@ -183,12 +182,12 @@ const endpoints = {
       getAll: (params = {}) => api.get('/api/social-media/', { params }),
       getById: postId => api.get(`/api/social-media/${postId}`),
       getStats: () => api.get('/api/social-media/stats'),
-      getTopPosts: (limit = 20, platform = null) => 
+      getTopPosts: (limit = 20, platform = null) =>
          api.get('/api/social-media/top', { params: { limit, platform } }),
-      getRecentPosts: (limit = 20, platform = null, search = null) => 
+      getRecentPosts: (limit = 20, platform = null, search = null) =>
          api.get('/api/social-media/recent', { params: { limit, platform, search } }),
       getPlatforms: () => api.get('/api/social-media/platforms/list'),
-      getAuthors: (limit = 100, search = null) => 
+      getAuthors: (limit = 100, search = null) =>
          api.get('/api/social-media/authors/list', { params: { limit, search } }),
    },
 

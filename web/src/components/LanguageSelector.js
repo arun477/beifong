@@ -4,7 +4,7 @@ import { ChevronDown, Search, Check, Globe2, X } from 'lucide-react';
 const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDisabled }) => {
    // Use provided languages or default to English
    const availableLanguages = languages || [{ code: 'en', name: 'English' }];
-   
+
    const [isOpen, setIsOpen] = useState(false);
    const [searchQuery, setSearchQuery] = useState('');
    const [filteredLanguages, setFilteredLanguages] = useState(availableLanguages);
@@ -15,9 +15,10 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
       if (!searchQuery) {
          setFilteredLanguages(availableLanguages);
       } else {
-         const filtered = availableLanguages.filter(lang =>
-            lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            lang.code.toLowerCase().includes(searchQuery.toLowerCase())
+         const filtered = availableLanguages.filter(
+            lang =>
+               lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               lang.code.toLowerCase().includes(searchQuery.toLowerCase())
          );
          setFilteredLanguages(filtered);
       }
@@ -31,7 +32,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
    }, [isOpen]);
 
    // Handle language selection - call with just the code like the old component
-   const handleLanguageSelect = (language) => {
+   const handleLanguageSelect = language => {
       onSelectLanguage(language.code);
       setIsOpen(false);
       setSearchQuery('');
@@ -44,49 +45,46 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
 
    const selectedLang = availableLanguages.find(lang => lang.code === selectedLanguage);
 
-   // Get flag emoji from language code - only for clear, unambiguous mappings
-   const getFlagEmoji = (code) => {
-      // Only include languages that are clearly associated with a single country
-      // Avoid sub-languages, regional variants, or languages spoken across multiple countries
+   const getFlagEmoji = code => {
       const clearCountryMap = {
-         'en': 'US', // English - using US as most common
-         'zh': 'CN', // Chinese - simplified Chinese
-         'es': 'ES', // Spanish - using Spain
-         'fr': 'FR', // French - using France
-         'de': 'DE', // German
-         'ja': 'JP', // Japanese
-         'ko': 'KR', // Korean
-         'ru': 'RU', // Russian
-         'it': 'IT', // Italian
-         'pt': 'PT', // Portuguese - using Portugal
-         'nl': 'NL', // Dutch
-         'sv': 'SE', // Swedish
-         'no': 'NO', // Norwegian
-         'da': 'DK', // Danish
-         'fi': 'FI', // Finnish
-         'pl': 'PL', // Polish
-         'tr': 'TR', // Turkish
-         'he': 'IL', // Hebrew
-         'cs': 'CZ', // Czech
-         'hu': 'HU', // Hungarian
-         'th': 'TH', // Thai
-         'vi': 'VN', // Vietnamese
-         'uk': 'UA', // Ukrainian
-         'is': 'IS', // Icelandic
+         en: 'US', // English - using US as most common
+         zh: 'CN', // Chinese - simplified Chinese
+         es: 'ES', // Spanish - using Spain
+         fr: 'FR', // French - using France
+         de: 'DE', // German
+         ja: 'JP', // Japanese
+         ko: 'KR', // Korean
+         ru: 'RU', // Russian
+         it: 'IT', // Italian
+         pt: 'PT', // Portuguese - using Portugal
+         nl: 'NL', // Dutch
+         sv: 'SE', // Swedish
+         no: 'NO', // Norwegian
+         da: 'DK', // Danish
+         fi: 'FI', // Finnish
+         pl: 'PL', // Polish
+         tr: 'TR', // Turkish
+         he: 'IL', // Hebrew
+         cs: 'CZ', // Czech
+         hu: 'HU', // Hungarian
+         th: 'TH', // Thai
+         vi: 'VN', // Vietnamese
+         uk: 'UA', // Ukrainian
+         is: 'IS', // Icelandic
       };
 
       // For languages with clear country associations, show flag
       if (clearCountryMap[code.toLowerCase()]) {
          const countryCode = clearCountryMap[code.toLowerCase()];
          try {
-            return String.fromCodePoint(...countryCode.split('').map(char => 
-               127397 + char.charCodeAt(0)
-            ));
+            return String.fromCodePoint(
+               ...countryCode.split('').map(char => 127397 + char.charCodeAt(0))
+            );
          } catch {
             return '🌐';
          }
       }
-      
+
       // For all other languages (sub-languages, regional variants, etc.), use globe
       return '🌐';
    };
@@ -117,9 +115,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                         <span className="text-sm" role="img" aria-label="flag">
                            {getFlagEmoji(selectedLang.code)}
                         </span>
-                        <span className="text-xs font-medium text-white">
-                           {selectedLang.name}
-                        </span>
+                        <span className="text-xs font-medium text-white">{selectedLang.name}</span>
                         <span className="text-[10px] text-gray-400 uppercase bg-gray-700/50 px-1 py-0.5 rounded-sm">
                            {selectedLang.code}
                         </span>
@@ -143,9 +139,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                            <Globe2 className="w-3 h-3 text-emerald-400" />
                            Select Language
                         </h3>
-                        <p className="text-xs text-gray-400">
-                           Choose podcast language
-                        </p>
+                        <p className="text-xs text-gray-400">Choose podcast language</p>
                      </div>
                      <button
                         onClick={handleClose}
@@ -165,7 +159,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                               type="text"
                               placeholder="Search languages..."
                               value={searchQuery}
-                              onChange={(e) => setSearchQuery(e.target.value)}
+                              onChange={e => setSearchQuery(e.target.value)}
                               className="w-full pl-7 pr-2 py-1.5 bg-gray-800/50 border border-gray-700/50 rounded-md text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent"
                            />
                         </div>
@@ -176,7 +170,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                   <div className="flex-1 overflow-y-auto p-2">
                      {filteredLanguages.length > 0 ? (
                         <div className="space-y-1">
-                           {filteredLanguages.map((language) => (
+                           {filteredLanguages.map(language => (
                               <button
                                  key={language.code}
                                  onClick={() => handleLanguageSelect(language)}
@@ -214,7 +208,8 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                   {availableLanguages.length > 5 && (
                      <div className="px-3 py-2 bg-gray-800/30 border-t border-gray-700/30 rounded-b-lg">
                         <p className="text-[10px] text-gray-500 text-center">
-                           {filteredLanguages.length} language{filteredLanguages.length !== 1 ? 's' : ''} available
+                           {filteredLanguages.length} language
+                           {filteredLanguages.length !== 1 ? 's' : ''} available
                            {searchQuery && ` (filtered from ${availableLanguages.length})`}
                         </p>
                      </div>

@@ -15,6 +15,7 @@ from db.agent_config import (
 from services.celery_tasks import agent_chat
 from dotenv import load_dotenv
 from services.internal_session_service import SessionService
+from db.agent_config_v2 import AVAILABLE_LANGS
 
 load_dotenv()
 
@@ -303,6 +304,7 @@ class PodcastAgentService:
         except Exception as e:
             print(f"Error deleting session: {e}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Failed to delete session: {str(e)}"})
+        
 
     async def _get_chat_messages(self, row, session_id):
         formatted_messages = []
@@ -366,6 +368,9 @@ class PodcastAgentService:
             }
         except Exception as e:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Error retrieving session history: {str(e)}"})
+        
+    async def get_supported_languages(self):
+        return {"languages": AVAILABLE_LANGS}
 
 
 podcast_agent_service = PodcastAgentService()
