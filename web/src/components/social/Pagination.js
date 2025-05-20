@@ -7,7 +7,7 @@ const Pagination = ({
    setPagination 
 }) => {
    return (
-      <div className="mt-8 flex items-center justify-between bg-gray-800/40 backdrop-blur-sm p-4 rounded-xl border border-gray-700/70 shadow-lg">
+      <div className="mt-6 flex items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 p-3 rounded-sm border-t border-gray-700 shadow-lg">
          <div className="flex items-center text-xs text-gray-400">
             Showing{' '}
             <span className="font-medium text-gray-300 px-1">{pagination.perPage}</span> of{' '}
@@ -16,16 +16,16 @@ const Pagination = ({
          </div>
          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-end">
             <nav
-               className="inline-flex shadow-lg rounded-lg overflow-hidden"
+               className="inline-flex -space-x-px rounded-sm shadow-sm"
                aria-label="Pagination"
             >
                <button
                   onClick={() => setPagination(prev => ({ ...prev, page: 1 }))}
                   disabled={pagination.page === 1}
-                  className={`relative inline-flex items-center px-3 py-2 ${
+                  className={`relative inline-flex items-center rounded-l-sm px-2 py-1 ${
                      pagination.page > 1
-                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-r border-gray-700'
-                        : 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-70'
+                        ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+                        : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-600 border border-gray-700 cursor-not-allowed opacity-70'
                   } transition-colors duration-200`}
                >
                   <span className="sr-only">First</span>
@@ -45,10 +45,10 @@ const Pagination = ({
                <button
                   onClick={handlePrevPage}
                   disabled={pagination.page === 1}
-                  className={`relative inline-flex items-center px-3 py-2 ${
+                  className={`relative inline-flex items-center px-2 py-1 ${
                      pagination.page > 1
-                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-r border-gray-700'
-                        : 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-70'
+                        ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+                        : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-600 border border-gray-700 cursor-not-allowed opacity-70'
                   } transition-colors duration-200`}
                >
                   <span className="sr-only">Previous</span>
@@ -66,7 +66,7 @@ const Pagination = ({
                      />
                   </svg>
                </button>
-               <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-emerald-900/50 text-emerald-300 border-r border-emerald-800/70">
+               <span className="relative inline-flex items-center px-4 py-1 text-sm font-medium bg-gradient-to-b from-gray-700 to-gray-800 text-emerald-400 border border-gray-600">
                   Page {pagination.page} of {pagination.totalPages}
                   {/* Active page indicator with subtle glow */}
                   <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 opacity-70"></span>
@@ -74,10 +74,10 @@ const Pagination = ({
                <button
                   onClick={handleNextPage}
                   disabled={pagination.page === pagination.totalPages}
-                  className={`relative inline-flex items-center px-3 py-2 ${
+                  className={`relative inline-flex items-center px-2 py-1 ${
                      pagination.page < pagination.totalPages
-                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-r border-gray-700'
-                        : 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-70'
+                        ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+                        : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-600 border border-gray-700 cursor-not-allowed opacity-70'
                   } transition-colors duration-200`}
                >
                   <span className="sr-only">Next</span>
@@ -100,10 +100,10 @@ const Pagination = ({
                      setPagination(prev => ({ ...prev, page: pagination.totalPages }))
                   }
                   disabled={pagination.page === pagination.totalPages}
-                  className={`relative inline-flex items-center px-3 py-2 ${
+                  className={`relative inline-flex items-center rounded-r-sm px-2 py-1 ${
                      pagination.page < pagination.totalPages
-                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                        : 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-70'
+                        ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-400 border border-gray-700 hover:bg-gray-700 hover:text-gray-300'
+                        : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-600 border border-gray-700 cursor-not-allowed opacity-70'
                   } transition-colors duration-200`}
                >
                   <span className="sr-only">Last</span>
@@ -131,10 +131,10 @@ const Pagination = ({
             <button
                onClick={handlePrevPage}
                disabled={pagination.page === 1}
-               className={`relative inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium ${
+               className={`relative inline-flex items-center rounded-sm px-4 py-2 text-sm font-medium ${
                   pagination.page > 1
-                     ? 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 shadow-lg'
-                     : 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed'
+                     ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                     : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-500 border border-gray-700 cursor-not-allowed'
                } transition-colors duration-200`}
             >
                Previous
@@ -142,10 +142,10 @@ const Pagination = ({
             <button
                onClick={handleNextPage}
                disabled={pagination.page === pagination.totalPages}
-               className={`relative ml-3 inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium ${
+               className={`relative ml-3 inline-flex items-center rounded-sm px-4 py-2 text-sm font-medium ${
                   pagination.page < pagination.totalPages
-                     ? 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 shadow-lg'
-                     : 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed'
+                     ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                     : 'bg-gradient-to-b from-gray-800 to-gray-900 text-gray-500 border border-gray-700 cursor-not-allowed'
                } transition-colors duration-200`}
             >
                Next

@@ -1,450 +1,473 @@
 import React from 'react';
 
-const StatsTab = ({ stats }) => {
-   // Helper functions for charts (keeping original logic)
-   const getMaxEngagement = () => {
-      if (!stats || !stats.engagement || stats.engagement.length === 0) return 0;
-      return Math.max(...stats.engagement.map(platform => platform.total_engagement || 0));
-   };
+// Mock data for the stats tab
+const mockData = {
+  total_posts: 345,
+  platform_distribution: {
+    facebook: 203,
+    x: 142
+  },
+  sentiment_distribution: {
+    overall: {
+      positive: 165,
+      negative: 92,
+      neutral: 48,
+      critical: 40
+    },
+    facebook: {
+      positive: 110,
+      negative: 48,
+      neutral: 25,
+      critical: 20
+    },
+    x: {
+      positive: 55,
+      negative: 44,
+      neutral: 23,
+      critical: 20
+    }
+  },
+  trending_topics: [
+    { topic: 'customer service', count: 46 },
+    { topic: 'product quality', count: 39 },
+    { topic: 'delivery time', count: 24 },
+    { topic: 'pricing', count: 18 },
+    { topic: 'new features', count: 15 }
+  ]
+};
 
-   const getPlatformColorClass = platform => {
-      switch (platform.toLowerCase()) {
-         case 'facebook':
-            return 'bg-blue-600';
-         case 'x':
-            return 'bg-blue-400';
-         default:
-            return 'bg-gray-500';
-      }
-   };
-
-   const getMaxPostsByDate = () => {
-      if (!stats || !stats.posts_by_date || stats.posts_by_date.length === 0) return 0;
-      return Math.max(...stats.posts_by_date.map(entry => entry.post_count || 0));
-   };
-
-   const getTimeSeriesPath = platform => {
-      if (!stats || !stats.posts_by_date || stats.posts_by_date.length === 0) return '';
-
-      const filteredData = stats.posts_by_date.filter(entry => entry.platform === platform);
-      if (filteredData.length === 0) return '';
-
-      const maxCount = getMaxPostsByDate();
-      const width = 100 / (filteredData.length - 1);
-      const height = 90; // 90% of chart height, leaving space for labels
-
-      // Sort by date
-      filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      // Create SVG path
-      let path = `M ${0} ${height - (height * filteredData[0].post_count) / maxCount}`;
-
-      filteredData.forEach((entry, index) => {
-         if (index === 0) return; // Skip first point as it's in the M command
-         const x = width * index;
-         const y = height - (height * entry.post_count) / maxCount;
-         path += ` L ${x} ${y}`;
-      });
-
-      return path;
-   };
-
-   const getDataPointsForPlatform = platform => {
-      if (!stats || !stats.posts_by_date || stats.posts_by_date.length === 0) return [];
-
-      const filteredData = stats.posts_by_date.filter(entry => entry.platform === platform);
-      if (filteredData.length === 0) return [];
-
-      const maxCount = getMaxPostsByDate();
-      const width = 100 / Math.max(filteredData.length - 1, 1);
-      const height = 90; // 90% of chart height
-
-      // Sort by date
-      filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      return filteredData.map((entry, index) => ({
-         x: width * index,
-         y: height - (height * entry.post_count) / maxCount,
-         count: entry.post_count,
-         date: entry.date,
-      }));
-   };
-
-   const getDateLabels = () => {
-      if (!stats || !stats.posts_by_date || stats.posts_by_date.length === 0) return [];
-
-      // Get unique dates
-      const uniqueDates = [...new Set(stats.posts_by_date.map(entry => entry.date))];
-
-      // Sort dates
-      uniqueDates.sort((a, b) => new Date(a) - new Date(b));
-
-      // For clarity, if we have many dates, only show some of them
-      const maxLabels = 6;
-      if (uniqueDates.length <= maxLabels) return uniqueDates;
-
-      const step = Math.ceil(uniqueDates.length / maxLabels);
-      return uniqueDates.filter((_, index) => index % step === 0);
-   };
-
-   // Loading state
-   if (!stats) {
+const getPlatformIcon = platform => {
+  switch (platform.toLowerCase()) {
+    case 'facebook':
       return (
-         <div className="flex items-center justify-center h-64">
-            <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-         </div>
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
       );
-   }
+    case 'x':
+      return (
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
 
-   return (
-      <div className="space-y-4">
-         {/* Key Metrics - More compact row */}
-         <div className="grid grid-cols-3 gap-3">
-            {/* Total Posts */}
-            <div className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50 shadow-md backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-300">
-               <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-900/40 flex items-center justify-center mr-3">
-                     <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                     </svg>
-                  </div>
-                  <div>
-                     <div className="text-xs text-gray-400">Total Posts</div>
-                     <div className="text-xl font-bold text-white">{stats.total_posts}</div>
-                  </div>
-               </div>
+const getSentimentColor = sentiment => {
+  switch (sentiment.toLowerCase()) {
+    case 'positive':
+      return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+    case 'negative':
+      return 'text-red-400 bg-red-500/10 border-red-500/30';
+    case 'critical':
+      return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+    case 'neutral':
+    default:
+      return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+  }
+};
+
+const getSentimentGradient = sentiment => {
+  switch (sentiment.toLowerCase()) {
+    case 'positive':
+      return 'from-emerald-600/30 to-emerald-500/30';
+    case 'negative':
+      return 'from-red-600/30 to-red-500/30';
+    case 'critical':
+      return 'from-orange-600/30 to-orange-500/30';
+    case 'neutral':
+    default:
+      return 'from-gray-600/30 to-gray-500/30';
+  }
+};
+
+const getPlatformColor = platform => {
+  switch (platform.toLowerCase()) {
+    case 'facebook':
+      return 'text-blue-500 bg-blue-500/10 border-blue-500/30';
+    case 'x':
+      return 'text-blue-400 bg-blue-400/10 border-blue-400/30';
+    default:
+      return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
+  }
+};
+
+const StatsTab = () => {
+  // Use mock data only
+  const data = mockData;
+  
+  // Calculate percentages for platform distribution
+  const totalPosts = data.total_posts;
+  const facebookPosts = data.platform_distribution.facebook;
+  const xPosts = data.platform_distribution.x;
+  const facebookPercentage = (facebookPosts / totalPosts) * 100;
+  const xPercentage = (xPosts / totalPosts) * 100;
+  
+  // Calculate percentages for sentiment distribution
+  const overallSentiment = data.sentiment_distribution.overall;
+  const positiveCount = overallSentiment.positive;
+  const negativeCount = overallSentiment.negative;
+  const neutralCount = overallSentiment.neutral;
+  const criticalCount = overallSentiment.critical;
+  
+  const positivePercentage = (positiveCount / totalPosts) * 100;
+  const negativePercentage = (negativeCount / totalPosts) * 100;
+  const neutralPercentage = (neutralCount / totalPosts) * 100;
+  const criticalPercentage = (criticalCount / totalPosts) * 100;
+  
+  // Calculate max count for trending topics
+  const trendingTopics = data.trending_topics;
+  const maxTopicCount = Math.max(...trendingTopics.map(topic => topic.count));
+
+  return (
+    <div className="space-y-3">
+      {/* Top row - Total Posts and Platform Distribution */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Total Posts */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
+            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Total Posts
+          </h3>
+          
+          <div className="flex items-center">
+            <div className="w-20 h-20 mr-4 rounded-sm bg-gradient-to-br from-emerald-900/20 to-teal-900/20 border border-emerald-900/20 flex items-center justify-center">
+              <span className="text-3xl font-bold text-white">{totalPosts}</span>
             </div>
-
-            {/* Unique Authors */}
-            <div className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50 shadow-md backdrop-blur-sm hover:border-blue-500/30 transition-all duration-300">
-               <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-blue-900/40 flex items-center justify-center mr-3">
-                     <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                     </svg>
+            
+            <div className="flex-1 space-y-2">
+              {/* Facebook posts count */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-1 rounded-sm mr-1.5 bg-blue-500/10 border border-blue-500/30">
+                    {getPlatformIcon('facebook')}
                   </div>
-                  <div>
-                     <div className="text-xs text-gray-400">Unique Authors</div>
-                     <div className="text-xl font-bold text-white">{stats.unique_authors}</div>
+                  <span className="text-xs text-gray-300">Facebook</span>
+                </div>
+                <span className="text-white font-medium text-xs">{data.platform_distribution.facebook}</span>
+              </div>
+              
+              {/* X posts count */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="p-1 rounded-sm mr-1.5 bg-blue-400/10 border border-blue-400/30">
+                    {getPlatformIcon('x')}
                   </div>
-               </div>
+                  <span className="text-xs text-gray-300">X (Twitter)</span>
+                </div>
+                <span className="text-white font-medium text-xs">{data.platform_distribution.x}</span>
+              </div>
             </div>
-
-            {/* Total Engagement */}
-            <div className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50 shadow-md backdrop-blur-sm hover:border-purple-500/30 transition-all duration-300">
-               <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-lg bg-purple-900/40 flex items-center justify-center mr-3">
-                     <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                     </svg>
-                  </div>
-                  <div>
-                     <div className="text-xs text-gray-400">Total Engagement</div>
-                     <div className="text-xl font-bold text-white">
-                        {stats.engagement?.reduce(
-                           (sum, platform) => sum + (platform.total_engagement || 0),
-                           0
-                        ) || 0}
-                     </div>
-                  </div>
-               </div>
+          </div>
+        </div>
+        
+        {/* Platform Distribution */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
+            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+            </svg>
+            Platform Distribution
+          </h3>
+          
+          <div className="flex flex-col items-center">
+            <div className="relative w-32 h-32">
+              {/* Donut chart */}
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                {/* Background circle */}
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1f2937" strokeWidth="15" />
+                
+                {/* Facebook segment */}
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  fill="transparent" 
+                  stroke="url(#facebook-gradient)" 
+                  strokeWidth="15" 
+                  strokeDasharray={`${facebookPercentage * 2.51} ${251 - facebookPercentage * 2.51}`} 
+                  transform="rotate(-90 50 50)" 
+                />
+                
+                {/* X segment */}
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  fill="transparent" 
+                  stroke="url(#x-gradient)" 
+                  strokeWidth="15" 
+                  strokeDasharray={`${xPercentage * 2.51} ${251 - xPercentage * 2.51}`} 
+                  transform={`rotate(${(facebookPercentage * 3.6) - 90} 50 50)`} 
+                />
+                
+                {/* Gradients */}
+                <defs>
+                  <linearGradient id="facebook-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#60a5fa" />
+                  </linearGradient>
+                  <linearGradient id="x-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#7dd3fc" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              
+              {/* Center text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-bold text-white">{totalPosts}</span>
+                <span className="text-xs text-gray-400">Total</span>
+              </div>
             </div>
-         </div>
-
-         {/* Main Content Area - 2 rows x 2 columns grid */}
-         <div className="grid grid-cols-2 gap-4">
-            {/* Platform Distribution - More compact */}
-            <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 shadow-md backdrop-blur-sm">
-               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                  </svg>
-                  Platform Distribution
-               </h3>
-               <div className="space-y-2">
-                  <div className="flex items-center">
-                     <div className="w-20 text-xs text-gray-400 font-medium">Facebook</div>
-                     <div className="flex-1">
-                        <div className="relative h-4 bg-gray-700/50 rounded overflow-hidden shadow-inner">
-                           {stats.facebook_posts > 0 && (
-                              <div
-                                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded"
-                                 style={{
-                                    width: `${(stats.facebook_posts / stats.total_posts) * 100}%`,
-                                 }}
-                              >
-                                 <div className="absolute inset-0 bg-blue-500 opacity-30 animate-pulse"></div>
-                              </div>
-                           )}
-                        </div>
-                     </div>
-                     <div className="w-16 text-right text-xs text-white font-medium">
-                        {stats.facebook_posts} ({((stats.facebook_posts / stats.total_posts) * 100).toFixed(1)}%)
-                     </div>
-                  </div>
-
-                  <div className="flex items-center">
-                     <div className="w-20 text-xs text-gray-400 font-medium">X (Twitter)</div>
-                     <div className="flex-1">
-                        <div className="relative h-4 bg-gray-700/50 rounded overflow-hidden shadow-inner">
-                           {stats.x_posts > 0 && (
-                              <div
-                                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-blue-300 rounded"
-                                 style={{
-                                    width: `${(stats.x_posts / stats.total_posts) * 100}%`,
-                                 }}
-                              >
-                                 <div className="absolute inset-0 bg-blue-400 opacity-30 animate-pulse"></div>
-                              </div>
-                           )}
-                        </div>
-                     </div>
-                     <div className="w-16 text-right text-xs text-white font-medium">
-                        {stats.x_posts} ({((stats.x_posts / stats.total_posts) * 100).toFixed(1)}%)
-                     </div>
-                  </div>
-               </div>
+            
+            {/* Legend */}
+            <div className="flex gap-3 mt-2">
+              <div className="flex items-center">
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-500 mr-1"></div>
+                <span className="text-xs text-gray-300">FB</span>
+                <span className="text-xs font-medium text-white ml-1">
+                  {facebookPercentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-400 mr-1"></div>
+                <span className="text-xs text-gray-300">X</span>
+                <span className="text-xs font-medium text-white ml-1">
+                  {xPercentage.toFixed(1)}%
+                </span>
+              </div>
             </div>
-
-            {/* Top Authors - More compact */}
-            <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 shadow-md backdrop-blur-sm">
-               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Top Authors
-               </h3>
-               <div className="space-y-2">
-                  {stats.top_authors?.slice(0, 4).map((author, index) => (
-                     <div key={index} className="flex justify-between items-center p-2 bg-gray-900/40 rounded border border-gray-700/30 hover:border-gray-600/50 transition-all">
-                        <div className="flex items-center">
-                           <div className="w-5 h-5 rounded bg-gray-800 flex items-center justify-center mr-2 text-gray-400 text-xs shadow-sm">
-                              {index + 1}
-                           </div>
-                           <span className="text-gray-300 text-xs font-medium truncate max-w-[100px]">{author.author_name}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs">
-                           <span className="bg-gray-800 text-white px-1.5 py-0.5 rounded">
-                              {author.post_count}
-                           </span>
-                           <span className="bg-emerald-900/30 text-emerald-300 px-1.5 py-0.5 rounded">
-                              {author.total_engagement || 0}
-                           </span>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </div>
-
-            {/* Engagement by Platform - More compact */}
-            <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 shadow-md backdrop-blur-sm">
-               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  Engagement by Platform
-               </h3>
-               <div className="h-52">
-                  {stats.engagement && stats.engagement.length > 0 ? (
-                     <div className="h-full flex flex-col">
-                        <div className="flex-1">
-                           <div className="relative h-full flex items-end">
-                              {/* Y-Axis */}
-                              <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-right pr-1">
-                                 {[4, 3, 2, 1, 0].map((_, i) => (
-                                    <span key={i} className="text-xs text-gray-500">
-                                       {Math.round((getMaxEngagement() * (4 - i)) / 4)}
-                                    </span>
-                                 ))}
-                              </div>
-
-                              {/* Grid Lines */}
-                              <div className="absolute left-10 right-0 top-0 bottom-0 flex flex-col justify-between">
-                                 {[0, 1, 2, 3, 4].map((_, i) => (
-                                    <div
-                                       key={i}
-                                       className="border-t border-gray-700/30 w-full h-0"
-                                    ></div>
-                                 ))}
-                              </div>
-
-                              {/* Bars */}
-                              <div className="absolute left-10 right-0 bottom-0 flex items-end h-full pt-3 pb-5">
-                                 {stats.engagement.map((platform, i) => {
-                                    const maxEngagement = getMaxEngagement();
-                                    const height =
-                                       maxEngagement > 0
-                                          ? `${(platform.total_engagement / maxEngagement) * 100}%`
-                                          : '0%';
-
-                                    return (
-                                       <div
-                                          key={i}
-                                          className="flex-1 flex flex-col items-center justify-end h-full"
-                                       >
-                                          <div
-                                             className={`w-10 ${getPlatformColorClass(
-                                                platform.platform
-                                             )} rounded-t relative group`}
-                                             style={{ height }}
-                                          >
-                                             <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
-                                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                                                {platform.platform}: {platform.total_engagement}
-                                             </div>
-                                          </div>
-                                          <div className="mt-1 text-xs text-gray-400 uppercase font-medium">
-                                             {platform.platform.substring(0, 1)}
-                                          </div>
-                                       </div>
-                                    );
-                                 })}
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* Compact Legend */}
-                        <div className="h-8 mt-3 flex items-center justify-center">
-                           <div className="flex flex-wrap gap-2 justify-center">
-                              <div className="flex items-center bg-gray-900/30 px-2 py-1 rounded text-xs">
-                                 <div className="w-2 h-2 bg-blue-600 rounded mr-1"></div>
-                                 <span className="text-gray-300">Likes</span>
-                              </div>
-                              <div className="flex items-center bg-gray-900/30 px-2 py-1 rounded text-xs">
-                                 <div className="w-2 h-2 bg-green-600 rounded mr-1"></div>
-                                 <span className="text-gray-300">Shares</span>
-                              </div>
-                              <div className="flex items-center bg-gray-900/30 px-2 py-1 rounded text-xs">
-                                 <div className="w-2 h-2 bg-purple-600 rounded mr-1"></div>
-                                 <span className="text-gray-300">Comments</span>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  ) : (
-                     <div className="h-full flex items-center justify-center">
-                        <p className="text-gray-400 text-xs">No engagement data available</p>
-                     </div>
-                  )}
-               </div>
-            </div>
-
-            {/* Posts Over Time - More compact */}
-            <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 shadow-md backdrop-blur-sm">
-               <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Posts Over Time
-               </h3>
-               <div className="h-52">
-                  {stats.posts_by_date && stats.posts_by_date.length > 0 ? (
-                     <div className="relative h-full">
-                        {/* Y-Axis */}
-                        <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-right pr-1">
-                           {[4, 3, 2, 1, 0].map((_, i) => (
-                              <span key={i} className="text-xs text-gray-500">
-                                 {Math.round((getMaxPostsByDate() * (4 - i)) / 4)}
-                              </span>
-                           ))}
-                        </div>
-
-                        {/* Time Series Chart */}
-                        <div className="absolute left-8 right-0 top-0 bottom-0">
-                           {/* Grid Lines */}
-                           <div className="absolute inset-0 flex flex-col justify-between">
-                              {[0, 1, 2, 3, 4].map((_, i) => (
-                                 <div
-                                    key={i}
-                                    className="border-t border-gray-700/30 w-full h-0"
-                                 ></div>
-                              ))}
-                           </div>
-
-                           {/* Line Chart */}
-                           <div className="absolute inset-0 flex items-end">
-                              <svg className="w-full h-full" preserveAspectRatio="none">
-                                 {/* Facebook Line */}
-                                 <path
-                                    d={getTimeSeriesPath('facebook')}
-                                    fill="none"
-                                    stroke="#3b82f6"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                 />
-
-                                 {/* X Line */}
-                                 <path
-                                    d={getTimeSeriesPath('x')}
-                                    fill="none"
-                                    stroke="#38bdf8"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                 />
-
-                                 {/* Data Points for Facebook */}
-                                 {getDataPointsForPlatform('facebook').map((point, i) => (
-                                    <circle
-                                       key={`fb-${i}`}
-                                       cx={point.x}
-                                       cy={point.y}
-                                       r="3"
-                                       fill="#3b82f6"
-                                       className="hover:r-4 transition-all duration-200"
-                                    />
-                                 ))}
-
-                                 {/* Data Points for X */}
-                                 {getDataPointsForPlatform('x').map((point, i) => (
-                                    <circle
-                                       key={`x-${i}`}
-                                       cx={point.x}
-                                       cy={point.y}
-                                       r="3"
-                                       fill="#38bdf8"
-                                       className="hover:r-4 transition-all duration-200"
-                                    />
-                                 ))}
-                              </svg>
-                           </div>
-
-                           {/* X-Axis - Dates */}
-                           <div className="absolute left-0 right-0 bottom-0 h-6 flex justify-between">
-                              {getDateLabels().map((date, i) => (
-                                 <div
-                                    key={i}
-                                    className="text-xs text-gray-500 transform -rotate-45 origin-top-left text-xs"
-                                 >
-                                    {date}
-                                 </div>
-                              ))}
-                           </div>
-                        </div>
-
-                        {/* Legend */}
-                        <div className="absolute top-0 right-0 flex gap-2">
-                           <div className="flex items-center bg-gray-900/30 px-2 py-0.5 rounded text-xs">
-                              <div className="w-2 h-2 bg-blue-600 rounded-full mr-1"></div>
-                              <span className="text-gray-300">FB</span>
-                           </div>
-                           <div className="flex items-center bg-gray-900/30 px-2 py-0.5 rounded text-xs">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full mr-1"></div>
-                              <span className="text-gray-300">X</span>
-                           </div>
-                        </div>
-                     </div>
-                  ) : (
-                     <div className="h-full flex items-center justify-center">
-                        <p className="text-gray-400 text-xs">No time series data available</p>
-                     </div>
-                  )}
-               </div>
-            </div>
-         </div>
+          </div>
+        </div>
       </div>
-   );
+      
+      {/* Second row - Sentiment Distribution */}
+      <div className="grid grid-cols-1 gap-3">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
+          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
+            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Sentiment Distribution
+          </h3>
+          
+          <div className="space-y-4">
+            {/* Overall sentiment */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-300">Overall Sentiment</span>
+              </div>
+              <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
+                {/* Positive segment */}
+                <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
+                  style={{ width: `${positivePercentage}%` }}
+                ></div>
+                {/* Negative segment */}
+                <div 
+                  className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
+                  style={{ left: `${positivePercentage}%`, width: `${negativePercentage}%` }}
+                ></div>
+                {/* Critical segment */}
+                <div 
+                  className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
+                  style={{ left: `${positivePercentage + negativePercentage}%`, width: `${criticalPercentage}%` }}
+                ></div>
+                {/* Neutral segment */}
+                <div 
+                  className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
+                  style={{ left: `${positivePercentage + negativePercentage + criticalPercentage}%`, width: `${neutralPercentage}%` }}
+                ></div>
+              </div>
+              
+              {/* Legend */}
+              <div className="flex gap-3 mt-1.5 flex-wrap">
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/60 mr-1"></div>
+                  <span className="text-xs text-gray-300">Positive</span>
+                  <span className="text-xs font-medium text-white ml-1">
+                    {positiveCount}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-red-500/60 mr-1"></div>
+                  <span className="text-xs text-gray-300">Negative</span>
+                  <span className="text-xs font-medium text-white ml-1">
+                    {negativeCount}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-orange-500/60 mr-1"></div>
+                  <span className="text-xs text-gray-300">Critical</span>
+                  <span className="text-xs font-medium text-white ml-1">
+                    {criticalCount}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-gray-500/60 mr-1"></div>
+                  <span className="text-xs text-gray-300">Neutral</span>
+                  <span className="text-xs font-medium text-white ml-1">
+                    {neutralCount}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Platform specific sentiment */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Facebook sentiment */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <div className="p-0.5 rounded-sm mr-1.5 bg-blue-500/10 border border-blue-500/30">
+                    {getPlatformIcon('facebook')}
+                  </div>
+                  <span className="text-xs font-medium text-gray-300">Facebook</span>
+                </div>
+                <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
+                  {/* Calculate percentages for Facebook */}
+                  {(() => {
+                    const fbSentiment = data.sentiment_distribution.facebook;
+                    const fbTotal = facebookPosts;
+                    const fbPositive = fbSentiment.positive;
+                    const fbNegative = fbSentiment.negative;
+                    const fbCritical = fbSentiment.critical;
+                    const fbNeutral = fbSentiment.neutral;
+                    
+                    const fbPositivePerc = (fbPositive / fbTotal) * 100;
+                    const fbNegativePerc = (fbNegative / fbTotal) * 100;
+                    const fbCriticalPerc = (fbCritical / fbTotal) * 100;
+                    const fbNeutralPerc = (fbNeutral / fbTotal) * 100;
+                    
+                    return (
+                      <>
+                        <div 
+                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
+                          style={{ width: `${fbPositivePerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
+                          style={{ left: `${fbPositivePerc}%`, width: `${fbNegativePerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
+                          style={{ left: `${fbPositivePerc + fbNegativePerc}%`, width: `${fbCriticalPerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
+                          style={{ left: `${fbPositivePerc + fbNegativePerc + fbCriticalPerc}%`, width: `${fbNeutralPerc}%` }}
+                        ></div>
+                      </>
+                    );
+                  })()}
+                </div>
+                
+                {/* Facebook sentiment stats */}
+                <div className="flex gap-1.5 mt-1 text-xs">
+                  <span className="text-emerald-400/80">{data.sentiment_distribution.facebook.positive}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-red-400/80">{data.sentiment_distribution.facebook.negative}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-orange-400/80">{data.sentiment_distribution.facebook.critical}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-gray-400/80">{data.sentiment_distribution.facebook.neutral}</span>
+                </div>
+              </div>
+              
+              {/* X sentiment */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <div className="p-0.5 rounded-sm mr-1.5 bg-blue-400/10 border border-blue-400/30">
+                    {getPlatformIcon('x')}
+                  </div>
+                  <span className="text-xs font-medium text-gray-300">X (Twitter)</span>
+                </div>
+                <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
+                  {/* Calculate percentages for X */}
+                  {(() => {
+                    const xSentiment = data.sentiment_distribution.x;
+                    const xTotal = xPosts;
+                    const xPositive = xSentiment.positive;
+                    const xNegative = xSentiment.negative;
+                    const xCritical = xSentiment.critical;
+                    const xNeutral = xSentiment.neutral;
+                    
+                    const xPositivePerc = (xPositive / xTotal) * 100;
+                    const xNegativePerc = (xNegative / xTotal) * 100;
+                    const xCriticalPerc = (xCritical / xTotal) * 100;
+                    const xNeutralPerc = (xNeutral / xTotal) * 100;
+                    
+                    return (
+                      <>
+                        <div 
+                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
+                          style={{ width: `${xPositivePerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
+                          style={{ left: `${xPositivePerc}%`, width: `${xNegativePerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
+                          style={{ left: `${xPositivePerc + xNegativePerc}%`, width: `${xCriticalPerc}%` }}
+                        ></div>
+                        <div 
+                          className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
+                          style={{ left: `${xPositivePerc + xNegativePerc + xCriticalPerc}%`, width: `${xNeutralPerc}%` }}
+                        ></div>
+                      </>
+                    );
+                  })()}
+                </div>
+                
+                {/* X sentiment stats */}
+                <div className="flex gap-1.5 mt-1 text-xs">
+                  <span className="text-emerald-400/80">{data.sentiment_distribution.x.positive}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-red-400/80">{data.sentiment_distribution.x.negative}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-orange-400/80">{data.sentiment_distribution.x.critical}</span>
+                  <span className="text-gray-500">|</span>
+                  <span className="text-gray-400/80">{data.sentiment_distribution.x.neutral}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Trending Topics */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
+        <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
+          <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+          Trending Topics
+        </h3>
+        
+        <div className="space-y-1.5">
+          {data.trending_topics.map((topic, index) => (
+            <div key={index} className="flex items-center">
+              <div className="text-xs font-medium text-gray-400 w-24 truncate">{topic.topic}</div>
+              <div className="flex-1 ml-2">
+                <div className="relative h-2.5 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
+                  <div 
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600/30 to-purple-500/30"
+                    style={{ width: `${(topic.count / maxTopicCount) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="ml-2 text-xs text-gray-300 w-6 text-right">{topic.count}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default StatsTab;

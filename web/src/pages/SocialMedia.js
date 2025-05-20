@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import FeedTab from '../components/social/FeedTab';
 import StatsTab from '../components/social/StatsTab';
-import TopPostsTab from '../components/social/TopPostsTab';
 
 const SocialMedia = () => {
    const [posts, setPosts] = useState([]);
@@ -143,7 +142,7 @@ const SocialMedia = () => {
 
    return (
       <div className="max-w-7xl mx-auto">
-         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 relative">
+         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 relative">
             <div className="relative mb-4 md:mb-0">
                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-10 h-10">
                   <div className="relative w-10 h-10">
@@ -188,14 +187,14 @@ const SocialMedia = () => {
                </div>
                <h1 className="text-2xl font-medium text-gray-100 ml-14">Social Media Dashboard</h1>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
                <div className="relative flex-grow">
                   <input
                      type="text"
                      value={filters.search}
                      onChange={e => handleFilterChange('search', e.target.value)}
                      placeholder="Search posts..."
-                     className="w-full pl-10 pr-4 py-2.5 bg-gray-900/80 border border-gray-700 rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 text-gray-300 transition-all"
+                     className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-gray-300 transition-all"
                   />
                   <div className="absolute left-3 top-2.5 text-gray-500">
                      <svg
@@ -216,7 +215,7 @@ const SocialMedia = () => {
                </div>
                <button
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="flex items-center justify-center p-2.5 bg-gray-800 border border-gray-700 rounded-lg shadow-lg hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition-all duration-200"
+                  className="flex items-center justify-center p-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-sm shadow-md hover:border-gray-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors duration-200"
                   aria-expanded={isFilterOpen}
                   aria-label="Toggle filters"
                >
@@ -238,19 +237,19 @@ const SocialMedia = () => {
             </div>
          </div>
 
-         <div className="mb-8">
+         <div className="mb-6">
             <div className="border-b border-gray-700">
-               <nav className="flex -mb-px space-x-8">
+               <nav className="flex -mb-px space-x-6">
                   <button
                      onClick={() => handleTabChange('feed')}
-                     className={`py-3 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
+                     className={`py-2.5 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
                         activeTab === 'feed'
                            ? 'border-emerald-500 text-emerald-400'
                            : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
                      } transition-colors duration-200`}
                   >
                      <svg
-                        className="w-5 h-5 mr-2"
+                        className="w-4 h-4 mr-2"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -266,14 +265,14 @@ const SocialMedia = () => {
                   </button>
                   <button
                      onClick={() => handleTabChange('stats')}
-                     className={`py-3 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
+                     className={`py-2.5 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
                         activeTab === 'stats'
                            ? 'border-emerald-500 text-emerald-400'
                            : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
                      } transition-colors duration-200`}
                   >
                      <svg
-                        className="w-5 h-5 mr-2"
+                        className="w-4 h-4 mr-2"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -287,29 +286,7 @@ const SocialMedia = () => {
                      </svg>
                      Analytics
                   </button>
-                  <button
-                     onClick={() => handleTabChange('top')}
-                     className={`py-3 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
-                        activeTab === 'top'
-                           ? 'border-emerald-500 text-emerald-400'
-                           : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-700'
-                     } transition-colors duration-200`}
-                  >
-                     <svg
-                        className="w-5 h-5 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                     >
-                        <path
-                           strokeLinecap="round"
-                           strokeLinejoin="round"
-                           strokeWidth="1.5"
-                           d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                        />
-                     </svg>
-                     Top Content
-                  </button>
+                
                </nav>
             </div>
          </div>
@@ -339,11 +316,7 @@ const SocialMedia = () => {
             />
          )}
          
-         {activeTab === 'top' && (
-            <TopPostsTab 
-               topPosts={topPosts}
-            />
-         )}
+        
       </div>
    );
 };

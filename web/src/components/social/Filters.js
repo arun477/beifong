@@ -12,7 +12,7 @@ const Filters = ({
    return (
       <>
          {isOpen && (
-            <div className="bg-gray-800/80 backdrop-blur-sm shadow-xl rounded-xl p-5 mb-6 border border-gray-700/80">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 shadow-lg rounded-sm p-4 mb-4 border border-gray-700">
                <form
                   onSubmit={e => {
                      e.preventDefault();
@@ -23,13 +23,13 @@ const Filters = ({
                   <div>
                      <label
                         htmlFor="platform"
-                        className="block text-sm font-medium text-gray-300 mb-1"
+                        className="block text-xs font-medium text-gray-300 mb-1"
                      >
                         Platform
                      </label>
                      <select
                         id="platform"
-                        className="w-full px-3 py-2.5 bg-gray-900/90 border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 sm:text-sm text-gray-300 transition-all"
+                        className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
                         value={filters.platform}
                         onChange={e => handleFilterChange('platform', e.target.value)}
                      >
@@ -44,13 +44,13 @@ const Filters = ({
                   <div>
                      <label
                         htmlFor="author"
-                        className="block text-sm font-medium text-gray-300 mb-1"
+                        className="block text-xs font-medium text-gray-300 mb-1"
                      >
                         Author
                      </label>
                      <select
                         id="author"
-                        className="w-full px-3 py-2.5 bg-gray-900/90 border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 sm:text-sm text-gray-300 transition-all"
+                        className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
                         value={filters.author}
                         onChange={e => handleFilterChange('author', e.target.value)}
                      >
@@ -66,7 +66,7 @@ const Filters = ({
                      <div className="w-1/2">
                         <label
                            htmlFor="dateFrom"
-                           className="block text-sm font-medium text-gray-300 mb-1"
+                           className="block text-xs font-medium text-gray-300 mb-1"
                         >
                            From Date
                         </label>
@@ -75,13 +75,13 @@ const Filters = ({
                            id="dateFrom"
                            value={filters.dateFrom}
                            onChange={e => handleFilterChange('dateFrom', e.target.value)}
-                           className="w-full px-3 py-2.5 bg-gray-900/90 border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 sm:text-sm text-gray-300 transition-all"
+                           className="w-full px-2 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
                         />
                      </div>
                      <div className="w-1/2">
                         <label
                            htmlFor="dateTo"
-                           className="block text-sm font-medium text-gray-300 mb-1"
+                           className="block text-xs font-medium text-gray-300 mb-1"
                         >
                            To Date
                         </label>
@@ -90,21 +90,21 @@ const Filters = ({
                            id="dateTo"
                            value={filters.dateTo}
                            onChange={e => handleFilterChange('dateTo', e.target.value)}
-                           className="w-full px-3 py-2.5 bg-gray-900/90 border border-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 sm:text-sm text-gray-300 transition-all"
+                           className="w-full px-2 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
                         />
                      </div>
                   </div>
-                  <div className="md:col-span-3 flex items-end space-x-3">
+                  <div className="md:col-span-3 flex items-end space-x-2 mt-3 md:mt-0">
                      <button
                         type="submit"
-                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-lg hover:shadow-lg hover:shadow-emerald-900/30 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 text-sm font-medium transition-all duration-200"
+                        className="flex-1 px-4 py-1.5 bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-sm hover:shadow-md hover:shadow-emerald-900/50 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-900 text-xs font-medium transition-all duration-300"
                      >
                         Apply Filters
                      </button>
                      <button
                         type="button"
                         onClick={resetFilters}
-                        className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 text-sm font-medium transition-all duration-200 border border-gray-700"
+                        className="flex-1 px-4 py-1.5 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-gray-300 rounded-sm hover:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 text-xs font-medium transition-all duration-300 border border-gray-700"
                      >
                         Reset
                      </button>
@@ -115,10 +115,10 @@ const Filters = ({
 
          {/* Active Filters Display */}
          {(filters.platform || filters.author || filters.dateFrom || filters.dateTo) && (
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-               <span className="text-sm text-gray-400 font-medium">Active filters:</span>
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+               <span className="text-xs text-gray-400 font-medium">Active filters:</span>
                {filters.platform && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-800/90 text-gray-300 border border-gray-700 shadow-sm">
+                  <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300 border border-gray-700">
                      Platform: {filters.platform}
                      <button
                         onClick={() => handleFilterChange('platform', '')}
@@ -141,7 +141,7 @@ const Filters = ({
                   </span>
                )}
                {filters.author && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-800/90 text-gray-300 border border-gray-700 shadow-sm">
+                  <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300 border border-gray-700">
                      Author: {filters.author}
                      <button
                         onClick={() => handleFilterChange('author', '')}
@@ -164,7 +164,7 @@ const Filters = ({
                   </span>
                )}
                {filters.dateFrom && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-300 border border-emerald-700/70 shadow-sm relative group">
+                  <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-emerald-900 to-emerald-800 text-emerald-300 border border-emerald-700 relative group">
                      From: {filters.dateFrom}
                      <button
                         onClick={() => handleFilterChange('dateFrom', '')}
@@ -187,7 +187,7 @@ const Filters = ({
                   </span>
                )}
                {filters.dateTo && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-900/40 text-emerald-300 border border-emerald-700/70 shadow-sm relative group">
+                  <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-emerald-900 to-emerald-800 text-emerald-300 border border-emerald-700 relative group">
                      To: {filters.dateTo}
                      <button
                         onClick={() => handleFilterChange('dateTo', '')}

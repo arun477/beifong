@@ -45,7 +45,7 @@ const FeedTab = ({
    const enhancedPosts = enhancePostData(posts);
    
    return (
-      <div className="space-y-6">
+      <div className="space-y-4">
          <Filters
             isOpen={isFilterOpen}
             filters={filters}
@@ -57,11 +57,11 @@ const FeedTab = ({
          />
 
          {loading ? (
-            <div className="flex justify-center py-16">
-               <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full shadow-md"></div>
+            <div className="flex justify-center py-12">
+               <div className="animate-spin w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full shadow-md"></div>
             </div>
          ) : error ? (
-            <div className="bg-red-900/40 backdrop-blur-sm border border-red-700 text-red-200 px-5 py-4 rounded-xl shadow-lg">
+            <div className="bg-gradient-to-br from-red-900/80 to-red-800/80 border border-red-700 text-red-200 px-4 py-3 rounded-sm shadow-md">
                <div className="flex items-center">
                   <svg
                      className="w-5 h-5 text-red-400 mr-2"
@@ -78,10 +78,10 @@ const FeedTab = ({
                </div>
             </div>
          ) : enhancedPosts.length === 0 ? (
-            <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-xl p-10 text-center shadow-lg">
-               <div className="w-20 h-20 mx-auto mb-5 bg-gray-700/50 rounded-full flex items-center justify-center">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-sm p-8 text-center shadow-md">
+               <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-b from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
                   <svg
-                     className="w-10 h-10 text-gray-400"
+                     className="w-8 h-8 text-gray-400"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -94,12 +94,12 @@ const FeedTab = ({
                      />
                   </svg>
                </div>
-               <h3 className="text-xl font-semibold text-gray-300 mb-2">No posts found</h3>
+               <h3 className="text-lg font-medium text-gray-300 mb-2">No posts found</h3>
                <p className="text-gray-400">Try adjusting your filters or search terms</p>
             </div>
          ) : (
             <>
-               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {enhancedPosts.map(post => (
                      <PostItem key={post.id || post._id} post={post} />
                   ))}
@@ -120,4 +120,3 @@ const FeedTab = ({
 };
 
 export default FeedTab;
-

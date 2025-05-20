@@ -10,7 +10,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    const [navExpanded, setNavExpanded] = useState(false);
    const [pagination, setPagination] = useState({
       page: 1,
-      perPage: 5,
+      perPage: 8,
       totalPages: 1,
       total: 0,
    });

@@ -156,7 +156,7 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                      <Sparkles className={`w-3 h-3 transition-all duration-300 ${
                         isPlaying ? 'text-emerald-400' : ''
                      }`} />
-                     High-quality audio ready
+                     Audio ready
                      {isPlaying && (
                         <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] rounded-full">
                            ♪ Playing
