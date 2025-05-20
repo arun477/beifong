@@ -386,7 +386,7 @@ const PodcastDetail = () => {
    }
 
    return (
-      <div className="min-h-screen py-4 px-4 relative overflow-hidden">
+      <div className="min-h-screen py-4 px-4 relative overflow-hidden" >
          {/* Banner Image Background */}
          {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
                            <div className="fixed inset-0 w-full h-full z-0">
@@ -438,7 +438,7 @@ const PodcastDetail = () => {
             <div className="bg-gradient-to-br from-gray-900/80 via-gray-850/80 to-gray-800/80 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl backdrop-blur-lg">
                {/* Banner Carousel */}
                {hasBannerCarousel && (
-                  <div className="h-80 relative overflow-hidden mb-16">
+                  <div className="h-65 relative overflow-hidden mb-16">
                      {/* Carousel Container */}
                      <div className="h-full w-full relative">
                         {bannerImages.map((image, index) => (
@@ -582,7 +582,20 @@ const PodcastDetail = () => {
                   <div className="flex flex-wrap justify-center gap-1.5">
                      {podcastData.language_code && (
                         <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50">
-                           <Globe className="w-3 h-3 mr-1" />
+ <svg
+                                       xmlns="http://www.w3.org/2000/svg"
+                                       className="h-3 w-3 mr-0.5"
+                                       fill="none"
+                                       viewBox="0 0 24 24"
+                                       stroke="currentColor"
+                                    >
+                                       <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                       />
+                                    </svg>
                            <span>{getLanguageName(podcastData.language_code)}</span>
                         </div>
                      )}

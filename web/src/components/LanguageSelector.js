@@ -46,47 +46,7 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
    const selectedLang = availableLanguages.find(lang => lang.code === selectedLanguage);
 
    const getFlagEmoji = code => {
-      const clearCountryMap = {
-         en: 'US', // English - using US as most common
-         zh: 'CN', // Chinese - simplified Chinese
-         es: 'ES', // Spanish - using Spain
-         fr: 'FR', // French - using France
-         de: 'DE', // German
-         ja: 'JP', // Japanese
-         ko: 'KR', // Korean
-         ru: 'RU', // Russian
-         it: 'IT', // Italian
-         pt: 'PT', // Portuguese - using Portugal
-         nl: 'NL', // Dutch
-         sv: 'SE', // Swedish
-         no: 'NO', // Norwegian
-         da: 'DK', // Danish
-         fi: 'FI', // Finnish
-         pl: 'PL', // Polish
-         tr: 'TR', // Turkish
-         he: 'IL', // Hebrew
-         cs: 'CZ', // Czech
-         hu: 'HU', // Hungarian
-         th: 'TH', // Thai
-         vi: 'VN', // Vietnamese
-         uk: 'UA', // Ukrainian
-         is: 'IS', // Icelandic
-      };
-
-      // For languages with clear country associations, show flag
-      if (clearCountryMap[code.toLowerCase()]) {
-         const countryCode = clearCountryMap[code.toLowerCase()];
-         try {
-            return String.fromCodePoint(
-               ...countryCode.split('').map(char => 127397 + char.charCodeAt(0))
-            );
-         } catch {
-            return '🌐';
-         }
-      }
-
-      // For all other languages (sub-languages, regional variants, etc.), use globe
-      return '🌐';
+      return <Globe2 className="w-3 h-3" />;
    };
 
    return (
