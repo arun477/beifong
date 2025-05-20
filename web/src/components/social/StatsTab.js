@@ -1,471 +1,599 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
+import {
+  Smile,
+  Frown,
+  AlertCircle,
+  Minus,
+  TrendingUp,
+  Users,
+  BarChart2,
+  Calendar,
+  Filter,
+  RefreshCw
+} from 'lucide-react';
+import api from '../../services/api';
 
-// Mock data for the stats tab
-const mockData = {
-  total_posts: 345,
-  platform_distribution: {
-    facebook: 203,
-    x: 142
-  },
-  sentiment_distribution: {
-    overall: {
-      positive: 165,
-      negative: 92,
-      neutral: 48,
-      critical: 40
-    },
-    facebook: {
-      positive: 110,
-      negative: 48,
-      neutral: 25,
-      critical: 20
-    },
-    x: {
-      positive: 55,
-      negative: 44,
-      neutral: 23,
-      critical: 20
+const StatsTab = ({ platforms }) => {
+  // State for analytics data
+  const [loading, setLoading] = useState(true);
+  const [sentimentData, setSentimentData] = useState([]);
+  const [userSentiment, setUserSentiment] = useState([]);
+  const [categorySentiment, setCategorySentiment] = useState([]);
+  const [trendingTopics, setTrendingTopics] = useState([]);
+  const [sentimentOverTime, setSentimentOverTime] = useState([]);
+  const [influentialPosts, setInfluentialPosts] = useState([]);
+  const [engagementStats, setEngagementStats] = useState(null);
+  
+  // State for filters
+  const [filters, setFilters] = useState({
+    platform: '',
+    timeRange: 30,
+    sentiment: ''
+  });
+  
+  // Colors for visualization
+  const COLORS = {
+    positive: '#10b981',
+    negative: '#ef4444',
+    critical: '#f97316',
+    neutral: '#6b7280',
+    background: '#1f2937',
+    border: '#374151'
+  };
+  
+  const SENTIMENT_COLORS = [
+    COLORS.positive,
+    COLORS.negative,
+    COLORS.critical,
+    COLORS.neutral
+  ];
+  
+  // Load data
+  useEffect(() => {
+    if (platforms && platforms.length > 0) {
+      fetchAllAnalyticsData();
     }
-  },
-  trending_topics: [
-    { topic: 'customer service', count: 46 },
-    { topic: 'product quality', count: 39 },
-    { topic: 'delivery time', count: 24 },
-    { topic: 'pricing', count: 18 },
-    { topic: 'new features', count: 15 }
-  ]
-};
-
-const getPlatformIcon = platform => {
-  switch (platform.toLowerCase()) {
-    case 'facebook':
-      return (
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-        </svg>
-      );
-    case 'x':
-      return (
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-};
-
-const getSentimentColor = sentiment => {
-  switch (sentiment.toLowerCase()) {
-    case 'positive':
-      return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-    case 'negative':
-      return 'text-red-400 bg-red-500/10 border-red-500/30';
-    case 'critical':
-      return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
-    case 'neutral':
-    default:
-      return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
-  }
-};
-
-const getSentimentGradient = sentiment => {
-  switch (sentiment.toLowerCase()) {
-    case 'positive':
-      return 'from-emerald-600/30 to-emerald-500/30';
-    case 'negative':
-      return 'from-red-600/30 to-red-500/30';
-    case 'critical':
-      return 'from-orange-600/30 to-orange-500/30';
-    case 'neutral':
-    default:
-      return 'from-gray-600/30 to-gray-500/30';
-  }
-};
-
-const getPlatformColor = platform => {
-  switch (platform.toLowerCase()) {
-    case 'facebook':
-      return 'text-blue-500 bg-blue-500/10 border-blue-500/30';
-    case 'x':
-      return 'text-blue-400 bg-blue-400/10 border-blue-400/30';
-    default:
-      return 'text-gray-400 bg-gray-500/10 border-gray-500/30';
-  }
-};
-
-const StatsTab = () => {
-  // Use mock data only
-  const data = mockData;
+  }, [filters, platforms]);
   
-  // Calculate percentages for platform distribution
-  const totalPosts = data.total_posts;
-  const facebookPosts = data.platform_distribution.facebook;
-  const xPosts = data.platform_distribution.x;
-  const facebookPercentage = (facebookPosts / totalPosts) * 100;
-  const xPercentage = (xPosts / totalPosts) * 100;
-  
-  // Calculate percentages for sentiment distribution
-  const overallSentiment = data.sentiment_distribution.overall;
-  const positiveCount = overallSentiment.positive;
-  const negativeCount = overallSentiment.negative;
-  const neutralCount = overallSentiment.neutral;
-  const criticalCount = overallSentiment.critical;
-  
-  const positivePercentage = (positiveCount / totalPosts) * 100;
-  const negativePercentage = (negativeCount / totalPosts) * 100;
-  const neutralPercentage = (neutralCount / totalPosts) * 100;
-  const criticalPercentage = (criticalCount / totalPosts) * 100;
-  
-  // Calculate max count for trending topics
-  const trendingTopics = data.trending_topics;
-  const maxTopicCount = Math.max(...trendingTopics.map(topic => topic.count));
-
-  return (
-    <div className="space-y-3">
-      {/* Top row - Total Posts and Platform Distribution */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Total Posts */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
-          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
-            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Total Posts
-          </h3>
-          
-          <div className="flex items-center">
-            <div className="w-20 h-20 mr-4 rounded-sm bg-gradient-to-br from-emerald-900/20 to-teal-900/20 border border-emerald-900/20 flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">{totalPosts}</span>
-            </div>
-            
-            <div className="flex-1 space-y-2">
-              {/* Facebook posts count */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="p-1 rounded-sm mr-1.5 bg-blue-500/10 border border-blue-500/30">
-                    {getPlatformIcon('facebook')}
-                  </div>
-                  <span className="text-xs text-gray-300">Facebook</span>
-                </div>
-                <span className="text-white font-medium text-xs">{data.platform_distribution.facebook}</span>
-              </div>
-              
-              {/* X posts count */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="p-1 rounded-sm mr-1.5 bg-blue-400/10 border border-blue-400/30">
-                    {getPlatformIcon('x')}
-                  </div>
-                  <span className="text-xs text-gray-300">X (Twitter)</span>
-                </div>
-                <span className="text-white font-medium text-xs">{data.platform_distribution.x}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Platform Distribution */}
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
-          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
-            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-            Platform Distribution
-          </h3>
-          
-          <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32">
-              {/* Donut chart */}
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                {/* Background circle */}
-                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1f2937" strokeWidth="15" />
-                
-                {/* Facebook segment */}
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="40" 
-                  fill="transparent" 
-                  stroke="url(#facebook-gradient)" 
-                  strokeWidth="15" 
-                  strokeDasharray={`${facebookPercentage * 2.51} ${251 - facebookPercentage * 2.51}`} 
-                  transform="rotate(-90 50 50)" 
-                />
-                
-                {/* X segment */}
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="40" 
-                  fill="transparent" 
-                  stroke="url(#x-gradient)" 
-                  strokeWidth="15" 
-                  strokeDasharray={`${xPercentage * 2.51} ${251 - xPercentage * 2.51}`} 
-                  transform={`rotate(${(facebookPercentage * 3.6) - 90} 50 50)`} 
-                />
-                
-                {/* Gradients */}
-                <defs>
-                  <linearGradient id="facebook-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#60a5fa" />
-                  </linearGradient>
-                  <linearGradient id="x-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#38bdf8" />
-                    <stop offset="100%" stopColor="#7dd3fc" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              
-              {/* Center text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-bold text-white">{totalPosts}</span>
-                <span className="text-xs text-gray-400">Total</span>
-              </div>
-            </div>
-            
-            {/* Legend */}
-            <div className="flex gap-3 mt-2">
-              <div className="flex items-center">
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-500 mr-1"></div>
-                <span className="text-xs text-gray-300">FB</span>
-                <span className="text-xs font-medium text-white ml-1">
-                  {facebookPercentage.toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-400 mr-1"></div>
-                <span className="text-xs text-gray-300">X</span>
-                <span className="text-xs font-medium text-white ml-1">
-                  {xPercentage.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  const fetchAllAnalyticsData = async () => {
+    setLoading(true);
+    try {
+      console.log("Fetching analytics data...");
       
-      {/* Second row - Sentiment Distribution */}
-      <div className="grid grid-cols-1 gap-3">
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
-          <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
-            <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Sentiment Distribution
-          </h3>
-          
-          <div className="space-y-4">
-            {/* Overall sentiment */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-300">Overall Sentiment</span>
-              </div>
-              <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
-                {/* Positive segment */}
-                <div 
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
-                  style={{ width: `${positivePercentage}%` }}
-                ></div>
-                {/* Negative segment */}
-                <div 
-                  className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
-                  style={{ left: `${positivePercentage}%`, width: `${negativePercentage}%` }}
-                ></div>
-                {/* Critical segment */}
-                <div 
-                  className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
-                  style={{ left: `${positivePercentage + negativePercentage}%`, width: `${criticalPercentage}%` }}
-                ></div>
-                {/* Neutral segment */}
-                <div 
-                  className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
-                  style={{ left: `${positivePercentage + negativePercentage + criticalPercentage}%`, width: `${neutralPercentage}%` }}
-                ></div>
-              </div>
-              
-              {/* Legend */}
-              <div className="flex gap-3 mt-1.5 flex-wrap">
-                <div className="flex items-center">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500/60 mr-1"></div>
-                  <span className="text-xs text-gray-300">Positive</span>
-                  <span className="text-xs font-medium text-white ml-1">
-                    {positiveCount}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-red-500/60 mr-1"></div>
-                  <span className="text-xs text-gray-300">Negative</span>
-                  <span className="text-xs font-medium text-white ml-1">
-                    {negativeCount}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-orange-500/60 mr-1"></div>
-                  <span className="text-xs text-gray-300">Critical</span>
-                  <span className="text-xs font-medium text-white ml-1">
-                    {criticalCount}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-gray-500/60 mr-1"></div>
-                  <span className="text-xs text-gray-300">Neutral</span>
-                  <span className="text-xs font-medium text-white ml-1">
-                    {neutralCount}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Platform specific sentiment */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Facebook sentiment */}
-              <div>
-                <div className="flex items-center mb-1">
-                  <div className="p-0.5 rounded-sm mr-1.5 bg-blue-500/10 border border-blue-500/30">
-                    {getPlatformIcon('facebook')}
-                  </div>
-                  <span className="text-xs font-medium text-gray-300">Facebook</span>
-                </div>
-                <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
-                  {/* Calculate percentages for Facebook */}
-                  {(() => {
-                    const fbSentiment = data.sentiment_distribution.facebook;
-                    const fbTotal = facebookPosts;
-                    const fbPositive = fbSentiment.positive;
-                    const fbNegative = fbSentiment.negative;
-                    const fbCritical = fbSentiment.critical;
-                    const fbNeutral = fbSentiment.neutral;
-                    
-                    const fbPositivePerc = (fbPositive / fbTotal) * 100;
-                    const fbNegativePerc = (fbNegative / fbTotal) * 100;
-                    const fbCriticalPerc = (fbCritical / fbTotal) * 100;
-                    const fbNeutralPerc = (fbNeutral / fbTotal) * 100;
-                    
-                    return (
-                      <>
-                        <div 
-                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
-                          style={{ width: `${fbPositivePerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
-                          style={{ left: `${fbPositivePerc}%`, width: `${fbNegativePerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
-                          style={{ left: `${fbPositivePerc + fbNegativePerc}%`, width: `${fbCriticalPerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
-                          style={{ left: `${fbPositivePerc + fbNegativePerc + fbCriticalPerc}%`, width: `${fbNeutralPerc}%` }}
-                        ></div>
-                      </>
-                    );
-                  })()}
-                </div>
-                
-                {/* Facebook sentiment stats */}
-                <div className="flex gap-1.5 mt-1 text-xs">
-                  <span className="text-emerald-400/80">{data.sentiment_distribution.facebook.positive}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-red-400/80">{data.sentiment_distribution.facebook.negative}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-orange-400/80">{data.sentiment_distribution.facebook.critical}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-gray-400/80">{data.sentiment_distribution.facebook.neutral}</span>
-                </div>
-              </div>
-              
-              {/* X sentiment */}
-              <div>
-                <div className="flex items-center mb-1">
-                  <div className="p-0.5 rounded-sm mr-1.5 bg-blue-400/10 border border-blue-400/30">
-                    {getPlatformIcon('x')}
-                  </div>
-                  <span className="text-xs font-medium text-gray-300">X (Twitter)</span>
-                </div>
-                <div className="relative h-3 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
-                  {/* Calculate percentages for X */}
-                  {(() => {
-                    const xSentiment = data.sentiment_distribution.x;
-                    const xTotal = xPosts;
-                    const xPositive = xSentiment.positive;
-                    const xNegative = xSentiment.negative;
-                    const xCritical = xSentiment.critical;
-                    const xNeutral = xSentiment.neutral;
-                    
-                    const xPositivePerc = (xPositive / xTotal) * 100;
-                    const xNegativePerc = (xNegative / xTotal) * 100;
-                    const xCriticalPerc = (xCritical / xTotal) * 100;
-                    const xNeutralPerc = (xNeutral / xTotal) * 100;
-                    
-                    return (
-                      <>
-                        <div 
-                          className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-600/30 to-emerald-500/30 border-r border-gray-800/20"
-                          style={{ width: `${xPositivePerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-red-600/30 to-red-500/30 border-r border-gray-800/20"
-                          style={{ left: `${xPositivePerc}%`, width: `${xNegativePerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-orange-600/30 to-orange-500/30 border-r border-gray-800/20"
-                          style={{ left: `${xPositivePerc + xNegativePerc}%`, width: `${xCriticalPerc}%` }}
-                        ></div>
-                        <div 
-                          className="absolute top-0 h-full bg-gradient-to-r from-gray-600/30 to-gray-500/30"
-                          style={{ left: `${xPositivePerc + xNegativePerc + xCriticalPerc}%`, width: `${xNeutralPerc}%` }}
-                        ></div>
-                      </>
-                    );
-                  })()}
-                </div>
-                
-                {/* X sentiment stats */}
-                <div className="flex gap-1.5 mt-1 text-xs">
-                  <span className="text-emerald-400/80">{data.sentiment_distribution.x.positive}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-red-400/80">{data.sentiment_distribution.x.negative}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-orange-400/80">{data.sentiment_distribution.x.critical}</span>
-                  <span className="text-gray-500">|</span>
-                  <span className="text-gray-400/80">{data.sentiment_distribution.x.neutral}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      // Fetch basic sentiment data first
+      const sentimentsRes = await api.socialMedia.getSentiments();
       
-      {/* Trending Topics */}
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
-        <h3 className="text-xs font-semibold text-white mb-2 flex items-center">
-          <svg className="w-3.5 h-3.5 mr-1 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-          Trending Topics
-        </h3>
+      // Process sentiment distribution data
+      const sentiments = sentimentsRes.data || [];
+      const totalPosts = sentiments.reduce((sum, item) => sum + item.post_count, 0);
+      const sentimentPieData = sentiments.map(item => ({
+        name: item.sentiment,
+        value: item.post_count,
+        percentage: ((item.post_count / totalPosts) * 100).toFixed(1)
+      }));
+      
+      setSentimentData(sentimentPieData);
+      
+      // Try to fetch each analytics endpoint separately to isolate errors
+      try {
+        const userSentimentRes = await api.socialMedia.getUserSentiment(10, filters.platform || undefined);
+        setUserSentiment(userSentimentRes.data || []);
+      } catch (err) {
+        console.error("Error fetching user sentiment:", err);
+      }
+      
+      try {
+        const categorySentimentRes = await api.socialMedia.getCategorySentiment();
+        setCategorySentiment(categorySentimentRes.data || []);
+      } catch (err) {
+        console.error("Error fetching category sentiment:", err);
+      }
+      
+      try {
+        const trendingTopicsRes = await api.socialMedia.getTrendingTopics(filters.timeRange, 10);
+        console.log('trendingTopicsRes', trendingTopicsRes)
+        setTrendingTopics(trendingTopicsRes.data || []);
+      } catch (err) {
+        console.error("Error fetching trending topics:", err);
+      }
+      
+      try {
+        const sentimentTimeRes = await api.socialMedia.getSentimentOverTime(filters.timeRange, filters.platform || undefined);
         
-        <div className="space-y-1.5">
-          {data.trending_topics.map((topic, index) => (
-            <div key={index} className="flex items-center">
-              <div className="text-xs font-medium text-gray-400 w-24 truncate">{topic.topic}</div>
-              <div className="flex-1 ml-2">
-                <div className="relative h-2.5 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
-                  <div 
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-600/30 to-purple-500/30"
-                    style={{ width: `${(topic.count / maxTopicCount) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="ml-2 text-xs text-gray-300 w-6 text-right">{topic.count}</div>
-            </div>
+        // Format date for sentiment over time
+        const timeData = sentimentTimeRes.data || [];
+        const formattedTimeData = timeData.map(item => ({
+          date: new Date(item.post_date).toLocaleDateString(),
+          positive: item.positive_count,
+          negative: item.negative_count,
+          critical: item.critical_count,
+          neutral: item.neutral_count,
+          total: item.total_count
+        }));
+        
+        setSentimentOverTime(formattedTimeData);
+      } catch (err) {
+        console.error("Error fetching sentiment over time:", err);
+      }
+      
+      try {
+        const influentialPostsRes = await api.socialMedia.getInfluentialPosts(filters.sentiment || undefined, 5);
+        setInfluentialPosts(influentialPostsRes.data || []);
+      } catch (err) {
+        console.error("Error fetching influential posts:", err);
+      }
+      
+      try {
+        const engagementStatsRes = await api.socialMedia.getEngagementStats();
+        setEngagementStats(engagementStatsRes.data || null);
+      } catch (err) {
+        console.error("Error fetching engagement stats:", err);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching analytics data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Common card component for analytics
+  const AnalyticsCard = ({ title, icon, children, className = '' }) => (
+    <div className={`bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md ${className}`}>
+      <h3 className="text-sm font-semibold text-white mb-3 flex items-center">
+        {icon}
+        <span className="ml-2">{title}</span>
+      </h3>
+      {children}
+    </div>
+  );
+  
+  // Helper to get sentiment icon
+  const getSentimentIcon = (sentiment, size = 16) => {
+    switch (sentiment?.toLowerCase()) {
+      case 'positive':
+        return <Smile size={size} className="text-emerald-400" />;
+      case 'negative':
+        return <Frown size={size} className="text-red-400" />;
+      case 'critical':
+        return <AlertCircle size={size} className="text-orange-400" />;
+      case 'neutral':
+      default:
+        return <Minus size={size} className="text-gray-400" />;
+    }
+  };
+  
+  // Custom tooltip for charts
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-800 p-2 border border-gray-700 shadow-lg rounded-sm">
+          <p className="text-white text-xs font-semibold">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-xs" style={{ color: entry.color }}>
+              {`${entry.name}: ${entry.value}`}
+            </p>
           ))}
         </div>
+      );
+    }
+    return null;
+  };
+  
+  // Transform category data for visualization
+  const categoryChartData = categorySentiment.slice(0, 6).map(cat => ({
+    name: cat.category,
+    positive: cat.positive_count,
+    negative: cat.negative_count,
+    critical: cat.critical_count,
+    neutral: cat.neutral_count,
+    total: cat.total_count
+  }));
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full shadow-md"></div>
       </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm p-3 border border-gray-700 shadow-md">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-white flex items-center">
+            <Filter size={16} className="text-emerald-400 mr-2" />
+            Analytics Filters
+          </h3>
+          <button 
+            onClick={fetchAllAnalyticsData}
+            className="flex items-center text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-sm transition-colors"
+          >
+            <RefreshCw size={12} className="mr-1" />
+            Refresh
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">
+              Platform
+            </label>
+            <select
+              value={filters.platform}
+              onChange={e => handleFilterChange('platform', e.target.value)}
+              className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
+            >
+              <option value="">All Platforms</option>
+              {platforms.map(platform => (
+                <option key={platform} value={platform}>
+                  {platform.charAt(0).toUpperCase() + platform.slice(1).replace('.com', '')}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">
+              Time Range
+            </label>
+            <select
+              value={filters.timeRange}
+              onChange={e => handleFilterChange('timeRange', e.target.value)}
+              className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
+            >
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">
+              Sentiment
+            </label>
+            <select
+              value={filters.sentiment}
+              onChange={e => handleFilterChange('sentiment', e.target.value)}
+              className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
+            >
+              <option value="">All Sentiments</option>
+              <option value="positive">Positive</option>
+              <option value="negative">Negative</option>
+              <option value="critical">Critical</option>
+              <option value="neutral">Neutral</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      {/* Top row - Sentiment Overview and Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Sentiment Overview */}
+        <AnalyticsCard 
+          title="Sentiment Distribution" 
+          icon={<BarChart2 size={16} className="text-emerald-400" />}
+          className="md:col-span-1"
+        >
+          <div className="flex flex-col items-center">
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sentimentData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    outerRadius={60}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {sentimentData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-2 mt-2">
+              {sentimentData.map(item => (
+                <div key={item.name} className="flex items-center">
+                  <div 
+                    className="w-3 h-3 rounded-sm mr-1"
+                    style={{ backgroundColor: COLORS[item.name] || COLORS.neutral }}
+                  ></div>
+                  <span className="text-xs text-gray-300 capitalize">
+                    {item.name}
+                  </span>
+                  <span className="text-xs font-medium text-white ml-1">
+                    {item.percentage}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </AnalyticsCard>
+        
+        {/* Categories Sentiment */}
+        <AnalyticsCard 
+          title="Categories by Sentiment" 
+          icon={<BarChart2 size={16} className="text-emerald-400" />}
+          className="md:col-span-2"
+        >
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={categoryChartData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+                <XAxis type="number" stroke="#9ca3af" fontSize={10} />
+                <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={10} width={80} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="positive" stackId="a" fill={COLORS.positive} name="Positive" />
+                <Bar dataKey="negative" stackId="a" fill={COLORS.negative} name="Negative" />
+                <Bar dataKey="critical" stackId="a" fill={COLORS.critical} name="Critical" />
+                <Bar dataKey="neutral" stackId="a" fill={COLORS.neutral} name="Neutral" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </AnalyticsCard>
+      </div>
+      
+      {/* Second row - Sentiment Over Time */}
+      <AnalyticsCard 
+        title="Sentiment Trends Over Time" 
+        icon={<Calendar size={16} className="text-emerald-400" />}
+      >
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={sentimentOverTime}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+              <XAxis dataKey="date" stroke="#9ca3af" fontSize={10} />
+              <YAxis stroke="#9ca3af" fontSize={10} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Area type="monotone" dataKey="positive" stackId="1" stroke={COLORS.positive} fill={`${COLORS.positive}50`} name="Positive" />
+              <Area type="monotone" dataKey="negative" stackId="1" stroke={COLORS.negative} fill={`${COLORS.negative}50`} name="Negative" />
+              <Area type="monotone" dataKey="critical" stackId="1" stroke={COLORS.critical} fill={`${COLORS.critical}50`} name="Critical" />
+              <Area type="monotone" dataKey="neutral" stackId="1" stroke={COLORS.neutral} fill={`${COLORS.neutral}50`} name="Neutral" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </AnalyticsCard>
+      
+      {/* Third row - User Sentiment and Trending Topics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* User Sentiment */}
+        <AnalyticsCard 
+          title="Users by Sentiment" 
+          icon={<Users size={16} className="text-emerald-400" />}
+        >
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+            {userSentiment.map(user => (
+              <div 
+                key={user.user_handle} 
+                className="bg-gradient-to-r from-gray-900/70 to-gray-800/70 rounded-sm p-2 border border-gray-700/70"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center">
+                    <span className="text-xs font-medium text-white">
+                      {user.user_display_name || `@${user.user_handle.replace('@', '')}`}
+                    </span>
+                    <span className="text-xs text-gray-400 ml-1">
+                      ({user.total_posts} posts)
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="relative h-2 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30">
+                  {/* Sentiment bars */}
+                  <div 
+                    className="absolute top-0 left-0 h-full bg-emerald-500/70" 
+                    style={{ width: `${user.positive_percent}%` }}
+                    title={`Positive: ${user.positive_percent.toFixed(1)}%`}
+                  ></div>
+                  <div 
+                    className="absolute top-0 h-full bg-red-500/70" 
+                    style={{ 
+                      left: `${user.positive_percent}%`, 
+                      width: `${user.negative_percent}%` 
+                    }}
+                    title={`Negative: ${user.negative_percent.toFixed(1)}%`}
+                  ></div>
+                  <div 
+                    className="absolute top-0 h-full bg-orange-500/70" 
+                    style={{ 
+                      left: `${user.positive_percent + user.negative_percent}%`, 
+                      width: `${user.critical_percent}%` 
+                    }}
+                    title={`Critical: ${user.critical_percent.toFixed(1)}%`}
+                  ></div>
+                  <div 
+                    className="absolute top-0 h-full bg-gray-500/70" 
+                    style={{ 
+                      left: `${user.positive_percent + user.negative_percent + user.critical_percent}%`, 
+                      width: `${user.neutral_percent}%` 
+                    }}
+                    title={`Neutral: ${user.neutral_percent.toFixed(1)}%`}
+                  ></div>
+                </div>
+                
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-emerald-400">+{user.positive_count}</span>
+                  <span className="text-red-400">-{user.negative_count}</span>
+                  <span className="text-orange-400">!{user.critical_count}</span>
+                  <span className="text-gray-400">={user.neutral_count}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalyticsCard>
+        
+        {/* Trending Topics */}
+        <AnalyticsCard 
+          title="Trending Topics" 
+          icon={<TrendingUp size={16} className="text-emerald-400" />}
+        >
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+            {trendingTopics.map((topic, index) => (
+              <div 
+                key={index} 
+                className="bg-gradient-to-r from-gray-900/70 to-gray-800/70 rounded-sm p-2 border border-gray-700/70"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-white">#{topic.topic}</span>
+                  <span className="text-xs text-gray-400">{topic.total_count} posts</span>
+                </div>
+                
+                <div className="relative h-2 bg-gradient-to-r from-gray-700/30 to-gray-800/30 rounded-sm overflow-hidden shadow-inner border border-gray-700/30 mb-1">
+                  {/* Sentiment distribution */}
+                  <div className="absolute top-0 left-0 h-full bg-emerald-500/70" style={{ width: `${topic.positive_percent}%` }}></div>
+                  <div className="absolute top-0 h-full bg-red-500/70" style={{ left: `${topic.positive_percent}%`, width: `${topic.negative_percent}%` }}></div>
+                  <div className="absolute top-0 h-full bg-orange-500/70" style={{ left: `${topic.positive_percent + topic.negative_percent}%`, width: `${topic.critical_percent}%` }}></div>
+                  <div className="absolute top-0 h-full bg-gray-500/70" style={{ left: `${topic.positive_percent + topic.negative_percent + topic.critical_percent}%`, width: `${topic.neutral_percent}%` }}></div>
+                </div>
+                
+                {/* Sentiment breakdown */}
+                <div className="flex space-x-2 text-xs">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-sm bg-emerald-500/70 mr-1"></div>
+                    <span className="text-gray-300">{topic.positive_percent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-sm bg-red-500/70 mr-1"></div>
+                    <span className="text-gray-300">{topic.negative_percent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-sm bg-orange-500/70 mr-1"></div>
+                    <span className="text-gray-300">{topic.critical_percent.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-sm bg-gray-500/70 mr-1"></div>
+                    <span className="text-gray-300">{topic.neutral_percent.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalyticsCard>
+      </div>
+      
+      {/* Fourth row - Most Influential Posts */}
+      <AnalyticsCard 
+        title="Most Influential Posts" 
+        icon={<TrendingUp size={16} className="text-emerald-400" />}
+      >
+        <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+          {influentialPosts.map(post => {
+            // Calculate total engagement
+            const engagement = post.engagement || {};
+            const totalEngagement = 
+              (engagement.replies || 0) + 
+              (engagement.retweets || 0) + 
+              (engagement.likes || 0) + 
+              (engagement.bookmarks || 0);
+            
+            return (
+              <div 
+                key={post.post_id} 
+                className={`bg-gradient-to-br from-gray-900/70 to-gray-800/70 rounded-sm p-3 border ${
+                  post.sentiment === 'positive' ? 'border-emerald-500/30' : 
+                  post.sentiment === 'negative' ? 'border-red-500/30' :
+                  post.sentiment === 'critical' ? 'border-orange-500/30' :
+                  'border-gray-700/70'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <span className="text-xs font-medium text-white">
+                      {post.user_display_name || `@${post.user_handle?.replace('@', '')}`}
+                    </span>
+                    <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(post.post_timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className={`flex items-center px-2 py-0.5 rounded-full ${
+                    post.sentiment === 'positive' ? 'bg-emerald-500/20 text-emerald-400' : 
+                    post.sentiment === 'negative' ? 'bg-red-500/20 text-red-400' :
+                    post.sentiment === 'critical' ? 'bg-orange-500/20 text-orange-400' :
+                    'bg-gray-600/30 text-gray-300'
+                  }`}>
+                    {getSentimentIcon(post.sentiment, 12)}
+                    <span className="text-xs ml-1 capitalize">{post.sentiment}</span>
+                  </div>
+                </div>
+                
+                <p className="text-gray-200 text-xs mb-2 line-clamp-2">
+                  {post.post_text}
+                </p>
+                
+                <div className="flex justify-between text-xs">
+                  <div className="flex space-x-3">
+                    {engagement.replies > 0 && (
+                      <span className="text-gray-400">
+                        {engagement.replies} replies
+                      </span>
+                    )}
+                    {engagement.retweets > 0 && (
+                      <span className="text-gray-400">
+                        {engagement.retweets} retweets
+                      </span>
+                    )}
+                    {engagement.likes > 0 && (
+                      <span className="text-gray-400">
+                        {engagement.likes} likes
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-emerald-400 font-medium">
+                    {totalEngagement} total engagement
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </AnalyticsCard>
     </div>
   );
 };

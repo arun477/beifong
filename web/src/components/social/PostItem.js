@@ -19,7 +19,7 @@ const formatDate = dateStr => {
    if (!dateStr) return 'N/A';
    try {
       const date = new Date(dateStr);
-      return date.toLocaleDateString().split('/')[0];
+      return date.toLocaleDateString();
    } catch (e) {
       return 'Invalid Date';
    }
@@ -48,7 +48,8 @@ const formatNumber = number => {
 };
 
 const getPlatformIcon = platform => {
-   switch (platform) {
+   switch (platform?.toLowerCase()) {
+      case 'x.com':
       case 'x':
          return (
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -84,7 +85,7 @@ const getPlatformIcon = platform => {
 
 // Sentiment related helpers
 const getSentimentIcon = sentiment => {
-   switch (sentiment) {
+   switch (sentiment?.toLowerCase()) {
       case 'positive':
          return <Smile className="w-3.5 h-3.5" />;
       case 'negative':
@@ -98,7 +99,7 @@ const getSentimentIcon = sentiment => {
 };
 
 const getSentimentColor = sentiment => {
-   switch (sentiment) {
+   switch (sentiment?.toLowerCase()) {
       case 'positive':
          return 'bg-emerald-400/10 text-emerald-400';
       case 'negative':
@@ -112,7 +113,7 @@ const getSentimentColor = sentiment => {
 };
 
 const getSentimentGradient = sentiment => {
-   switch (sentiment) {
+   switch (sentiment?.toLowerCase()) {
       case 'positive':
          return 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30';
       case 'negative':
@@ -126,7 +127,7 @@ const getSentimentGradient = sentiment => {
 };
 
 const getSentimentCardStyle = sentiment => {
-   switch (sentiment) {
+   switch (sentiment?.toLowerCase()) {
       case 'positive':
          return 'border-emerald-500/30 hover:border-emerald-500/50 bg-gradient-to-br from-emerald-900/10 to-teal-900/10';
       case 'negative':
@@ -140,7 +141,8 @@ const getSentimentCardStyle = sentiment => {
 };
 
 const getPlatformColor = platform => {
-   switch (platform) {
+   switch (platform?.toLowerCase()) {
+      case 'x.com':
       case 'x':
          return 'text-blue-400';
       case 'facebook':
@@ -159,26 +161,30 @@ const PostItem = ({ post }) => {
 
    // Get sentiment and impact score with fallbacks
    const sentiment = post.sentiment || 'neutral';
-   const impactScore = post.impact_score || 0;
+   const impactScore = 0; // Not in our current schema, so defaulting to 0
 
-   // Handle missing values
-   const commentsCount = post.comments_count || 0;
-   const likesCount = post.likes_count || 0;
-   const repostsCount = post.reposts_count || 0;
-   const sharesCount = post.shares_count || 0;
+   // Extract engagement metrics from engagement object
+   const engagement = post.engagement || {};
+   const replyCount = engagement.replies || post.engagement_reply_count || 0;
+   const retweetCount = engagement.retweets || post.engagement_retweet_count || 0;
+   const likeCount = engagement.likes || post.engagement_like_count || 0;
+   const bookmarkCount = engagement.bookmarks || post.engagement_bookmark_count || 0;
+   const viewCount = engagement.views || post.engagement_view_count || 0;
 
-   // Use shares count if reposts are not available and vice versa
-   const shareOrRepostCount = repostsCount || sharesCount || 0;
+   // Use replies for comments count
+   const commentsCount = replyCount || 0;
+   const likesCount = likeCount || 0;
+   const sharesCount = retweetCount || 0;
 
    // Check for large numbers to adapt layout
-   const hasLargeNumbers = commentsCount >= 100 || likesCount >= 100 || shareOrRepostCount >= 100;
+   const hasLargeNumbers = commentsCount >= 100 || likesCount >= 100 || sharesCount >= 100;
 
    // Check for very high engagement (requiring special treatment)
-   const hasVeryHighEngagement = commentsCount > 200 || shareOrRepostCount > 200 || likesCount > 1000;
+   const hasVeryHighEngagement = commentsCount > 200 || sharesCount > 200 || likesCount > 1000;
 
    return (
       <Link
-         to={`/social-media/${post.id}`}
+         to={`/social-media/${post.post_id}`}
          className="block h-full"
       >
          <div className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(sentiment)}`}>
@@ -193,9 +199,6 @@ const PostItem = ({ post }) => {
                   : 'from-gray-600 to-gray-700'
             }`}></div>
             
-            {/* Pulsing Ring Animation for hover state */}
-            {/* Removed animation effects */}
-
             {/* Header */}
             <div className={`flex flex-col px-3.5 py-2.5 border-b ${
                sentiment === 'positive' 
@@ -222,13 +225,8 @@ const PostItem = ({ post }) => {
                      <div className="min-w-0">
                         <div className="flex items-center gap-1">
                            <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
-                              {post.author_name || 'Unknown Author'}
+                              {post.user_display_name || post.author_name || (post.user_handle ? `@${post.user_handle.replace('@', '')}` : 'Unknown Author')}
                            </span>
-                           {post.author_is_verified && (
-                              <div className="transition-colors duration-300">
-                                 <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                              </div>
-                           )}
                         </div>
                      </div>
                   </div>
@@ -237,10 +235,7 @@ const PostItem = ({ post }) => {
                {/* Row 2: Author details */}
                <div className="flex items-center flex-wrap text-gray-400 text-xs mt-1">
                   <span className="truncate max-w-[100px] inline-block">
-                     @
-                     {post.author_handle ||
-                        post.author_name?.toLowerCase().replace(/\s/g, '') ||
-                        'unknown'}
+                     @{post.user_handle ? post.user_handle.replace('@', '') : 'unknown'}
                   </span>
                   <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
                   <span
@@ -248,10 +243,10 @@ const PostItem = ({ post }) => {
                         post.platform
                      )} flex-shrink-0 font-medium mr-0.5 group-hover:font-semibold transition-all duration-300`}
                   >
-                     {post.platform || 'web'}
+                     {post.platform?.replace('.com', '') || 'web'}
                   </span>
                   <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
-                  <span className="text-gray-500 flex-shrink-0">{formatDate(post.post_datetime)}</span>
+                  <span className="text-gray-500 flex-shrink-0">{formatDate(post.post_timestamp)}</span>
                </div>
 
                {/* Row 3: Sentiment Indicator with improved styling */}
@@ -272,21 +267,13 @@ const PostItem = ({ post }) => {
                      {getSentimentIcon(sentiment)}
                      <span className="text-xs font-medium capitalize">{sentiment}</span>
                   </div>
-                  
-                  {/* Sparkles icon for high impact */}
-                  {impactScore > 7 && (
-                     <div className="ml-2 flex items-center gap-1 py-1 px-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-400">
-                        <Sparkles className="w-3 h-3" />
-                        <span className="text-xs font-medium">High Impact</span>
-                     </div>
-                  )}
                </div>
             </div>
 
             {/* Content */}
             <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
                <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
-                  {post.message || 'No content available'}
+                  {post.post_text || 'No content available'}
                </p>
             </div>
 
@@ -307,11 +294,11 @@ const PostItem = ({ post }) => {
                               </div>
                            )}
 
-                           {shareOrRepostCount > 0 && (
+                           {sharesCount > 0 && (
                               <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
                                  <Share2 className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
                                  <span className="text-xs text-gray-400 group-hover:text-emerald-100 transition-colors duration-300">
-                                    {formatNumber(shareOrRepostCount)}
+                                    {formatNumber(sharesCount)}
                                  </span>
                               </div>
                            )}
@@ -325,17 +312,6 @@ const PostItem = ({ post }) => {
                               </div>
                            )}
                         </div>
-
-                        {/* Impact score */}
-                        {impactScore > 0 && (
-                           <div
-                              className="flex items-center justify-center gap-1 py-1 px-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-gray-200 group-hover:from-emerald-500/20 group-hover:to-teal-500/20 transition-all duration-300 group-hover:shadow-sm"
-                              title={`Impact score: ${impactScore.toFixed(1)}`}
-                           >
-                              <BarChart2 className="w-3.5 h-3.5 text-emerald-400" />
-                              <span className="text-xs font-medium">{impactScore.toFixed(1)}</span>
-                           </div>
-                        )}
                      </div>
                   </div>
                ) : (
@@ -352,11 +328,11 @@ const PostItem = ({ post }) => {
                            </div>
                         )}
 
-                        {shareOrRepostCount > 0 && (
+                        {sharesCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
                               <Share2 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
                               <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
-                                 {formatNumber(shareOrRepostCount)}
+                                 {formatNumber(sharesCount)}
                               </span>
                            </div>
                         )}
@@ -369,18 +345,19 @@ const PostItem = ({ post }) => {
                               </span>
                            </div>
                         )}
-                     </div>
 
-                     {/* Right side - impact score */}
-                     {impactScore > 0 && (
-                        <div
-                           className="flex items-center justify-center gap-1 py-1 px-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-gray-200 group-hover:from-emerald-500/20 group-hover:to-teal-500/20 transition-all duration-300 group-hover:shadow-emerald-500/10 group-hover:shadow-sm"
-                           title={`Impact score: ${impactScore.toFixed(1)}`}
-                        >
-                           <BarChart2 className="w-3.5 h-3.5 text-emerald-400" />
-                           <span className="text-xs font-medium">{impactScore.toFixed(1)}</span>
-                        </div>
-                     )}
+                        {viewCount > 0 && (
+                           <div className="flex items-center transition-colors duration-300">
+                              <svg className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                 {formatNumber(viewCount)}
+                              </span>
+                           </div>
+                        )}
+                     </div>
                   </div>
                )}
                

@@ -4,7 +4,8 @@ const Filters = ({
    isOpen, 
    filters, 
    platforms, 
-   authors, 
+   sentiments,
+   categories,
    handleFilterChange, 
    resetFilters, 
    setIsFilterOpen 
@@ -43,21 +44,42 @@ const Filters = ({
                   </div>
                   <div>
                      <label
-                        htmlFor="author"
+                        htmlFor="sentiment"
                         className="block text-xs font-medium text-gray-300 mb-1"
                      >
-                        Author
+                        Sentiment
                      </label>
                      <select
-                        id="author"
+                        id="sentiment"
                         className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
-                        value={filters.author}
-                        onChange={e => handleFilterChange('author', e.target.value)}
+                        value={filters.sentiment}
+                        onChange={e => handleFilterChange('sentiment', e.target.value)}
                      >
-                        <option value="">All Authors</option>
-                        {authors.map(author => (
-                           <option key={author.author_name} value={author.author_name}>
-                              {author.author_name}
+                        <option value="">All Sentiments</option>
+                        {sentiments.map(sentiment => (
+                           <option key={sentiment} value={sentiment}>
+                              {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
+                           </option>
+                        ))}
+                     </select>
+                  </div>
+                  <div>
+                     <label
+                        htmlFor="category"
+                        className="block text-xs font-medium text-gray-300 mb-1"
+                     >
+                        Category
+                     </label>
+                     <select
+                        id="category"
+                        className="w-full px-3 py-1.5 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-xs text-gray-300 transition-all"
+                        value={filters.category}
+                        onChange={e => handleFilterChange('category', e.target.value)}
+                     >
+                        <option value="">All Categories</option>
+                        {categories.map(category => (
+                           <option key={category} value={category}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
                            </option>
                         ))}
                      </select>
@@ -114,7 +136,7 @@ const Filters = ({
          )}
 
          {/* Active Filters Display */}
-         {(filters.platform || filters.author || filters.dateFrom || filters.dateTo) && (
+         {(filters.platform || filters.sentiment || filters.category || filters.dateFrom || filters.dateTo) && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
                <span className="text-xs text-gray-400 font-medium">Active filters:</span>
                {filters.platform && (
@@ -140,13 +162,36 @@ const Filters = ({
                      </button>
                   </span>
                )}
-               {filters.author && (
+               {filters.sentiment && (
                   <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300 border border-gray-700">
-                     Author: {filters.author}
+                     Sentiment: {filters.sentiment}
                      <button
-                        onClick={() => handleFilterChange('author', '')}
+                        onClick={() => handleFilterChange('sentiment', '')}
                         className="ml-1.5 text-gray-500 hover:text-emerald-300 transition-colors duration-200"
-                        aria-label={`Remove ${filters.author} filter`}
+                        aria-label={`Remove ${filters.sentiment} filter`}
+                     >
+                        <svg
+                           xmlns="http://www.w3.org/2000/svg"
+                           className="h-3 w-3"
+                           viewBox="0 0 20 20"
+                           fill="currentColor"
+                        >
+                           <path
+                              fillRule="evenodd"
+                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                           />
+                        </svg>
+                     </button>
+                  </span>
+               )}
+               {filters.category && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300 border border-gray-700">
+                     Category: {filters.category}
+                     <button
+                        onClick={() => handleFilterChange('category', '')}
+                        className="ml-1.5 text-gray-500 hover:text-emerald-300 transition-colors duration-200"
+                        aria-label={`Remove ${filters.category} filter`}
                      >
                         <svg
                            xmlns="http://www.w3.org/2000/svg"

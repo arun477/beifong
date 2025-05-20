@@ -266,44 +266,53 @@ def init_internal_sessions_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_state_session_id ON session_state(session_id)")
         conn.commit()
     print("Internal sessions database initialized.")
-
-
+    
+    
 def init_social_media_db():
     """Initialize the social media database."""
     db_path = get_db_path("social_media_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("""
+        # Main posts table (from existing schema)
+        cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id TEXT UNIQUE NOT NULL,
-            platform TEXT NOT NULL,
-            message TEXT,
-            author_name TEXT,
-            author_handle TEXT,
-            author_is_verified INTEGER DEFAULT 0,
+            post_id TEXT PRIMARY KEY,
+            platform TEXT,
+            user_display_name TEXT,
+            user_handle TEXT,
+            user_profile_pic_url TEXT,
+            post_timestamp TEXT,
+            post_display_time TEXT,
             post_url TEXT,
-            post_date TEXT,
-            post_datetime TEXT,
-            comments_count INTEGER DEFAULT 0,
-            reactions_count INTEGER DEFAULT 0,
-            shares_count INTEGER DEFAULT 0,
-            reposts_count INTEGER DEFAULT 0,
-            likes_count INTEGER DEFAULT 0,
-            views_count INTEGER DEFAULT 0,
-            bookmarks_count INTEGER DEFAULT 0,
-            has_image INTEGER DEFAULT 0,
-            image_url TEXT,
-            first_seen_timestamp TEXT,
-            last_updated_timestamp TEXT,
-            extra_data TEXT
+            post_text TEXT,
+            post_mentions TEXT,
+            engagement_reply_count INTEGER,
+            engagement_retweet_count INTEGER,
+            engagement_like_count INTEGER,
+            engagement_like_count INTEGER,
+            engagement_bookmark_count INTEGER,
+            engagement_view_count INTEGER,
+            media TEXT,  -- Stored as JSON
+            media_count INTEGER,
+            is_ad BOOLEAN,
+            sentiment TEXT,
+            categories TEXT,
+            tags TEXT,
+            analysis_reasoning TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """)
+        ''')
+        
+        # Add indexes for better performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_platform ON posts(platform)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_author_name ON posts(author_name)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_post_datetime ON posts(post_datetime)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_user_handle ON posts(user_handle)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_post_timestamp ON posts(post_timestamp)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_sentiment ON posts(sentiment)")
+          
         conn.commit()
     print("Social media database initialized.")
+
 
 async def init_databases():
     """Initialize all databases."""

@@ -3,28 +3,6 @@ import PostItem from './PostItem';
 import Filters from './Filters';
 import Pagination from './Pagination';
 
-// Function to enhance existing data with sentiment and impact score if not present
-const enhancePostData = (posts) => {
-  const sentiments = ['positive', 'negative', 'neutral', 'critical'];
-  const impactScores = [2.5, 3.1, 3.5, 3.7, 4.2, 4.6, 4.8, 4.9];
-  
-  return posts.map(post => {
-    // Create a new object to avoid mutating the original
-    const enhancedPost = { ...post };
-    
-    // Only add sentiment and impact_score if they don't exist
-    if (!enhancedPost.sentiment) {
-      enhancedPost.sentiment = sentiments[Math.floor(Math.random() * sentiments.length)];
-    }
-    
-    if (!enhancedPost.impact_score) {
-      enhancedPost.impact_score = impactScores[Math.floor(Math.random() * impactScores.length)];
-    }
-    
-    return enhancedPost;
-  });
-};
-
 const FeedTab = ({
    posts,
    loading,
@@ -33,7 +11,8 @@ const FeedTab = ({
    pagination,
    isFilterOpen,
    platforms,
-   authors,
+   sentiments,
+   categories,
    handleFilterChange,
    resetFilters,
    handlePrevPage,
@@ -41,16 +20,14 @@ const FeedTab = ({
    setIsFilterOpen,
    setPagination,
 }) => {
-   // Enhance posts with sentiment and impact score if needed
-   const enhancedPosts = enhancePostData(posts);
-   
    return (
       <div className="space-y-4">
          <Filters
             isOpen={isFilterOpen}
             filters={filters}
             platforms={platforms}
-            authors={authors}
+            sentiments={sentiments}
+            categories={categories}
             handleFilterChange={handleFilterChange}
             resetFilters={resetFilters}
             setIsFilterOpen={setIsFilterOpen}
@@ -77,7 +54,7 @@ const FeedTab = ({
                   {error}
                </div>
             </div>
-         ) : enhancedPosts.length === 0 ? (
+         ) : posts.length === 0 ? (
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-sm p-8 text-center shadow-md">
                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-b from-gray-700 to-gray-800 rounded-full flex items-center justify-center">
                   <svg
@@ -100,8 +77,8 @@ const FeedTab = ({
          ) : (
             <>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {enhancedPosts.map(post => (
-                     <PostItem key={post.id || post._id} post={post} />
+                  {posts.map(post => (
+                     <PostItem key={post.post_id} post={post} />
                   ))}
                </div>
 

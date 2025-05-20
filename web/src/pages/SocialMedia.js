@@ -8,13 +8,14 @@ const SocialMedia = () => {
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState(null);
    const [stats, setStats] = useState(null);
-   const [topPosts, setTopPosts] = useState([]);
    const [platforms, setPlatforms] = useState([]);
-   const [authors, setAuthors] = useState([]);
+   const [sentiments, setSentiments] = useState([]);
+   const [categories, setCategories] = useState([]);
    const [activeTab, setActiveTab] = useState('feed');
    const [filters, setFilters] = useState({
       platform: '',
-      author: '',
+      sentiment: '',
+      category: '',
       dateFrom: '',
       dateTo: '',
       search: '',
@@ -30,10 +31,9 @@ const SocialMedia = () => {
    // Load initial data
    useEffect(() => {
       fetchPosts();
-      fetchStats();
-      fetchTopPosts();
       fetchPlatforms();
-      fetchAuthors();
+      fetchSentiments();
+      fetchCategories();
    }, []);
 
    // Refetch posts when filters or pagination changes
@@ -48,7 +48,8 @@ const SocialMedia = () => {
             page: pagination.page,
             per_page: pagination.perPage,
             platform: filters.platform || undefined,
-            author: filters.author || undefined,
+            sentiment: filters.sentiment || undefined,
+            category: filters.category || undefined,
             date_from: filters.dateFrom || undefined,
             date_to: filters.dateTo || undefined,
             search: filters.search || undefined,
@@ -69,24 +70,6 @@ const SocialMedia = () => {
       }
    };
 
-   const fetchStats = async () => {
-      try {
-         const response = await api.socialMedia.getStats();
-         setStats(response.data);
-      } catch (error) {
-         console.error('Error fetching social media stats:', error);
-      }
-   };
-
-   const fetchTopPosts = async () => {
-      try {
-         const response = await api.socialMedia.getTopPosts(5);
-         setTopPosts(response.data || []);
-      } catch (error) {
-         console.error('Error fetching top posts:', error);
-      }
-   };
-
    const fetchPlatforms = async () => {
       try {
          const response = await api.socialMedia.getPlatforms();
@@ -96,19 +79,39 @@ const SocialMedia = () => {
       }
    };
 
-   const fetchAuthors = async () => {
+   const fetchSentiments = async () => {
       try {
-         const response = await api.socialMedia.getAuthors(20);
-         setAuthors(response.data || []);
+         const response = await api.socialMedia.getSentiments();
+         setSentiments(response.data || []);
+         
+         // Build stats object for StatsTab
+         const sentimentData = response.data || [];
+         const statsData = {
+            sentiments: sentimentData.reduce((acc, item) => {
+               acc[item.sentiment] = item.post_count;
+               return acc;
+            }, {})
+         };
+         setStats(statsData);
       } catch (error) {
-         console.error('Error fetching authors:', error);
+         console.error('Error fetching sentiments:', error);
+      }
+   };
+
+   const fetchCategories = async () => {
+      try {
+         const response = await api.socialMedia.getCategories();
+         setCategories(response.data || []);
+      } catch (error) {
+         console.error('Error fetching categories:', error);
       }
    };
 
    const resetFilters = () => {
       setFilters({
          platform: '',
-         author: '',
+         sentiment: '',
+         category: '',
          dateFrom: '',
          dateTo: '',
          search: '',
@@ -286,7 +289,6 @@ const SocialMedia = () => {
                      </svg>
                      Analytics
                   </button>
-                
                </nav>
             </div>
          </div>
@@ -300,7 +302,8 @@ const SocialMedia = () => {
                pagination={pagination}
                isFilterOpen={isFilterOpen}
                platforms={platforms}
-               authors={authors}
+               sentiments={sentiments.map(item => item.sentiment)}
+               categories={categories.map(item => item.category)}
                handleFilterChange={handleFilterChange}
                resetFilters={resetFilters}
                handlePrevPage={handlePrevPage}
@@ -312,11 +315,12 @@ const SocialMedia = () => {
          
          {activeTab === 'stats' && (
             <StatsTab 
+               platforms={platforms}
+               sentiments={sentiments}
+               categories={categories}
                stats={stats}
             />
          )}
-         
-        
       </div>
    );
 };

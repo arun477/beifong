@@ -1,128 +1,107 @@
-from fastapi import APIRouter, Query, Path, HTTPException
+from fastapi import APIRouter, Query
 from typing import List, Optional, Dict, Any
 from services.social_media_service import social_media_service
-from models.social_media_schemas import PaginatedSocialMediaPosts, SocialMediaPost, SocialMediaStats
+from models.social_media_schemas import PaginatedPosts, Post  # Import existing schemas
 
 router = APIRouter()
 
-
-@router.get("/", response_model=PaginatedSocialMediaPosts)
+@router.get("/", response_model=PaginatedPosts)  # Use the existing PaginatedPosts model
 async def read_posts(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-    platform: Optional[str] = Query(None, description="Filter by platform (facebook or x)"),
-    author: Optional[str] = Query(None, description="Filter by author name"),
-    date_from: Optional[str] = Query(None, description="Filter by start date (YYYY-MM-DD)"),
-    date_to: Optional[str] = Query(None, description="Filter by end date (YYYY-MM-DD)"),
-    search: Optional[str] = Query(None, description="Search in post content"),
+    platform: Optional[str] = Query(None, description="Filter by platform (e.g., x.com, instagram)"),
+    user_handle: Optional[str] = Query(None, description="Filter by user handle"),
+    sentiment: Optional[str] = Query(None, description="Filter by sentiment"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
+    search: Optional[str] = Query(None, description="Search in post text, user display name, or handle"),
 ):
     """
     Get all social media posts with pagination and filtering.
-
-    - **page**: Page number (starting from 1)
-    - **per_page**: Number of items per page (max 100)
-    - **platform**: Filter by platform ('facebook' or 'x')
-    - **author**: Filter by author name
-    - **date_from**: Filter by start date (format: YYYY-MM-DD)
-    - **date_to**: Filter by end date (format: YYYY-MM-DD)
-    - **search**: Search in post content
     """
     return await social_media_service.get_posts(
-        page=page, per_page=per_page, platform=platform, author=author, date_from=date_from, date_to=date_to, search=search
+        page=page,
+        per_page=per_page,
+        platform=platform,
+        user_handle=user_handle,
+        sentiment=sentiment,
+        category=category,
+        date_from=date_from,
+        date_to=date_to,
+        search=search
     )
 
-
-@router.get("/stats", response_model=SocialMediaStats)
-async def get_stats():
-    """
-    Get analytics overview for social media posts.
-
-    Returns statistics including:
-    - Total post counts
-    - Platform-specific post counts
-    - Unique author count
-    - Engagement metrics by platform
-    - Top authors with their post counts
-    - Post counts by date and platform
-    """
-    return await social_media_service.get_stats()
-
-
-@router.get("/top", response_model=List[Dict[str, Any]])
-async def get_top_posts(
-    limit: int = Query(20, ge=1, le=100, description="Number of posts to return"),
-    platform: Optional[str] = Query(None, description="Filter by platform (facebook or x)"),
-):
-    """
-    Get top posts by engagement.
-
-    - **limit**: Maximum number of posts to return (max 100)
-    - **platform**: Filter by platform ('facebook' or 'x')
-    """
-    return await social_media_service.get_top_posts(limit=limit, platform=platform)
-
-
-@router.get("/recent", response_model=List[Dict[str, Any]])
-async def get_recent_posts(
-    limit: int = Query(20, ge=1, le=100, description="Number of posts to return"),
-    platform: Optional[str] = Query(None, description="Filter by platform (facebook or x)"),
-    search: Optional[str] = Query(None, description="Search in post content"),
-):
-    """
-    Get most recent posts.
-
-    - **limit**: Maximum number of posts to return (max 100)
-    - **platform**: Filter by platform ('facebook' or 'x')
-    - **search**: Search in post content
-    """
-    return await social_media_service.get_recent_posts(limit=limit, platform=platform, search=search)
-
-
-@router.get("/{post_id}", response_model=SocialMediaPost)
-async def read_post(
-    post_id: int = Path(..., description="ID of the post to retrieve"),
-):
+@router.get("/{post_id}", response_model=Post)  # Use the existing Post model
+async def read_post(post_id: str):
     """
     Get a specific social media post by ID.
-
-    - **post_id**: ID of the post to retrieve
     """
     return await social_media_service.get_post(post_id=post_id)
 
-
 @router.get("/platforms/list", response_model=List[str])
-async def get_platforms():
-    """
-    Get list of available platforms in the database.
-    """
+async def read_platforms():
+    """Get all available platforms."""
     return await social_media_service.get_platforms()
 
+@router.get("/sentiments/list", response_model=List[Dict[str, Any]])
+async def read_sentiments():
+    """Get sentiment distribution with post counts."""
+    return await social_media_service.get_sentiments()
 
-@router.get("/authors/list", response_model=List[Dict[str, Any]])
-async def get_authors(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of authors to return"),
-    search: Optional[str] = Query(None, description="Filter authors by name"),
+@router.get("/users/top", response_model=List[Dict[str, Any]])
+async def read_top_users(
+    platform: Optional[str] = Query(None, description="Filter by platform"),
+    limit: int = Query(10, ge=1, le=50, description="Number of top users to return")
 ):
-    """
-    Get list of authors with post counts.
+    """Get top users by post count."""
+    return await social_media_service.get_top_users(platform=platform, limit=limit)
 
-    - **limit**: Maximum number of authors to return (max 1000)
-    - **search**: Filter authors by name
-    """
-    return await social_media_service.get_authors(limit=limit, search=search)
+@router.get("/categories/list", response_model=List[Dict[str, Any]])
+async def read_categories():
+    """Get all categories with post counts."""
+    return await social_media_service.get_categories()
 
+# New analytics endpoints
+@router.get("/users/sentiment", response_model=List[Dict[str, Any]])
+async def read_user_sentiment(
+    limit: int = Query(10, ge=1, le=50, description="Number of users to return"),
+    platform: Optional[str] = Query(None, description="Filter by platform")
+):
+    """Get users with their sentiment breakdown."""
+    return await social_media_service.get_user_sentiment(limit=limit, platform=platform)
 
-@router.post("/import")
-async def import_post(post_data: Dict[str, Any]):
-    """
-    Import a post from the crawler system.
+@router.get("/categories/sentiment", response_model=List[Dict[str, Any]])
+async def read_category_sentiment():
+    """Get sentiment distribution by category."""
+    return await social_media_service.get_category_sentiment()
 
-    This endpoint is primarily for internal use by the social media crawler.
-    It expects a JSON object containing the post data to be imported.
+@router.get("/topic/trends", response_model=List[Dict[str, Any]])
+async def read_trending_topics(
+    days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
+    limit: int = Query(10, ge=1, le=50, description="Number of topics to return")
+):
+    print('reaching...')
+    """Get trending topics with sentiment breakdown."""
+    return await social_media_service.get_trending_topics(days=days, limit=limit)
 
-    Returns:
-    - "inserted" if a new post was created
-    - "updated" if an existing post was updated
-    """
-    result = await social_media_service.import_post(post_data)
-    return {"status": "success", "operation": result}
+@router.get("/trends/time", response_model=List[Dict[str, Any]])
+async def read_sentiment_over_time(
+    days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
+    platform: Optional[str] = Query(None, description="Filter by platform")
+):
+    """Get sentiment trends over time."""
+    return await social_media_service.get_sentiment_over_time(days=days, platform=platform)
+
+@router.get("/posts/influential", response_model=List[Dict[str, Any]])
+async def read_influential_posts(
+    sentiment: Optional[str] = Query(None, description="Filter by sentiment"),
+    limit: int = Query(5, ge=1, le=20, description="Number of posts to return")
+):
+    """Get most influential posts by engagement, optionally filtered by sentiment."""
+    return await social_media_service.get_influential_posts(sentiment=sentiment, limit=limit)
+
+@router.get("/engagement/stats", response_model=Dict[str, Any])
+async def read_engagement_stats():
+    """Get overall engagement statistics."""
+    return await social_media_service.get_engagement_stats()
