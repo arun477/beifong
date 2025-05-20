@@ -16,29 +16,20 @@ PODCAST_MUSIC_FOLDER = os.path.join(PODCASTS_FOLDER, "musics")
 OPENAI_VOICES = {1: "alloy", 2: "echo", 3: "fable", 4: "onyx", 5: "nova", 6: "shimmer"}
 DEFAULT_VOICE_MAP = {1: "alloy", 2: "nova"}
 TTS_MODEL = "gpt-4o-mini-tts"
-
-# Music configuration
 INTRO_MUSIC_FILE = os.path.join(PODCAST_MUSIC_FOLDER, "intro_audio.mp3")
-OUTRO_MUSIC_FILE = os.path.join(PODCAST_MUSIC_FOLDER, "intro_audio.mp3")  # Same file for outro
+OUTRO_MUSIC_FILE = os.path.join(PODCAST_MUSIC_FOLDER, "intro_audio.mp3")
 
 
 def resample_audio_scipy(audio, original_sr, target_sr):
-    """Resample audio to match target sample rate using scipy."""
     if original_sr == target_sr:
         return audio
-
-    # Calculate the resampling ratio
     resampling_ratio = target_sr / original_sr
-
-    # Use scipy's resample function for high-quality resampling
     num_samples = int(len(audio) * resampling_ratio)
     resampled = signal.resample(audio, num_samples)
-
     return resampled
 
 
 def create_silence_audio(silence_duration: float, sampling_rate: int) -> np.ndarray:
-    """Create a silent audio segment."""
     if sampling_rate <= 0:
         print(f"Invalid sampling rate ({sampling_rate}) for silence generation")
         return np.zeros(0, dtype=np.float32)
@@ -46,7 +37,6 @@ def create_silence_audio(silence_duration: float, sampling_rate: int) -> np.ndar
 
 
 def combine_audio_segments(audio_segments: List[np.ndarray], silence_duration: float, sampling_rate: int) -> np.ndarray:
-    """Combine multiple audio segments with silence between them."""
     if not audio_segments:
         return np.zeros(0, dtype=np.float32)
     silence = create_silence_audio(silence_duration, sampling_rate)
@@ -63,7 +53,6 @@ def combine_audio_segments(audio_segments: List[np.ndarray], silence_duration: f
 
 
 def process_audio_file(temp_path: str) -> Optional[Tuple[np.ndarray, int]]:
-    """Process audio file in a synchronous manner."""
     try:
         from pydub import AudioSegment
 
@@ -101,7 +90,6 @@ def process_audio_file(temp_path: str) -> Optional[Tuple[np.ndarray, int]]:
 
 
 def resample_audio(audio, orig_sr, target_sr):
-    """Resample audio from one sample rate to another"""
     try:
         import librosa
 
@@ -121,7 +109,6 @@ def text_to_speech_openai(
     voice_map: Dict[int, str] = None,
     model: str = TTS_MODEL,
 ) -> Optional[Tuple[np.ndarray, int]]:
-    """Generate speech using OpenAI's text-to-speech API synchronously."""
     if not text.strip():
         print("Empty text provided, skipping TTS generation")
         return None
@@ -145,16 +132,12 @@ def text_to_speech_openai(
         if not audio_data:
             print("OpenAI TTS returned empty response")
             return None
-
         print(f"Received {len(audio_data)} bytes from OpenAI TTS")
         temp_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
         temp_path = temp_file.name
         temp_file.close()
-
-        # Synchronous file write
         with open(temp_path, "wb") as f:
             f.write(audio_data)
-
         try:
             return process_audio_file(temp_path)
         finally:
@@ -177,22 +160,6 @@ def create_podcast(
     voice_map: Dict[int, str] = None,
     model: str = TTS_MODEL,
 ) -> Optional[str]:
-    """
-    Generate podcast audio synchronously using OpenAI's TTS API.
-
-    Args:
-        script: Script entries - either a list of dicts with 'speaker' and 'text' keys,
-                or an object with 'entries' attribute containing such a list
-        output_path: Path to save the output audio file
-        tts_engine: TTS engine name (currently only 'openai' is supported in this standalone version)
-        language_code: Language code for TTS (e.g., 'en' for English)
-        silence_duration: Duration of silence between segments in seconds
-        voice_map: Mapping from speaker IDs to voice names
-        model: TTS model name
-
-    Returns:
-        Path to the generated audio file or None if generation failed
-    """
     if tts_engine.lower() != "openai":
         print(f"Only OpenAI TTS engine is available in this standalone version. Requested: {tts_engine}")
         return None
@@ -323,6 +290,7 @@ def audio_generate_agent_run(agent: Agent) -> str:
         A message with the result of audio generation
     """
     from services.internal_session_service import SessionService
+
     session_id = agent.session_id
     session = SessionService.get_session(session_id)
     session_state = session["state"]

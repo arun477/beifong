@@ -111,15 +111,21 @@ def update_language(agent: Agent, language_code: str) -> str:
     Returns:
         Confirmation message
     """
+    from services.internal_session_service import SessionService
+
+    session_id = agent.session_id
+    session = SessionService.get_session(session_id)
+    session_state = session["state"]
     language_name = "English"
-    for lang in agent.session_state.get("available_languages", []):
+    for lang in session_state.get("available_languages", []):
         if lang.get("code") == language_code:
             language_name = lang.get("name")
             break
-    agent.session_state["selected_language"] = {
+    session_state["selected_language"] = {
         "code": language_code,
         "name": language_name,
     }
+    SessionService.save_session(session_id, session_state)
     return f"Podcast language set to: {language_name} ({language_code})"
 
 
