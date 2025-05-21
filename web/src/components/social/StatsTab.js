@@ -39,7 +39,7 @@ import {
    Activity,
 } from 'lucide-react';
 import api from '../../services/api';
-import PostItem from './PostItem';
+import ImprovedCards from './ImprovedCards';
 
 const formatNumber = number => {
    if (!number || isNaN(number)) return '0';
@@ -742,184 +742,11 @@ const StatsTab = ({ platforms }) => {
             </div>
          </AnalyticsCard>
          {/* Third row - User Sentiment and Trending Topics */}
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* User Sentiment - IMPROVED */}
-            <AnalyticsCard
-               title="Users by Sentiment"
-               icon={<Users size={16} className="text-emerald-400" />}
-            >
-               <div className="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-                  {userSentiment.map(user => (
-                     <div
-                        key={user.user_handle}
-                        className="group bg-gradient-to-r from-gray-900 to-gray-800/90 rounded-md p-3 border border-gray-700/50 transition-all duration-300 hover:border-emerald-600/30 hover:shadow-md"
-                     >
-                        <div className="flex items-center justify-between mb-1.5">
-                           <div className="flex items-center">
-                              <span className="text-xs font-medium text-white">
-                                 {user.user_display_name || `@${user.user_handle.replace('@', '')}`}
-                              </span>
-                              <span className="text-xs text-gray-400 ml-1.5 bg-gray-800/70 px-1.5 py-0.5 rounded-full">
-                                 {user.total_posts} posts
-                              </span>
-                           </div>
-                        </div>
-
-                        {/* Enhanced sentiment visualization */}
-                        <div className="flex items-center space-x-1 mb-2">
-                           {/* Sentiment gauges with improved design */}
-                           <div
-                              className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{ width: `${Math.max(user.positive_percent, 5)}%` }}
-                           >
-                              <div className="absolute inset-0 bg-emerald-500/20"></div>
-                              <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                 <Smile size={12} className="text-emerald-400 mr-1" />
-                                 <span className="text-xs text-emerald-300 font-medium">
-                                    {user.positive_percent}%
-                                 </span>
-                              </div>
-                           </div>
-
-                           <div
-                              className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{ width: `${Math.max(user.negative_percent, 5)}%` }}
-                           >
-                              <div className="absolute inset-0 bg-red-500/20"></div>
-                              <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                 <Frown size={12} className="text-red-400 mr-1" />
-                                 <span className="text-xs text-red-300 font-medium">
-                                    {user.negative_percent}%
-                                 </span>
-                              </div>
-                           </div>
-
-                           <div
-                              className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{ width: `${Math.max(user.critical_percent, 5)}%` }}
-                           >
-                              <div className="absolute inset-0 bg-orange-500/20"></div>
-                              <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                 <AlertCircle size={12} className="text-orange-400 mr-1" />
-                                 <span className="text-xs text-orange-300 font-medium">
-                                    {user.critical_percent}%
-                                 </span>
-                              </div>
-                           </div>
-
-                           <div
-                              className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{ width: `${Math.max(user.neutral_percent, 5)}%` }}
-                           >
-                              <div className="absolute inset-0 bg-gray-500/20"></div>
-                              <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                 <Minus size={12} className="text-gray-400 mr-1" />
-                                 <span className="text-xs text-gray-300 font-medium">
-                                    {user.neutral_percent}%
-                                 </span>
-                              </div>
-                           </div>
-                        </div>
-
-                        {/* Post count badges */}
-                        <div className="flex flex-wrap gap-2 text-xs">
-                           <div className="flex items-center bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/20">
-                              <Smile size={10} className="text-emerald-400 mr-1" />
-                              <span className="text-emerald-400">{user.positive_count}</span>
-                           </div>
-                           <div className="flex items-center bg-red-500/10 px-1.5 py-0.5 rounded-md border border-red-500/20">
-                              <Frown size={10} className="text-red-400 mr-1" />
-                              <span className="text-red-400">{user.negative_count}</span>
-                           </div>
-                           <div className="flex items-center bg-orange-500/10 px-1.5 py-0.5 rounded-md border border-orange-500/20">
-                              <AlertCircle size={10} className="text-orange-400 mr-1" />
-                              <span className="text-orange-400">{user.critical_count}</span>
-                           </div>
-                           <div className="flex items-center bg-gray-500/10 px-1.5 py-0.5 rounded-md border border-gray-500/20">
-                              <Minus size={10} className="text-gray-400 mr-1" />
-                              <span className="text-gray-400">{user.neutral_count}</span>
-                           </div>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </AnalyticsCard>
-
-            {/* Trending Topics with enhanced UI */}
-            <AnalyticsCard
-               title="Trending Topics"
-               icon={<TrendingUp size={16} className="text-emerald-400" />}
-            >
-               <div className="space-y-3 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-                  {trendingTopics.map((topic, index) => (
-                     <div
-                        key={index}
-                        className="group bg-gradient-to-r from-gray-900/70 to-gray-800/70 rounded-md p-3 border border-gray-700/50 transition-all duration-300 hover:border-emerald-600/30 hover:shadow-md"
-                     >
-                        <div className="flex items-center justify-between mb-2">
-                           <div className="flex items-center gap-1.5">
-                              <div className="p-1 bg-emerald-500/10 rounded-full">
-                                 <TrendingUp size={12} className="text-emerald-400" />
-                              </div>
-                              <span className="text-xs font-medium text-white">#{topic.topic}</span>
-                           </div>
-                           <span className="text-xs text-gray-400 px-1.5 py-0.5 bg-gray-800/70 rounded-full">
-                              {topic.total_count} posts
-                           </span>
-                        </div>
-
-                        <div className="flex mb-2 h-2.5 rounded-full overflow-hidden border border-gray-700/30">
-                           {/* Sentiment distribution - horizontal bars */}
-                           <div
-                              className="h-full bg-emerald-500 group-hover:bg-emerald-400 transition-colors duration-300"
-                              style={{ width: `${topic.positive_percent}%` }}
-                           ></div>
-                           <div
-                              className="h-full bg-red-500 group-hover:bg-red-400 transition-colors duration-300"
-                              style={{ width: `${topic.negative_percent}%` }}
-                           ></div>
-                           <div
-                              className="h-full bg-orange-500 group-hover:bg-orange-400 transition-colors duration-300"
-                              style={{ width: `${topic.critical_percent}%` }}
-                           ></div>
-                           <div
-                              className="h-full bg-gray-500 group-hover:bg-gray-400 transition-colors duration-300"
-                              style={{ width: `${topic.neutral_percent}%` }}
-                           ></div>
-                        </div>
-
-                        {/* Sentiment breakdown */}
-                        <div className="flex flex-wrap gap-2 text-xs">
-                           <div className="flex items-center bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></div>
-                              <span className="text-gray-300">
-                                 {topic.positive_percent.toFixed(1)}%
-                              </span>
-                           </div>
-                           <div className="flex items-center bg-red-500/10 px-2 py-1 rounded-md border border-red-500/20">
-                              <div className="w-2 h-2 rounded-full bg-red-500 mr-1.5"></div>
-                              <span className="text-gray-300">
-                                 {topic.negative_percent.toFixed(1)}%
-                              </span>
-                           </div>
-                           <div className="flex items-center bg-orange-500/10 px-2 py-1 rounded-md border border-orange-500/20">
-                              <div className="w-2 h-2 rounded-full bg-orange-500 mr-1.5"></div>
-                              <span className="text-gray-300">
-                                 {topic.critical_percent.toFixed(1)}%
-                              </span>
-                           </div>
-                           <div className="flex items-center bg-gray-500/10 px-2 py-1 rounded-md border border-gray-500/20">
-                              <div className="w-2 h-2 rounded-full bg-gray-500 mr-1.5"></div>
-                              <span className="text-gray-300">
-                                 {topic.neutral_percent.toFixed(1)}%
-                              </span>
-                           </div>
-                        </div>
-                     </div>
-                  ))}
-               </div>
-            </AnalyticsCard>
-         </div>
+         <ImprovedCards 
+            userSentiment={userSentiment}
+            trendingTopics={trendingTopics}
+            loading={loading}
+         />
          {/* Fourth row - Most Influential Posts */}
          <AnalyticsCard
             title="Most Influential Posts"
