@@ -124,7 +124,7 @@ const getSentimentCardStyle = sentiment => {
    }
 };
 
-const StatsTab = ({ platforms }) => {
+const StatsTab = ({ platforms, onPostClick }) => {
    // State for analytics data
    const [loading, setLoading] = useState(true);
    const [sentimentData, setSentimentData] = useState([]);
@@ -513,108 +513,117 @@ const StatsTab = ({ platforms }) => {
                </div>
             </AnalyticsCard>
 
-            {/* Categories Sentiment - IMPROVED */}
             <AnalyticsCard
                title="Categories by Sentiment"
                icon={<BarChart2 size={16} className="text-emerald-400" />}
                className="md:col-span-2"
             >
-               <div className="flex flex-col h-64">
-                  <div className="flex-grow">
-                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                           data={categoryChartData}
-                           layout="vertical"
-                           margin={{ top: 10, right: 30, left: 30, bottom: 15 }}
-                           barSize={16}
-                           barGap={3}
-                           maxBarSize={16}
-                        >
-                           <CartesianGrid
-                              strokeDasharray="3 3"
-                              stroke={COLORS.border.medium}
-                              horizontal={true}
-                              vertical={false}
-                           />
-                           <XAxis
-                              type="number"
-                              stroke={COLORS.text.secondary}
-                              fontSize={12}
-                              tickFormatter={value => value.toLocaleString()}
-                              axisLine={false}
-                              tickLine={false}
-                              domain={[0, 'dataMax']}
-                              allowDecimals={false}
-                              tickCount={6}
-                           />
-                           <YAxis
-                              dataKey="name"
-                              type="category"
-                              stroke={COLORS.text.secondary}
-                              fontSize={14}
-                              width={75}
-                              tick={{ fill: COLORS.text.primary }}
-                              axisLine={false}
-                              tickLine={false}
-                              tickMargin={5}
-                           />
-                           <Tooltip
-                              content={<CustomTooltip />}
-                              cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                           />
-                           <Bar
-                              dataKey="positive"
-                              stackId="a"
-                              fill={sentimentColorMap.positive}
-                              name="Positive"
-                              animationDuration={1500}
-                              animationBegin={300}
-                              radius={[0, 3, 3, 0]}
-                           />
-                           <Bar
-                              dataKey="negative"
-                              stackId="a"
-                              fill={sentimentColorMap.negative}
-                              name="Negative"
-                              animationDuration={1500}
-                              animationBegin={600}
-                           />
-                           <Bar
-                              dataKey="critical"
-                              stackId="a"
-                              fill={sentimentColorMap.critical}
-                              name="Critical"
-                              animationDuration={1500}
-                              animationBegin={900}
-                           />
-                           <Bar
-                              dataKey="neutral"
-                              stackId="a"
-                              fill={sentimentColorMap.neutral}
-                              name="Neutral"
-                              animationDuration={1500}
-                              animationBegin={1200}
-                           />
-                        </BarChart>
-                     </ResponsiveContainer>
-                  </div>
-
-                  <div className="flex items-center justify-center mt-4 mb-1 gap-6">
-                     <div className="flex items-center">
-                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 mr-2"></div>
-                        <span className="text-sm font-medium text-gray-200">Positive</span>
+               <div className="flex flex-col h-64 px-2">
+                  {/* Standalone heatmap implementation */}
+                  <div className="flex flex-col h-full">
+                     {/* Header row with sentiment labels */}
+                     <div className="flex mb-2 pl-24">
+                        <div className="flex-1 text-center text-xs text-emerald-400 font-medium">Positive</div>
+                        <div className="flex-1 text-center text-xs text-red-400 font-medium">Negative</div>
+                        <div className="flex-1 text-center text-xs text-orange-400 font-medium">Critical</div>
+                        <div className="flex-1 text-center text-xs text-gray-400 font-medium">Neutral</div>
                      </div>
-                     <div className="flex items-center">
-                        <div className="w-3.5 h-3.5 rounded-full bg-red-500 mr-2"></div>
-                        <span className="text-sm font-medium text-gray-200">Negative</span>
-                     </div>
-                     <div className="flex items-center">
-                        <div className="w-3.5 h-3.5 rounded-full bg-orange-500 mr-2"></div>
-                        <span className="text-sm font-medium text-gray-200">Critical</span>
-                     </div>
-                     <div className="flex items-center">
-                        <div className="w-3.5 h-3.5 rounded-full bg-gray-500 mr-2"></div>
-                        <span className="text-sm font-medium text-gray-200">Neutral</span>
+                     
+                     {/* Heatmap grid */}
+                     <div className="flex flex-col flex-grow justify-between">
+                        {categoryChartData.map((cat, idx) => (
+                           <div key={idx} className="flex h-8 mb-1 last:mb-0">
+                              {/* Category label */}
+                              <div className="w-24 pr-2 flex items-center justify-end">
+                                 <span className="text-right text-gray-300 text-sm truncate">
+                                    {cat.name}
+                                 </span>
+                              </div>
+                              
+                              {/* Cells for each sentiment type */}
+                              <div className="flex-1 flex gap-1">
+                                 {/* Positive cell */}
+                                 <div 
+                                    className="flex-1 rounded-sm flex items-center justify-center relative overflow-hidden group cursor-pointer" 
+                                    style={{ 
+                                       backgroundColor: `rgba(16, 185, 129, ${Math.min(cat.positive / (cat.total || 1) * 0.8 + 0.1, 0.9)})`
+                                    }}
+                                 >
+                                    <span className="text-white text-xs font-medium">
+                                       {cat.positive > 0 ? cat.positive : ''}
+                                    </span>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/50 flex items-center justify-center transition-opacity">
+                                       <div className="bg-gray-900/90 px-2 py-1 rounded-sm">
+                                          <div className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                                             <Smile size={10} />
+                                             <span>{((cat.positive / (cat.total || 1)) * 100).toFixed(1)}%</span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 
+                                 {/* Negative cell */}
+                                 <div 
+                                    className="flex-1 rounded-sm flex items-center justify-center relative overflow-hidden group cursor-pointer" 
+                                    style={{ 
+                                       backgroundColor: `rgba(239, 68, 68, ${Math.min(cat.negative / (cat.total || 1) * 0.8 + 0.1, 0.9)})`
+                                    }}
+                                 >
+                                    <span className="text-white text-xs font-medium">
+                                       {cat.negative > 0 ? cat.negative : ''}
+                                    </span>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/50 flex items-center justify-center transition-opacity">
+                                       <div className="bg-gray-900/90 px-2 py-1 rounded-sm">
+                                          <div className="text-xs text-red-400 font-medium flex items-center gap-1">
+                                             <Frown size={10} />
+                                             <span>{((cat.negative / (cat.total || 1)) * 100).toFixed(1)}%</span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 
+                                 {/* Critical cell */}
+                                 <div 
+                                    className="flex-1 rounded-sm flex items-center justify-center relative overflow-hidden group cursor-pointer" 
+                                    style={{ 
+                                       backgroundColor: `rgba(249, 115, 22, ${Math.min(cat.critical / (cat.total || 1) * 0.8 + 0.1, 0.9)})`
+                                    }}
+                                 >
+                                    <span className="text-white text-xs font-medium">
+                                       {cat.critical > 0 ? cat.critical : ''}
+                                    </span>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/50 flex items-center justify-center transition-opacity">
+                                       <div className="bg-gray-900/90 px-2 py-1 rounded-sm">
+                                          <div className="text-xs text-orange-400 font-medium flex items-center gap-1">
+                                             <AlertCircle size={10} />
+                                             <span>{((cat.critical / (cat.total || 1)) * 100).toFixed(1)}%</span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 
+                                 {/* Neutral cell */}
+                                 <div 
+                                    className="flex-1 rounded-sm flex items-center justify-center relative overflow-hidden group cursor-pointer" 
+                                    style={{ 
+                                       backgroundColor: `rgba(107, 114, 128, ${Math.min(cat.neutral / (cat.total || 1) * 0.8 + 0.1, 0.9)})`
+                                    }}
+                                 >
+                                    <span className="text-white text-xs font-medium">
+                                       {cat.neutral > 0 ? cat.neutral : ''}
+                                    </span>
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/50 flex items-center justify-center transition-opacity">
+                                       <div className="bg-gray-900/90 px-2 py-1 rounded-sm">
+                                          <div className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                                             <Minus size={10} />
+                                             <span>{((cat.neutral / (cat.total || 1)) * 100).toFixed(1)}%</span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        ))}
                      </div>
                   </div>
                </div>
@@ -770,7 +779,7 @@ const StatsTab = ({ platforms }) => {
             title="Most Influential Posts"
             icon={<TrendingUp size={16} className="text-emerald-400" />}
          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[32rem] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[32rem] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
                {influentialPosts.map(post => {
                   const sentiment = post.sentiment || 'neutral';
                   const platform = post.platform || 'web';
@@ -779,185 +788,220 @@ const StatsTab = ({ platforms }) => {
                   const retweetCount = engagement.retweets || 0;
                   const likeCount = engagement.likes || 0;
                   const viewCount = engagement.views || 0;
-                  const platformColorClass = getPlatformColor(platform);
+                  
+                  // Use replies for comments count
+                  const commentsCount = replyCount || 0;
+                  const likesCount = likeCount || 0;
+                  const sharesCount = retweetCount || 0;
+                  
+                  // Check for large numbers to adapt layout
+                  const hasLargeNumbers = commentsCount >= 100 || likesCount >= 100 || sharesCount >= 100;
+                  
+                  // Check for very high engagement (requiring special treatment)
+                  const hasVeryHighEngagement = commentsCount > 200 || sharesCount > 200 || likesCount > 1000;
 
                   return (
                      <div
                         key={post.post_id}
-                        className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(
-                           sentiment
-                        )}`}
+                        className="block h-full cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                        onClick={() => onPostClick && onPostClick(post)}
                      >
-                        {/* Sentiment indicator strip at the top */}
-                        <div
-                           className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
-                              sentiment === 'positive'
-                                 ? 'from-emerald-500 to-teal-500'
-                                 : sentiment === 'negative'
-                                 ? 'from-red-500 to-red-600'
-                                 : sentiment === 'critical'
-                                 ? 'from-orange-500 to-orange-600'
+                        <div className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(sentiment)}`}>
+                           {/* Sentiment indicator strip at the top with gradient */}
+                           <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                              sentiment === 'positive' 
+                                 ? 'from-emerald-500 to-teal-500' 
+                                 : sentiment === 'negative' 
+                                 ? 'from-red-500 to-red-600' 
+                                 : sentiment === 'critical' 
+                                 ? 'from-orange-500 to-orange-600' 
                                  : 'from-gray-600 to-gray-700'
-                           }`}
-                        ></div>
-
-                        {/* Header */}
-                        <div
-                           className={`flex flex-col px-3.5 py-2.5 border-b ${
-                              sentiment === 'positive'
-                                 ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/80 to-emerald-900/40'
-                                 : sentiment === 'negative'
-                                 ? 'border-red-500/30 bg-gradient-to-r from-gray-800/80 to-red-900/40'
-                                 : sentiment === 'critical'
-                                 ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/80 to-orange-900/40'
+                           }`}></div>
+                           
+                           {/* Header */}
+                           <div className={`flex flex-col px-3.5 py-2.5 border-b ${
+                              sentiment === 'positive' 
+                                 ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/80 to-emerald-900/40' 
+                                 : sentiment === 'negative' 
+                                 ? 'border-red-500/30 bg-gradient-to-r from-gray-800/80 to-red-900/40' 
+                                 : sentiment === 'critical' 
+                                 ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/80 to-orange-900/40' 
                                  : 'border-gray-700/30 bg-gradient-to-r from-gray-800/80 to-gray-900/80'
-                           } backdrop-blur`}
-                        >
-                           {/* Row 1: Author info and platform icon */}
-                           <div className="flex items-center gap-2.5 justify-between">
-                              <div className="flex items-center gap-2.5">
-                                 {/* Platform Icon */}
-                                 <div className="min-w-8 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden transition-all duration-300 group-hover:border-gray-600">
-                                    <div className="flex items-center justify-center w-full h-full">
-                                       <div
-                                          className={`text-${platformColorClass} group-hover:text-opacity-90 transition-colors duration-300`}
-                                       >
-                                          {getPlatformIcon(platform)}
+                           } backdrop-blur`}>
+                              {/* Row 1: Author info and platform icon with sentiment icon on right */}
+                              <div className="flex items-center gap-2.5 justify-between">
+                                 <div className="flex items-center gap-2.5">
+                                    {/* Platform Icon */}
+                                    <div className="min-w-8 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden transition-all duration-300 group-hover:border-gray-600">
+                                       <div className="flex items-center justify-center w-full h-full">
+                                          <div className={`text-${getPlatformColor(post.platform).split('-')[1]} group-hover:text-opacity-90 transition-colors duration-300`}>
+                                             {getPlatformIcon(platform)}
+                                          </div>
+                                       </div>
+                                    </div>
+
+                                    {/* Author info */}
+                                    <div className="min-w-0">
+                                       <div className="flex items-center gap-1">
+                                          <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
+                                             {post.user_display_name || post.author_name || (post.user_handle ? `@${post.user_handle.replace('@', '')}` : 'Unknown Author')}
+                                          </span>
                                        </div>
                                     </div>
                                  </div>
+                              </div>
 
-                                 {/* Author info */}
-                                 <div className="min-w-0">
-                                    <div className="flex items-center gap-1">
-                                       <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
-                                          {post.user_display_name ||
-                                             `@${post.user_handle?.replace('@', '')}`}
-                                       </span>
-                                    </div>
+                              {/* Row 2: Author details */}
+                              <div className="flex items-center flex-wrap text-gray-400 text-xs mt-1">
+                                 <span className="truncate max-w-[100px] inline-block">
+                                    @{post.user_handle ? post.user_handle.replace('@', '') : 'unknown'}
+                                 </span>
+                                 <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
+                                 <span
+                                    className={`text-xs ${getPlatformColor(
+                                       post.platform
+                                    )} flex-shrink-0 font-medium mr-0.5 group-hover:font-semibold transition-all duration-300`}
+                                 >
+                                    {post.platform?.replace('.com', '') || 'web'}
+                                 </span>
+                                 <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
+                                 <span className="text-gray-500 flex-shrink-0">{new Date(post.post_timestamp).toLocaleDateString()}</span>
+                              </div>
+
+                              {/* Row 3: Sentiment Indicator with improved styling */}
+                              <div className="flex items-center mt-2">
+                                 {/* Sentiment indicator */}
+                                 <div 
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
+                                       sentiment === 'positive' 
+                                          ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-400' 
+                                          : sentiment === 'negative' 
+                                          ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/50 text-red-400' 
+                                          : sentiment === 'critical' 
+                                          ? 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/50 text-orange-400' 
+                                          : 'bg-gradient-to-r from-gray-600/30 to-gray-700/30 border border-gray-600/40 text-gray-300'
+                                    } group-hover:shadow-sm transition-all duration-300`}
+                                    title={`${sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} sentiment`}
+                                 >
+                                    {getSentimentIcon(sentiment)}
+                                    <span className="text-xs font-medium capitalize">{sentiment}</span>
                                  </div>
                               </div>
                            </div>
 
-                           {/* Row 2: Author details */}
-                           <div className="flex items-center flex-wrap text-gray-400 text-xs mt-1">
-                              <span className="truncate max-w-[100px] inline-block">
-                                 @{post.user_handle ? post.user_handle.replace('@', '') : 'unknown'}
-                              </span>
-                              <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
-                              <span
-                                 className={`text-xs text-${platformColorClass} flex-shrink-0 font-medium mr-0.5 group-hover:font-semibold transition-all duration-300`}
-                              >
-                                 {platform.replace('.com', '')}
-                              </span>
-                              <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
-                              <span className="text-gray-500 flex-shrink-0">
-                                 {new Date(post.post_timestamp).toLocaleDateString()}
-                              </span>
+                           {/* Content */}
+                           <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
+                              <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
+                                 {post.post_text || 'No content available'}
+                              </p>
                            </div>
 
-                           {/* Row 3: Sentiment Indicator */}
-                           <div className="flex items-center mt-2">
-                              <div
-                                 className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
-                                    sentiment === 'positive'
-                                       ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-400'
-                                       : sentiment === 'negative'
-                                       ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/50 text-red-400'
-                                       : sentiment === 'critical'
-                                       ? 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/50 text-orange-400'
-                                       : 'bg-gradient-to-r from-gray-600/30 to-gray-700/30 border border-gray-600/40 text-gray-300'
-                                 } group-hover:shadow-sm transition-all duration-300`}
-                                 title={`${
-                                    sentiment.charAt(0).toUpperCase() + sentiment.slice(1)
-                                 } sentiment`}
-                              >
-                                 {getSentimentIcon(sentiment)}
-                                 <span className="text-xs font-medium capitalize">{sentiment}</span>
-                              </div>
-                           </div>
-                        </div>
+                           {/* Footer - Enhanced with better styling */}
+                           <div className="border-t border-gray-700/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
+                              {/* For very high engagement numbers, use a stacked 2-row layout */}
+                              {hasVeryHighEngagement ? (
+                                 <div className="py-2 px-3.5">
+                                    {/* Engagement metrics */}
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                       <div className="flex items-center gap-3">
+                                          {commentsCount > 0 && (
+                                             <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
+                                                <MessageCircle className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                                <span className="text-xs text-gray-400 group-hover:text-emerald-100 transition-colors duration-300">
+                                                   {formatNumber(commentsCount)}
+                                                </span>
+                                             </div>
+                                          )}
 
-                        {/* Content */}
-                        <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
-                           <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
-                              {post.post_text || 'No content available'}
-                           </p>
-                        </div>
+                                          {sharesCount > 0 && (
+                                             <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
+                                                <Share2 className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                                <span className="text-xs text-gray-400 group-hover:text-emerald-100 transition-colors duration-300">
+                                                   {formatNumber(sharesCount)}
+                                                </span>
+                                             </div>
+                                          )}
 
-                        {/* Footer */}
-                        <div className="border-t border-gray-700/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
-                           <div className="py-2 px-3.5 flex items-center justify-between">
-                              {/* Engagement metrics */}
-                              <div className="flex items-center gap-3">
-                                 {replyCount > 0 && (
-                                    <div className="flex items-center transition-colors duration-300">
-                                       <MessageCircle className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
-                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
-                                          {formatNumber(replyCount)}
-                                       </span>
+                                          {likesCount > 0 && (
+                                             <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
+                                                <Heart className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                                <span className="text-xs text-gray-400 group-hover:text-emerald-100 transition-colors duration-300">
+                                                   {formatNumber(likesCount)}
+                                                </span>
+                                             </div>
+                                          )}
+                                       </div>
                                     </div>
-                                 )}
+                                 </div>
+                              ) : (
+                                 /* Standard layout for normal numbers */
+                                 <div className="py-2 px-3.5 flex items-center justify-between">
+                                    {/* Left side - engagement metrics */}
+                                    <div className="flex items-center gap-3">
+                                       {commentsCount > 0 && (
+                                          <div className="flex items-center transition-colors duration-300">
+                                             <MessageCircle className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                             <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                                {formatNumber(commentsCount)}
+                                             </span>
+                                          </div>
+                                       )}
 
-                                 {retweetCount > 0 && (
-                                    <div className="flex items-center transition-colors duration-300">
-                                       <Share2 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
-                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
-                                          {formatNumber(retweetCount)}
-                                       </span>
+                                       {sharesCount > 0 && (
+                                          <div className="flex items-center transition-colors duration-300">
+                                             <Share2 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                             <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                                {formatNumber(sharesCount)}
+                                             </span>
+                                          </div>
+                                       )}
+
+                                       {likesCount > 0 && (
+                                          <div className="flex items-center transition-colors duration-300">
+                                             <Heart className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                             <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                                {formatNumber(likesCount)}
+                                             </span>
+                                          </div>
+                                       )}
+
+                                       {viewCount > 0 && (
+                                          <div className="flex items-center transition-colors duration-300">
+                                             <svg className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                             </svg>
+                                             <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                                {formatNumber(viewCount)}
+                                             </span>
+                                          </div>
+                                       )}
                                     </div>
-                                 )}
-
-                                 {likeCount > 0 && (
-                                    <div className="flex items-center transition-colors duration-300">
-                                       <Heart className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
-                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
-                                          {formatNumber(likeCount)}
-                                       </span>
-                                    </div>
-                                 )}
-                              </div>
-
-                              {/* Total engagement counter with trending icon */}
-                              <div className="flex items-center px-2 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-                                 <TrendingUp size={12} className="text-emerald-400 mr-1.5" />
-                                 <span className="text-emerald-400 font-medium text-xs">
-                                    {formatNumber(
-                                       replyCount +
-                                          retweetCount +
-                                          likeCount +
-                                          (engagement.bookmarks || 0)
-                                    )}{' '}
-                                    engagement
-                                 </span>
-                              </div>
-                           </div>
-
-                           {/* View indicator strip at bottom */}
-                           <div
-                              className={`border-t py-1.5 px-3.5 ${
-                                 sentiment === 'positive'
-                                    ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/50 to-emerald-900/30'
-                                    : sentiment === 'negative'
-                                    ? 'border-red-500/30 bg-gradient-to-r from-gray-800/50 to-red-900/30'
-                                    : sentiment === 'critical'
-                                    ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/50 to-orange-900/30'
+                                 </div>
+                              )}
+                              
+                              {/* View indicator strip at bottom */}
+                              <div className={`border-t py-1.5 px-3.5 ${
+                                 sentiment === 'positive' 
+                                    ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/50 to-emerald-900/30' 
+                                    : sentiment === 'negative' 
+                                    ? 'border-red-500/30 bg-gradient-to-r from-gray-800/50 to-red-900/30' 
+                                    : sentiment === 'critical' 
+                                    ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/50 to-orange-900/30' 
                                     : 'border-gray-700/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50'
-                              }`}
-                           >
-                              <div
-                                 className={`flex items-center justify-center gap-1.5 ${
-                                    sentiment === 'positive'
-                                       ? 'text-emerald-400'
-                                       : sentiment === 'negative'
-                                       ? 'text-red-400'
-                                       : sentiment === 'critical'
-                                       ? 'text-orange-400'
+                              }`}>
+                                 <div className={`flex items-center justify-center gap-1.5 ${
+                                    sentiment === 'positive' 
+                                       ? 'text-emerald-400' 
+                                       : sentiment === 'negative' 
+                                       ? 'text-red-400' 
+                                       : sentiment === 'critical' 
+                                       ? 'text-orange-400' 
                                        : 'text-gray-400 group-hover:text-emerald-400'
-                                 } transition-colors duration-300 text-xs`}
-                              >
-                                 <ExternalLink className="w-3 h-3" />
-                                 <span>View details</span>
+                                 } transition-colors duration-300 text-xs`}>
+                                    <ExternalLink className="w-3 h-3" />
+                                    <span>View details</span>
+                                 </div>
                               </div>
                            </div>
                         </div>
