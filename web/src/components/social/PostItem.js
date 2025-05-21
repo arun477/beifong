@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
    MessageCircle,
    Heart,
@@ -156,7 +155,7 @@ const getPlatformColor = platform => {
    }
 };
 
-const PostItem = ({ post }) => {
+const PostItem = ({ post, onPostClick }) => {
    if (!post) return null;
 
    // Get sentiment and impact score with fallbacks
@@ -182,10 +181,17 @@ const PostItem = ({ post }) => {
    // Check for very high engagement (requiring special treatment)
    const hasVeryHighEngagement = commentsCount > 200 || sharesCount > 200 || likesCount > 1000;
 
+   // Handle click on post item
+   const handleClick = () => {
+      if (onPostClick) {
+         onPostClick(post);
+      }
+   };
+
    return (
-      <Link
-         to={`/social-media/${post.post_id}`}
-         className="block h-full"
+      <div 
+         className="block h-full cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+         onClick={handleClick}
       >
          <div className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(sentiment)}`}>
             {/* Sentiment indicator strip at the top with gradient */}
@@ -386,7 +392,7 @@ const PostItem = ({ post }) => {
                </div>
             </div>
          </div>
-      </Link>
+      </div>
    );
 };
 

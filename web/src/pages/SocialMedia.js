@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import FeedTab from '../components/social/FeedTab';
 import StatsTab from '../components/social/StatsTab';
+import PostDetailPanel from '../components/social/PostDetailPanel';
 import { ShieldCheck } from 'lucide-react';
 
 const SocialMedia = () => {
@@ -28,6 +29,10 @@ const SocialMedia = () => {
       total: 0,
    });
    const [isFilterOpen, setIsFilterOpen] = useState(false);
+   
+   // New state for the post detail panel
+   const [selectedPost, setSelectedPost] = useState(null);
+   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
 
    // Load initial data
    useEffect(() => {
@@ -143,6 +148,83 @@ const SocialMedia = () => {
    const handleTabChange = tab => {
       setActiveTab(tab);
    };
+   
+   // Handler for post clicks
+   const handlePostClick = (post) => {
+      setSelectedPost(post);
+      setIsDetailPanelOpen(true);
+      
+      // Add browser history entry without navigation
+      const url = new URL(window.location);
+      url.searchParams.set('postId', post.post_id);
+      window.history.pushState({}, '', url);
+   };
+   
+   // Handler for closing the detail panel
+   const handleCloseDetailPanel = () => {
+      setIsDetailPanelOpen(false);
+      
+      // Remove postId from URL
+      const url = new URL(window.location);
+      url.searchParams.delete('postId');
+      window.history.pushState({}, '', url);
+   };
+   
+   // Check URL for postId on component mount
+   useEffect(() => {
+      const url = new URL(window.location);
+      const postId = url.searchParams.get('postId');
+      
+      if (postId) {
+         const loadPostFromUrl = async () => {
+            try {
+               const response = await api.socialMedia.getById(postId);
+               setSelectedPost(response.data);
+               setIsDetailPanelOpen(true);
+            } catch (error) {
+               console.error('Error loading post from URL:', error);
+               // Remove invalid postId from URL
+               url.searchParams.delete('postId');
+               window.history.pushState({}, '', url);
+            }
+         };
+         
+         loadPostFromUrl();
+      }
+   }, []);
+   
+   // Handle browser back/forward buttons
+   useEffect(() => {
+      const handlePopState = (event) => {
+         const url = new URL(window.location);
+         const postId = url.searchParams.get('postId');
+         
+         if (postId) {
+            // Load the post if not already selected
+            if (!selectedPost || selectedPost.post_id !== postId) {
+               const loadPostFromUrl = async () => {
+                  try {
+                     const response = await api.socialMedia.getById(postId);
+                     setSelectedPost(response.data);
+                     setIsDetailPanelOpen(true);
+                  } catch (error) {
+                     console.error('Error loading post from URL:', error);
+                  }
+               };
+               
+               loadPostFromUrl();
+            } else {
+               setIsDetailPanelOpen(true);
+            }
+         } else {
+            // Close the panel if no postId in URL
+            setIsDetailPanelOpen(false);
+         }
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+   }, [selectedPost]);
 
    return (
       <div className="max-w-7xl mx-auto">
@@ -276,6 +358,7 @@ const SocialMedia = () => {
                handleNextPage={handleNextPage}
                setIsFilterOpen={setIsFilterOpen}
                setPagination={setPagination}
+               onPostClick={handlePostClick}
             />
          )}
          
@@ -287,6 +370,13 @@ const SocialMedia = () => {
                stats={stats}
             />
          )}
+         
+         {/* Post Detail Slide-out Panel */}
+         <PostDetailPanel
+            post={selectedPost}
+            isOpen={isDetailPanelOpen}
+            onClose={handleCloseDetailPanel}
+         />
       </div>
    );
 };

@@ -19,6 +19,7 @@ const FeedTab = ({
    handleNextPage,
    setIsFilterOpen,
    setPagination,
+   onPostClick, // Add this prop to receive the click handler
 }) => {
    return (
       <div className="space-y-4">
@@ -78,7 +79,11 @@ const FeedTab = ({
             <>
                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {posts.map(post => (
-                     <PostItem key={post.post_id} post={post} />
+                     <PostItem 
+                        key={post.post_id} 
+                        post={post} 
+                        onPostClick={onPostClick} // Pass the click handler to each PostItem
+                     />
                   ))}
                </div>
 
