@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import ImprovedCards from './ImprovedCards';
+import DateRangeFilter from './DateRangeFilter';
 
 const formatNumber = number => {
    if (!number || isNaN(number)) return '0';
@@ -134,11 +135,14 @@ const StatsTab = ({ platforms }) => {
    const [influentialPosts, setInfluentialPosts] = useState([]);
    const [engagementStats, setEngagementStats] = useState(null);
 
-   // State for filters
-   const [filters, setFilters] = useState({
-      platform: '',
-      timeRange: 30,
-      sentiment: '',
+   // State for date range filter
+   const [dateRange, setDateRange] = useState({
+      startDate: (() => {
+         const date = new Date();
+         date.setDate(date.getDate() - 7); // Default to 7 days
+         return date.toISOString().split('T')[0];
+      })(),
+      endDate: new Date().toISOString().split('T')[0]
    });
 
    // Colors for visualization - consistent with design system
@@ -183,11 +187,27 @@ const StatsTab = ({ platforms }) => {
       if (platforms && platforms.length > 0) {
          fetchAllAnalyticsData();
       }
-   }, [filters, platforms]);
+   }, [dateRange, platforms]);
+
+   // Handle date range change
+   const handleDateRangeChange = (newDateRange) => {
+      setDateRange(newDateRange);
+   };
+
+   // Calculate days between two dates
+   const getDaysBetweenDates = (startDate, endDate) => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end - start);
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+   };
 
    const fetchAllAnalyticsData = async () => {
       setLoading(true);
       try {
+         // Calculate days for time-based queries
+         const days = getDaysBetweenDates(dateRange.startDate, dateRange.endDate);
+         
          // Fetch basic sentiment data first
          const sentimentsRes = await api.socialMedia.getSentiments();
 
@@ -206,7 +226,7 @@ const StatsTab = ({ platforms }) => {
          try {
             const userSentimentRes = await api.socialMedia.getUserSentiment(
                10,
-               filters.platform || undefined
+               null // No platform filter, replaced by date range
             );
             setUserSentiment(userSentimentRes.data || []);
          } catch (err) {
@@ -221,8 +241,9 @@ const StatsTab = ({ platforms }) => {
          }
 
          try {
+            // Use dynamic days value based on selected date range
             const trendingTopicsRes = await api.socialMedia.getTrendingTopics(
-               filters.timeRange,
+               days,
                10
             );
             setTrendingTopics(trendingTopicsRes.data || []);
@@ -231,9 +252,10 @@ const StatsTab = ({ platforms }) => {
          }
 
          try {
+            // Use dynamic days value based on selected date range
             const sentimentTimeRes = await api.socialMedia.getSentimentOverTime(
-               filters.timeRange,
-               filters.platform || undefined
+               days,
+               null // No platform filter
             );
 
             // Format date for sentiment over time
@@ -254,7 +276,7 @@ const StatsTab = ({ platforms }) => {
 
          try {
             const influentialPostsRes = await api.socialMedia.getInfluentialPosts(
-               filters.sentiment || undefined,
+               null, // No sentiment filter
                5
             );
             setInfluentialPosts(influentialPostsRes.data || []);
@@ -273,13 +295,6 @@ const StatsTab = ({ platforms }) => {
       } finally {
          setLoading(false);
       }
-   };
-
-   const handleFilterChange = (name, value) => {
-      setFilters(prev => ({
-         ...prev,
-         [name]: value,
-      }));
    };
 
    // Common card component for analytics with consistent design
@@ -383,6 +398,9 @@ const StatsTab = ({ platforms }) => {
 
    return (
       <div className="space-y-5">
+         {/* Date Range Filter */}
+         <DateRangeFilter onDateRangeChange={handleDateRangeChange} />
+         
          {/* Top row - Sentiment Overview and Key Metrics */}
          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Sentiment Overview - IMPROVED */}

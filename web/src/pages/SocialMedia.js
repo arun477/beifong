@@ -368,6 +368,7 @@ const SocialMedia = () => {
                sentiments={sentiments}
                categories={categories}
                stats={stats}
+               // No need to pass feed filters to the stats tab anymore
             />
          )}
          
