@@ -182,29 +182,80 @@ const endpoints = {
       getAll: (params = {}) => api.get('/api/social-media/', { params }),
       getById: postId => api.get(`/api/social-media/${postId}`),
       getPlatforms: () => api.get('/api/social-media/platforms/list'),
-      getSentiments: () => api.get('/api/social-media/sentiments/list'),
-      getTopUsers: (limit = 10, platform = null) => 
-         api.get('/api/social-media/users/top', { params: { limit, platform } }),
-      getCategories: () => api.get('/api/social-media/categories/list'),
-      getUserSentiment: (limit = 10, platform = null) =>
-         api.get('/api/social-media/users/sentiment', { params: { limit, platform } }),
-      getCategorySentiment: () =>
-         api.get('/api/social-media/categories/sentiment'),
-      getTrendingTopics: (days = 7, limit = 10) =>
-         api.get('/api/social-media/topic/trends', { params: { days, limit } }),
-      getSentimentOverTime: (days = 30, platform = null) =>
-         api.get('/api/social-media/trends/time', { params: { days, platform } }),
-      getInfluentialPosts: (sentiment = null, limit = 5) =>
-         api.get('/api/social-media/posts/influential', { params: { sentiment, limit } }),
-      getEngagementStats: () =>
-         api.get('/api/social-media/engagement/stats'),
+      getSentiments: (dateFrom, dateTo) =>
+         api.get('/api/social-media/sentiments/list', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getTopUsers: (limit = 10, platform = null, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/users/top', {
+            params: {
+               limit,
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getCategories: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/categories/list', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getUserSentiment: (limit = 10, platform = null, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/users/sentiment', {
+            params: {
+               limit,
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getCategorySentiment: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/categories/sentiment', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getTrendingTopics: (dateFrom = null, dateTo = null, limit = 10) =>
+         api.get('/api/social-media/topic/trends', {
+            params: {
+               limit,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getSentimentOverTime: (dateFrom = null, dateTo = null, platform = null) =>
+         api.get('/api/social-media/trends/time', {
+            params: {
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getInfluentialPosts: (sentiment = null, limit = 5, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/posts/influential', {
+            params: {
+               sentiment,
+               limit,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getEngagementStats: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/engagement/stats', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
    },
-
 
    API_BASE_URL: API_BASE_URL,
 };
 
 export default endpoints;
-
-
-

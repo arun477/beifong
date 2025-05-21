@@ -16,7 +16,7 @@ const SocialMedia = () => {
    const [activeTab, setActiveTab] = useState('feed');
    const [filters, setFilters] = useState({
       platform: '',
-      sentiment: '',
+      sentiment: 'positive',
       category: '',
       dateFrom: '',
       dateTo: '',

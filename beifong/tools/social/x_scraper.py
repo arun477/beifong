@@ -72,7 +72,7 @@ def crawl_x_profile(profile_url, db_file="x_posts.db"):
                 time.sleep(3)
 
                 scroll_count += 1
-                if scroll_count >= 10:
+                if scroll_count >= 30:
                     break
 
         except KeyboardInterrupt:

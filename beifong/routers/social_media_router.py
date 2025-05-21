@@ -5,6 +5,7 @@ from models.social_media_schemas import PaginatedPosts, Post  # Import existing 
 
 router = APIRouter()
 
+
 @router.get("/", response_model=PaginatedPosts)  # Use the existing PaginatedPosts model
 async def read_posts(
     page: int = Query(1, ge=1, description="Page number"),
@@ -29,8 +30,9 @@ async def read_posts(
         category=category,
         date_from=date_from,
         date_to=date_to,
-        search=search
+        search=search,
     )
+
 
 @router.get("/{post_id}", response_model=Post)  # Use the existing Post model
 async def read_post(post_id: str):
@@ -39,69 +41,98 @@ async def read_post(post_id: str):
     """
     return await social_media_service.get_post(post_id=post_id)
 
+
 @router.get("/platforms/list", response_model=List[str])
 async def read_platforms():
     """Get all available platforms."""
     return await social_media_service.get_platforms()
 
+
 @router.get("/sentiments/list", response_model=List[Dict[str, Any]])
-async def read_sentiments():
+async def read_sentiments(
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
+):
     """Get sentiment distribution with post counts."""
-    return await social_media_service.get_sentiments()
+    return await social_media_service.get_sentiments(date_from=date_from, date_to=date_to)
+
 
 @router.get("/users/top", response_model=List[Dict[str, Any]])
 async def read_top_users(
     platform: Optional[str] = Query(None, description="Filter by platform"),
-    limit: int = Query(10, ge=1, le=50, description="Number of top users to return")
+    limit: int = Query(10, ge=1, le=50, description="Number of top users to return"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
 ):
     """Get top users by post count."""
-    return await social_media_service.get_top_users(platform=platform, limit=limit)
+    return await social_media_service.get_top_users(platform=platform, limit=limit, date_from=date_from, date_to=date_to)
+
 
 @router.get("/categories/list", response_model=List[Dict[str, Any]])
-async def read_categories():
+async def read_categories(
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
+):
     """Get all categories with post counts."""
-    return await social_media_service.get_categories()
+    return await social_media_service.get_categories(date_from=date_from, date_to=date_to)
+
 
 # New analytics endpoints
 @router.get("/users/sentiment", response_model=List[Dict[str, Any]])
 async def read_user_sentiment(
     limit: int = Query(10, ge=1, le=50, description="Number of users to return"),
-    platform: Optional[str] = Query(None, description="Filter by platform")
+    platform: Optional[str] = Query(None, description="Filter by platform"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
 ):
     """Get users with their sentiment breakdown."""
-    return await social_media_service.get_user_sentiment(limit=limit, platform=platform)
+    return await social_media_service.get_user_sentiment(limit=limit, platform=platform, date_from=date_from, date_to=date_to)
+
 
 @router.get("/categories/sentiment", response_model=List[Dict[str, Any]])
-async def read_category_sentiment():
+async def read_category_sentiment(
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
+):
     """Get sentiment distribution by category."""
-    return await social_media_service.get_category_sentiment()
+    return await social_media_service.get_category_sentiment(date_from=date_from, date_to=date_to)
+
 
 @router.get("/topic/trends", response_model=List[Dict[str, Any]])
 async def read_trending_topics(
-    days: int = Query(7, ge=1, le=90, description="Number of days to look back"),
-    limit: int = Query(10, ge=1, le=50, description="Number of topics to return")
+    limit: int = Query(10, ge=1, le=50, description="Number of topics to return"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
 ):
-    print('reaching...')
     """Get trending topics with sentiment breakdown."""
-    return await social_media_service.get_trending_topics(days=days, limit=limit)
+    return await social_media_service.get_trending_topics(date_from=date_from, date_to=date_to, limit=limit)
+
 
 @router.get("/trends/time", response_model=List[Dict[str, Any]])
 async def read_sentiment_over_time(
-    days: int = Query(30, ge=1, le=365, description="Number of days to look back"),
-    platform: Optional[str] = Query(None, description="Filter by platform")
+    platform: Optional[str] = Query(None, description="Filter by platform"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
 ):
     """Get sentiment trends over time."""
-    return await social_media_service.get_sentiment_over_time(days=days, platform=platform)
+    return await social_media_service.get_sentiment_over_time(date_from=date_from, date_to=date_to, platform=platform)
+
 
 @router.get("/posts/influential", response_model=List[Dict[str, Any]])
 async def read_influential_posts(
     sentiment: Optional[str] = Query(None, description="Filter by sentiment"),
-    limit: int = Query(5, ge=1, le=20, description="Number of posts to return")
+    limit: int = Query(5, ge=1, le=20, description="Number of posts to return"),
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
 ):
     """Get most influential posts by engagement, optionally filtered by sentiment."""
-    return await social_media_service.get_influential_posts(sentiment=sentiment, limit=limit)
+    return await social_media_service.get_influential_posts(sentiment=sentiment, limit=limit, date_from=date_from, date_to=date_to)
+
 
 @router.get("/engagement/stats", response_model=Dict[str, Any])
-async def read_engagement_stats():
+async def read_engagement_stats(
+    date_from: Optional[str] = Query(None, description="Filter by start date (format: YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="Filter by end date (format: YYYY-MM-DD)"),
+):
     """Get overall engagement statistics."""
-    return await social_media_service.get_engagement_stats()
+    return await social_media_service.get_engagement_stats(date_from=date_from, date_to=date_to)

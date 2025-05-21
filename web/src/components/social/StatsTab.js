@@ -194,22 +194,14 @@ const StatsTab = ({ platforms, onPostClick }) => {
       setDateRange(newDateRange);
    };
 
-   // Calculate days between two dates
-   const getDaysBetweenDates = (startDate, endDate) => {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffTime = Math.abs(end - start);
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-   };
-
    const fetchAllAnalyticsData = async () => {
       setLoading(true);
       try {
-         // Calculate days for time-based queries
-         const days = getDaysBetweenDates(dateRange.startDate, dateRange.endDate);
-         
          // Fetch basic sentiment data first
-         const sentimentsRes = await api.socialMedia.getSentiments();
+         const sentimentsRes = await api.socialMedia.getSentiments(
+            dateRange.startDate,
+            dateRange.endDate
+         );
 
          // Process sentiment distribution data
          const sentiments = sentimentsRes.data || [];
@@ -226,7 +218,9 @@ const StatsTab = ({ platforms, onPostClick }) => {
          try {
             const userSentimentRes = await api.socialMedia.getUserSentiment(
                10,
-               null // No platform filter, replaced by date range
+               null, // No platform filter
+               dateRange.startDate,
+               dateRange.endDate
             );
             setUserSentiment(userSentimentRes.data || []);
          } catch (err) {
@@ -234,16 +228,19 @@ const StatsTab = ({ platforms, onPostClick }) => {
          }
 
          try {
-            const categorySentimentRes = await api.socialMedia.getCategorySentiment();
+            const categorySentimentRes = await api.socialMedia.getCategorySentiment(
+               dateRange.startDate,
+               dateRange.endDate
+            );
             setCategorySentiment(categorySentimentRes.data || []);
          } catch (err) {
             console.error('Error fetching category sentiment:', err);
          }
 
          try {
-            // Use dynamic days value based on selected date range
             const trendingTopicsRes = await api.socialMedia.getTrendingTopics(
-               days,
+               dateRange.startDate,
+               dateRange.endDate,
                10
             );
             setTrendingTopics(trendingTopicsRes.data || []);
@@ -252,9 +249,9 @@ const StatsTab = ({ platforms, onPostClick }) => {
          }
 
          try {
-            // Use dynamic days value based on selected date range
             const sentimentTimeRes = await api.socialMedia.getSentimentOverTime(
-               days,
+               dateRange.startDate,
+               dateRange.endDate,
                null // No platform filter
             );
 
@@ -277,7 +274,9 @@ const StatsTab = ({ platforms, onPostClick }) => {
          try {
             const influentialPostsRes = await api.socialMedia.getInfluentialPosts(
                null, // No sentiment filter
-               5
+               5,
+               dateRange.startDate,
+               dateRange.endDate
             );
             setInfluentialPosts(influentialPostsRes.data || []);
          } catch (err) {
@@ -285,7 +284,10 @@ const StatsTab = ({ platforms, onPostClick }) => {
          }
 
          try {
-            const engagementStatsRes = await api.socialMedia.getEngagementStats();
+            const engagementStatsRes = await api.socialMedia.getEngagementStats(
+               dateRange.startDate,
+               dateRange.endDate
+            );
             setEngagementStats(engagementStatsRes.data || null);
          } catch (err) {
             console.error('Error fetching engagement stats:', err);

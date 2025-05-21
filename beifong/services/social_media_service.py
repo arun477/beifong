@@ -175,18 +175,43 @@ class SocialMediaService:
         result = await social_media_db.execute_query(query, fetch=True)
         return [row.get("platform", "") for row in result if row.get("platform")]
 
-    async def get_sentiments(self) -> List[Dict[str, Any]]:
+    async def get_sentiments(self, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get sentiment distribution with post counts."""
-        query = """
-        SELECT sentiment, COUNT(*) as post_count 
-        FROM posts 
-        WHERE sentiment IS NOT NULL 
-        GROUP BY sentiment 
-        ORDER BY post_count DESC
-        """
-        return await social_media_db.execute_query(query, fetch=True)
+        try:
+            query_parts = [
+                """
+                SELECT 
+                    sentiment, COUNT(*) as post_count 
+                FROM posts 
+                WHERE sentiment IS NOT NULL
+                """
+            ]
+            params = []
 
-    async def get_top_users(self, platform: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
+
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
+
+            query_parts.append("GROUP BY sentiment ORDER BY post_count DESC")
+            query = " ".join(query_parts)
+            
+            return await social_media_db.execute_query(query, tuple(params), fetch=True)
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
+            raise HTTPException(status_code=500, detail=f"Error fetching sentiments: {str(e)}")
+
+    async def get_top_users(
+        self, 
+        platform: Optional[str] = None,
+        limit: int = 10,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Get top users by post count."""
         query_parts = ["SELECT user_handle, user_display_name, COUNT(*) as post_count", "FROM posts", "WHERE user_handle IS NOT NULL"]
         params = []
@@ -194,6 +219,14 @@ class SocialMediaService:
         if platform:
             query_parts.append("AND platform = ?")
             params.append(platform)
+            
+        if date_from:
+            query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+            params.append(date_from)
+
+        if date_to:
+            query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+            params.append(date_to)
 
         query_parts.extend(["GROUP BY user_handle", "ORDER BY post_count DESC", "LIMIT ?"])
         params.append(limit)
@@ -201,32 +234,49 @@ class SocialMediaService:
         query = " ".join(query_parts)
         return await social_media_db.execute_query(query, tuple(params), fetch=True)
 
-    async def get_categories(self) -> List[Dict[str, Any]]:
+    async def get_categories(self, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get all categories with post counts."""
-        # This is more complex because categories are stored as JSON
-        # We'll use a simplified query and process in Python
-        query = "SELECT categories FROM posts WHERE categories IS NOT NULL"
-        result = await social_media_db.execute_query(query, fetch=True)
+        try:
+            # We'll need to build a more complex query for date-filtered categories
+            query_parts = ["SELECT categories FROM posts WHERE categories IS NOT NULL"]
+            params = []
+            
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
 
-        category_counts = {}
-        for row in result:
-            if row.get("categories"):
-                try:
-                    categories = json.loads(row["categories"])
-                    for category in categories:
-                        if category in category_counts:
-                            category_counts[category] += 1
-                        else:
-                            category_counts[category] = 1
-                except json.JSONDecodeError:
-                    pass
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
+                
+            query = " ".join(query_parts)
+            result = await social_media_db.execute_query(query, tuple(params), fetch=True)
 
-        return [{"category": category, "post_count": count} for category, count in sorted(category_counts.items(), key=lambda x: x[1], reverse=True)]
+            category_counts = {}
+            for row in result:
+                if row.get("categories"):
+                    try:
+                        categories = json.loads(row["categories"])
+                        for category in categories:
+                            if category in category_counts:
+                                category_counts[category] += 1
+                            else:
+                                category_counts[category] = 1
+                    except json.JSONDecodeError:
+                        pass
+
+            return [{"category": category, "post_count": count} for category, count in sorted(category_counts.items(), key=lambda x: x[1], reverse=True)]
+        except Exception as e:
+            if isinstance(e, HTTPException):
+                raise e
+            raise HTTPException(status_code=500, detail=f"Error fetching categories: {str(e)}")
 
     async def get_user_sentiment(
         self,
         limit: int = 10,
         platform: Optional[str] = None,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Get users with their sentiment breakdown."""
         try:
@@ -249,6 +299,14 @@ class SocialMediaService:
             if platform:
                 query_parts.append("AND platform = ?")
                 params.append(platform)
+                
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
+
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
 
             query_parts.extend(["GROUP BY user_handle, user_display_name", "ORDER BY total_posts DESC", "LIMIT ?"])
             params.append(limit)
@@ -270,20 +328,35 @@ class SocialMediaService:
                 raise e
             raise HTTPException(status_code=500, detail=f"Error fetching user sentiment: {str(e)}")
 
-    async def get_category_sentiment(self) -> List[Dict[str, Any]]:
+    async def get_category_sentiment(self, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get sentiment distribution by category."""
         try:
-            query = """
+            # We need to build a complex query with date filtering for category sentiment
+            date_filter = ""
+            params = []
+            
+            if date_from or date_to:
+                date_filter = "WHERE "
+                if date_from:
+                    date_filter += "datetime(p.post_timestamp) >= datetime(?)"
+                    params.append(date_from)
+                    if date_to:
+                        date_filter += " AND "
+                
+                if date_to:
+                    date_filter += "datetime(p.post_timestamp) <= datetime(?)"
+                    params.append(date_to)
+            
+            query = f"""
             WITH category_data AS (
                 SELECT 
                     json_each.value as category,
                     sentiment,
                     COUNT(*) as count
                 FROM 
-                    posts,
-                    json_each(posts.categories)
-                WHERE 
-                    categories IS NOT NULL
+                    posts p,
+                    json_each(p.categories)
+                {date_filter}
                 GROUP BY 
                     json_each.value, sentiment
             )
@@ -302,7 +375,7 @@ class SocialMediaService:
                 total_count DESC
             """
 
-            result = await social_media_db.execute_query(query, fetch=True)
+            result = await social_media_db.execute_query(query, tuple(params), fetch=True)
 
             # Calculate percentages
             for category in result:
@@ -318,44 +391,62 @@ class SocialMediaService:
                 raise e
             raise HTTPException(status_code=500, detail=f"Error fetching category sentiment: {str(e)}")
 
-    async def get_trending_topics(self, days: int = 7, limit: int = 10) -> List[Dict[str, Any]]:
+    async def get_trending_topics(
+        self, 
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
         """Get trending topics with sentiment breakdown."""
         try:
-            # Calculate the date threshold
-            days_ago = (datetime.now() - timedelta(days=days)).isoformat()
+            query_parts = [
+                """
+                WITH topic_data AS (
+                    SELECT 
+                        json_each.value as topic,
+                        sentiment,
+                        COUNT(*) as count
+                    FROM 
+                        posts,
+                        json_each(posts.tags)
+                    WHERE tags IS NOT NULL
+                """
+            ]
+            params = []
+            
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
 
-            query = """
-            WITH topic_data AS (
-                SELECT 
-                    json_each.value as topic,
-                    sentiment,
-                    COUNT(*) as count
-                FROM 
-                    posts,
-                    json_each(posts.tags)
-                WHERE 
-                    tags IS NOT NULL
-                    AND datetime(post_timestamp) >= datetime(?)
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
+                
+            query_parts.append(
+                """
                 GROUP BY 
                     json_each.value, sentiment
+                )
+                SELECT 
+                    topic,
+                    SUM(count) as total_count,
+                    SUM(CASE WHEN sentiment = 'positive' THEN count ELSE 0 END) as positive_count,
+                    SUM(CASE WHEN sentiment = 'negative' THEN count ELSE 0 END) as negative_count,
+                    SUM(CASE WHEN sentiment = 'neutral' THEN count ELSE 0 END) as neutral_count,
+                    SUM(CASE WHEN sentiment = 'critical' THEN count ELSE 0 END) as critical_count
+                FROM 
+                    topic_data
+                GROUP BY 
+                    topic
+                ORDER BY 
+                    total_count DESC
+                LIMIT ?
+                """
             )
-            SELECT 
-                topic,
-                SUM(count) as total_count,
-                SUM(CASE WHEN sentiment = 'positive' THEN count ELSE 0 END) as positive_count,
-                SUM(CASE WHEN sentiment = 'negative' THEN count ELSE 0 END) as negative_count,
-                SUM(CASE WHEN sentiment = 'neutral' THEN count ELSE 0 END) as neutral_count,
-                SUM(CASE WHEN sentiment = 'critical' THEN count ELSE 0 END) as critical_count
-            FROM 
-                topic_data
-            GROUP BY 
-                topic
-            ORDER BY 
-                total_count DESC
-            LIMIT ?
-            """
+            params.append(limit)
 
-            result = await social_media_db.execute_query(query, (days_ago, limit), fetch=True)
+            query = " ".join(query_parts)
+            result = await social_media_db.execute_query(query, tuple(params), fetch=True)
 
             # Calculate percentages
             for topic in result:
@@ -371,19 +462,46 @@ class SocialMediaService:
                 raise e
             raise HTTPException(status_code=500, detail=f"Error fetching trending topics: {str(e)}")
 
-    async def get_sentiment_over_time(self, days: int = 30, platform: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_sentiment_over_time(
+        self, 
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+        platform: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get sentiment trends over time."""
         try:
-            # Calculate the date threshold
-            days_ago = (datetime.now() - timedelta(days=days)).isoformat()
-
-            query_parts = [
+            # Create a date range table to ensure all dates are represented
+            # even if there are no posts on some days
+            date_range_query = ""
+            if date_from and date_to:
+                date_range_query = f"""
+                WITH RECURSIVE date_range(date) AS (
+                    SELECT date('{date_from}')
+                    UNION ALL
+                    SELECT date(date, '+1 day')
+                    FROM date_range
+                    WHERE date < date('{date_to}')
+                )
+                SELECT date as post_date FROM date_range
                 """
+            else:
+                # If no date range provided, use the default days parameter
+                days_ago = (datetime.now() - timedelta(days=30)).isoformat()
+                date_range_query = f"""
+                WITH RECURSIVE date_range(date) AS (
+                    SELECT date('{days_ago}')
+                    UNION ALL
+                    SELECT date(date, '+1 day')
+                    FROM date_range
+                    WHERE date < date('now')
+                )
+                SELECT date as post_date FROM date_range
+                """
+            
+            query_parts = [
+                f"""
                 WITH dates AS (
-                    SELECT date(post_timestamp) as post_date
-                    FROM posts
-                    WHERE datetime(post_timestamp) >= datetime(?)
-                    GROUP BY date(post_timestamp)
+                    {date_range_query}
                 )
                 SELECT 
                     dates.post_date,
@@ -398,7 +516,7 @@ class SocialMediaService:
                     posts ON date(posts.post_timestamp) = dates.post_date
                 """
             ]
-            params = [days_ago]
+            params = []
 
             if platform:
                 query_parts.append("AND posts.platform = ?")
@@ -423,7 +541,13 @@ class SocialMediaService:
                 raise e
             raise HTTPException(status_code=500, detail=f"Error fetching sentiment over time: {str(e)}")
 
-    async def get_influential_posts(self, sentiment: Optional[str] = None, limit: int = 5) -> List[Dict[str, Any]]:
+    async def get_influential_posts(
+        self, 
+        sentiment: Optional[str] = None,
+        limit: int = 5,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Get most influential posts by engagement, optionally filtered by sentiment."""
         try:
             query_parts = [
@@ -442,6 +566,14 @@ class SocialMediaService:
             if sentiment:
                 query_parts.append("AND sentiment = ?")
                 params.append(sentiment)
+                
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
+
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
 
             query_parts.extend(["ORDER BY total_engagement DESC", "LIMIT ?"])
             params.append(limit)
@@ -490,27 +622,44 @@ class SocialMediaService:
                 raise e
             raise HTTPException(status_code=500, detail=f"Error fetching influential posts: {str(e)}")
 
-    async def get_engagement_stats(self) -> Dict[str, Any]:
+    async def get_engagement_stats(
+        self,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Get overall engagement statistics."""
         try:
-            query = """
-            SELECT 
-                AVG(COALESCE(engagement_reply_count, 0)) as avg_replies,
-                AVG(COALESCE(engagement_retweet_count, 0)) as avg_retweets,
-                AVG(COALESCE(engagement_like_count, 0)) as avg_likes,
-                AVG(COALESCE(engagement_bookmark_count, 0)) as avg_bookmarks,
-                AVG(COALESCE(engagement_view_count, 0)) as avg_views,
-                MAX(COALESCE(engagement_reply_count, 0)) as max_replies,
-                MAX(COALESCE(engagement_retweet_count, 0)) as max_retweets,
-                MAX(COALESCE(engagement_like_count, 0)) as max_likes,
-                MAX(COALESCE(engagement_bookmark_count, 0)) as max_bookmarks,
-                MAX(COALESCE(engagement_view_count, 0)) as max_views,
-                COUNT(*) as total_posts,
-                COUNT(DISTINCT user_handle) as unique_authors
-            FROM posts
-            """
+            query_parts = [
+                """
+                SELECT 
+                    AVG(COALESCE(engagement_reply_count, 0)) as avg_replies,
+                    AVG(COALESCE(engagement_retweet_count, 0)) as avg_retweets,
+                    AVG(COALESCE(engagement_like_count, 0)) as avg_likes,
+                    AVG(COALESCE(engagement_bookmark_count, 0)) as avg_bookmarks,
+                    AVG(COALESCE(engagement_view_count, 0)) as avg_views,
+                    MAX(COALESCE(engagement_reply_count, 0)) as max_replies,
+                    MAX(COALESCE(engagement_retweet_count, 0)) as max_retweets,
+                    MAX(COALESCE(engagement_like_count, 0)) as max_likes,
+                    MAX(COALESCE(engagement_bookmark_count, 0)) as max_bookmarks,
+                    MAX(COALESCE(engagement_view_count, 0)) as max_views,
+                    COUNT(*) as total_posts,
+                    COUNT(DISTINCT user_handle) as unique_authors
+                FROM posts
+                WHERE 1=1
+                """
+            ]
+            params = []
+            
+            if date_from:
+                query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+                params.append(date_from)
 
-            result = await social_media_db.execute_query(query, fetch=True, fetch_one=True)
+            if date_to:
+                query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                params.append(date_to)
+
+            query = " ".join(query_parts)
+            result = await social_media_db.execute_query(query, tuple(params), fetch=True, fetch_one=True)
 
             if not result:
                 return {"avg_engagement": 0, "total_posts": 0, "unique_authors": 0}
@@ -523,17 +672,33 @@ class SocialMediaService:
             )
 
             # Top platforms by post count
-            platforms_query = """
-            SELECT 
-                platform, 
-                COUNT(*) as post_count
-            FROM posts
-            GROUP BY platform
-            ORDER BY post_count DESC
-            LIMIT 10
-            """
+            platform_query_parts = [
+                """
+                SELECT 
+                    platform, 
+                    COUNT(*) as post_count
+                FROM posts
+                WHERE 1=1
+                """
+            ]
+            
+            if date_from:
+                platform_query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
+            
+            if date_to:
+                platform_query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
+                
+            platform_query_parts.extend([
+                "GROUP BY platform",
+                "ORDER BY post_count DESC",
+                "LIMIT 10"
+            ])
 
-            platforms = await social_media_db.execute_query(platforms_query, fetch=True)
+            platforms = await social_media_db.execute_query(
+                " ".join(platform_query_parts), 
+                tuple(params), 
+                fetch=True
+            )
             result_dict["platforms"] = platforms
 
             return result_dict
