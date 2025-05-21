@@ -17,13 +17,21 @@ import {
    Area,
 } from 'recharts';
 import {
+   MessageCircle,
+   Heart,
+   Share2,
+   CheckCircle,
+   BarChart2,
    Smile,
    Frown,
    AlertCircle,
    Minus,
+   ExternalLink,
+   Sparkles,
+} from 'lucide-react';
+import {
    TrendingUp,
    Users,
-   BarChart2,
    Calendar,
    Filter,
    RefreshCw,
@@ -31,6 +39,89 @@ import {
    Activity,
 } from 'lucide-react';
 import api from '../../services/api';
+import PostItem from './PostItem';
+
+const formatNumber = number => {
+   if (!number || isNaN(number)) return '0';
+   if (number >= 1000000) return (number / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+   if (number >= 10000) return Math.floor(number / 1000) + 'k';
+   if (number >= 1000) return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+   return number.toString();
+};
+
+const getPlatformIcon = platform => {
+   switch (platform?.toLowerCase()) {
+      case 'twitter':
+      case 'x.com':
+      case 'x':
+         return (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+         );
+      case 'facebook':
+         return (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+         );
+      case 'instagram':
+         return (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M12 2c2.717 0 3.056.01 4.122.06 1.065.05 1.79.217 2.428.465.66.254 1.216.598 1.772 1.153.509.5.902 1.105 1.153 1.772.247.637.415 1.363.465 2.428.047 1.066.06 1.405.06 4.122 0 2.717-.01 3.056-.06 4.122-.05 1.065-.218 1.79-.465 2.428a4.883 4.883 0 01-1.153 1.772c-.5.508-1.105.902-1.772 1.153-.637.247-1.363.415-2.428.465-1.066.047-1.405.06-4.122.06-2.717 0-3.056-.01-4.122-.06-1.065-.05-1.79-.218-2.428-.465a4.89 4.89 0 01-1.772-1.153 4.904 4.904 0 01-1.153-1.772c-.247-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122.05-1.066.217-1.79.465-2.428a4.88 4.88 0 011.153-1.772A4.897 4.897 0 015.45 2.525c.638-.247 1.362-.415 2.428-.465C8.944 2.013 9.283 2 12 2zm0 5a5 5 0 100 10 5 5 0 000-10zm6.5-.25a1.25 1.25 0 10-2.5 0 1.25 1.25 0 002.5 0zM12 9a3 3 0 110 6 3 3 0 010-6z" />
+            </svg>
+         );
+      default:
+         return (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+            </svg>
+         );
+   }
+};
+
+const getSentimentIcon = sentiment => {
+   switch (sentiment?.toLowerCase()) {
+      case 'positive':
+         return <Smile className="w-3.5 h-3.5" />;
+      case 'negative':
+         return <Frown className="w-3.5 h-3.5" />;
+      case 'critical':
+         return <AlertCircle className="w-3.5 h-3.5" />;
+      case 'neutral':
+      default:
+         return <Minus className="w-3.5 h-3.5" />;
+   }
+};
+
+const getPlatformColor = platform => {
+   switch (platform?.toLowerCase()) {
+      case 'x.com':
+      case 'x':
+      case 'twitter':
+         return 'blue-400';
+      case 'facebook':
+         return 'blue-600';
+      case 'instagram':
+         return 'pink-500';
+      default:
+         return 'gray-400';
+   }
+};
+
+const getSentimentCardStyle = sentiment => {
+   switch (sentiment?.toLowerCase()) {
+      case 'positive':
+         return 'border-emerald-500/30 hover:border-emerald-500/50 bg-gradient-to-br from-emerald-900/10 to-teal-900/10';
+      case 'negative':
+         return 'border-red-500/30 hover:border-red-500/50 bg-gradient-to-br from-red-900/10 to-red-800/10';
+      case 'critical':
+         return 'border-orange-500/30 hover:border-orange-500/50 bg-gradient-to-br from-orange-900/10 to-orange-800/10';
+      case 'neutral':
+      default:
+         return 'border-gray-700/50 hover:border-gray-600/50 bg-gradient-to-br from-gray-800/50 to-gray-700/50 hover:from-gray-700/60 hover:to-gray-600/60';
+   }
+};
 
 const StatsTab = ({ platforms }) => {
    // State for analytics data
@@ -265,7 +356,7 @@ const StatsTab = ({ platforms }) => {
    };
 
    // Transform category data for visualization
-   const categoryChartData = categorySentiment.slice(0, 6).map(cat => ({
+   const categoryChartData = categorySentiment.slice(0, 7).map(cat => ({
       name: cat.category,
       positive: cat.positive_count,
       negative: cat.negative_count,
@@ -410,16 +501,16 @@ const StatsTab = ({ platforms }) => {
                icon={<BarChart2 size={16} className="text-emerald-400" />}
                className="md:col-span-2"
             >
-               <div className="flex flex-col h-56">
+               <div className="flex flex-col h-64">
                   <div className="flex-grow">
                      <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                            data={categoryChartData}
                            layout="vertical"
-                           margin={{ top: 5, right: 20, left: 25, bottom: 5 }}
-                           barSize={10}
-                           barGap={1}
-                           maxBarSize={10}
+                           margin={{ top: 10, right: 30, left: 30, bottom: 15 }}
+                           barSize={16}
+                           barGap={3}
+                           maxBarSize={16}
                         >
                            <CartesianGrid
                               strokeDasharray="3 3"
@@ -430,22 +521,24 @@ const StatsTab = ({ platforms }) => {
                            <XAxis
                               type="number"
                               stroke={COLORS.text.secondary}
-                              fontSize={9}
+                              fontSize={12}
                               tickFormatter={value => value.toLocaleString()}
                               axisLine={false}
                               tickLine={false}
                               domain={[0, 'dataMax']}
                               allowDecimals={false}
+                              tickCount={6}
                            />
                            <YAxis
                               dataKey="name"
                               type="category"
                               stroke={COLORS.text.secondary}
-                              fontSize={10}
-                              width={60}
-                              tick={{ fill: COLORS.text.secondary }}
+                              fontSize={14}
+                              width={75}
+                              tick={{ fill: COLORS.text.primary }}
                               axisLine={false}
                               tickLine={false}
+                              tickMargin={5}
                            />
                            <Tooltip
                               content={<CustomTooltip />}
@@ -488,29 +581,27 @@ const StatsTab = ({ platforms }) => {
                      </ResponsiveContainer>
                   </div>
 
-                  {/* Manual Legend - better positioned and styled */}
-                  <div className="flex items-center justify-center mt-2 gap-4">
+                  <div className="flex items-center justify-center mt-4 mb-1 gap-6">
                      <div className="flex items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></div>
-                        <span className="text-xs text-gray-300">Positive</span>
+                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 mr-2"></div>
+                        <span className="text-sm font-medium text-gray-200">Positive</span>
                      </div>
                      <div className="flex items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 mr-1.5"></div>
-                        <span className="text-xs text-gray-300">Negative</span>
+                        <div className="w-3.5 h-3.5 rounded-full bg-red-500 mr-2"></div>
+                        <span className="text-sm font-medium text-gray-200">Negative</span>
                      </div>
                      <div className="flex items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-orange-500 mr-1.5"></div>
-                        <span className="text-xs text-gray-300">Critical</span>
+                        <div className="w-3.5 h-3.5 rounded-full bg-orange-500 mr-2"></div>
+                        <span className="text-sm font-medium text-gray-200">Critical</span>
                      </div>
                      <div className="flex items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-gray-500 mr-1.5"></div>
-                        <span className="text-xs text-gray-300">Neutral</span>
+                        <div className="w-3.5 h-3.5 rounded-full bg-gray-500 mr-2"></div>
+                        <span className="text-sm font-medium text-gray-200">Neutral</span>
                      </div>
                   </div>
                </div>
             </AnalyticsCard>
          </div>
-
          {/* Second row - Sentiment Over Time */}
          <AnalyticsCard
             title="Sentiment Trends Over Time"
@@ -650,7 +741,6 @@ const StatsTab = ({ platforms }) => {
                </ResponsiveContainer>
             </div>
          </AnalyticsCard>
-
          {/* Third row - User Sentiment and Trending Topics */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* User Sentiment - IMPROVED */}
@@ -830,86 +920,200 @@ const StatsTab = ({ platforms }) => {
                </div>
             </AnalyticsCard>
          </div>
-
          {/* Fourth row - Most Influential Posts */}
          <AnalyticsCard
             title="Most Influential Posts"
             icon={<TrendingUp size={16} className="text-emerald-400" />}
          >
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[32rem] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
                {influentialPosts.map(post => {
-                  // Calculate total engagement
+                  const sentiment = post.sentiment || 'neutral';
+                  const platform = post.platform || 'web';
                   const engagement = post.engagement || {};
-                  const totalEngagement =
-                     (engagement.replies || 0) +
-                     (engagement.retweets || 0) +
-                     (engagement.likes || 0) +
-                     (engagement.bookmarks || 0);
-
-                  const sentimentColor =
-                     post.sentiment === 'positive'
-                        ? 'emerald'
-                        : post.sentiment === 'negative'
-                        ? 'red'
-                        : post.sentiment === 'critical'
-                        ? 'orange'
-                        : 'gray';
+                  const replyCount = engagement.replies || 0;
+                  const retweetCount = engagement.retweets || 0;
+                  const likeCount = engagement.likes || 0;
+                  const viewCount = engagement.views || 0;
+                  const platformColorClass = getPlatformColor(platform);
 
                   return (
                      <div
                         key={post.post_id}
-                        className="group bg-gradient-to-br from-gray-900/80 to-gray-800/80 rounded-md p-3 border border-gray-700/50 transition-all duration-300 hover:shadow-md hover:border-gray-600/70"
+                        className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(
+                           sentiment
+                        )}`}
                      >
-                        <div className="flex items-center justify-between mb-2">
-                           <div className="flex items-center">
-                              <span className="text-xs font-medium text-white">
-                                 {post.user_display_name ||
-                                    `@${post.user_handle?.replace('@', '')}`}
+                        {/* Sentiment indicator strip at the top */}
+                        <div
+                           className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                              sentiment === 'positive'
+                                 ? 'from-emerald-500 to-teal-500'
+                                 : sentiment === 'negative'
+                                 ? 'from-red-500 to-red-600'
+                                 : sentiment === 'critical'
+                                 ? 'from-orange-500 to-orange-600'
+                                 : 'from-gray-600 to-gray-700'
+                           }`}
+                        ></div>
+
+                        {/* Header */}
+                        <div
+                           className={`flex flex-col px-3.5 py-2.5 border-b ${
+                              sentiment === 'positive'
+                                 ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/80 to-emerald-900/40'
+                                 : sentiment === 'negative'
+                                 ? 'border-red-500/30 bg-gradient-to-r from-gray-800/80 to-red-900/40'
+                                 : sentiment === 'critical'
+                                 ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/80 to-orange-900/40'
+                                 : 'border-gray-700/30 bg-gradient-to-r from-gray-800/80 to-gray-900/80'
+                           } backdrop-blur`}
+                        >
+                           {/* Row 1: Author info and platform icon */}
+                           <div className="flex items-center gap-2.5 justify-between">
+                              <div className="flex items-center gap-2.5">
+                                 {/* Platform Icon */}
+                                 <div className="min-w-8 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden transition-all duration-300 group-hover:border-gray-600">
+                                    <div className="flex items-center justify-center w-full h-full">
+                                       <div
+                                          className={`text-${platformColorClass} group-hover:text-opacity-90 transition-colors duration-300`}
+                                       >
+                                          {getPlatformIcon(platform)}
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* Author info */}
+                                 <div className="min-w-0">
+                                    <div className="flex items-center gap-1">
+                                       <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
+                                          {post.user_display_name ||
+                                             `@${post.user_handle?.replace('@', '')}`}
+                                       </span>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Row 2: Author details */}
+                           <div className="flex items-center flex-wrap text-gray-400 text-xs mt-1">
+                              <span className="truncate max-w-[100px] inline-block">
+                                 @{post.user_handle ? post.user_handle.replace('@', '') : 'unknown'}
                               </span>
-                              <span className="text-gray-500 mx-1.5 flex-shrink-0">·</span>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
+                              <span
+                                 className={`text-xs text-${platformColorClass} flex-shrink-0 font-medium mr-0.5 group-hover:font-semibold transition-all duration-300`}
+                              >
+                                 {platform.replace('.com', '')}
+                              </span>
+                              <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
+                              <span className="text-gray-500 flex-shrink-0">
                                  {new Date(post.post_timestamp).toLocaleDateString()}
                               </span>
                            </div>
-                           <div
-                              className={`flex items-center px-2 py-1 rounded-full bg-${sentimentColor}-500/20 text-${sentimentColor}-400 border border-${sentimentColor}-500/30`}
-                           >
-                              {getSentimentIcon(post.sentiment, 12)}
-                              <span className="text-xs ml-1 capitalize">{post.sentiment}</span>
+
+                           {/* Row 3: Sentiment Indicator */}
+                           <div className="flex items-center mt-2">
+                              <div
+                                 className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
+                                    sentiment === 'positive'
+                                       ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-400'
+                                       : sentiment === 'negative'
+                                       ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/50 text-red-400'
+                                       : sentiment === 'critical'
+                                       ? 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/50 text-orange-400'
+                                       : 'bg-gradient-to-r from-gray-600/30 to-gray-700/30 border border-gray-600/40 text-gray-300'
+                                 } group-hover:shadow-sm transition-all duration-300`}
+                                 title={`${
+                                    sentiment.charAt(0).toUpperCase() + sentiment.slice(1)
+                                 } sentiment`}
+                              >
+                                 {getSentimentIcon(sentiment)}
+                                 <span className="text-xs font-medium capitalize">{sentiment}</span>
+                              </div>
                            </div>
                         </div>
 
-                        <p className="text-gray-200 text-xs mb-3 line-clamp-2 bg-gray-800/30 p-2 rounded-md border border-gray-700/30">
-                           {post.post_text}
-                        </p>
+                        {/* Content */}
+                        <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
+                           <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
+                              {post.post_text || 'No content available'}
+                           </p>
+                        </div>
 
-                        <div className="flex justify-between items-center">
-                           <div className="flex flex-wrap gap-2 text-xs">
-                              {engagement.replies > 0 && (
-                                 <div className="flex items-center px-1.5 py-0.5 bg-gray-800/50 rounded-md border border-gray-700/30">
-                                    <span className="text-gray-400">
-                                       {engagement.replies} replies
-                                    </span>
-                                 </div>
-                              )}
-                              {engagement.retweets > 0 && (
-                                 <div className="flex items-center px-1.5 py-0.5 bg-gray-800/50 rounded-md border border-gray-700/30">
-                                    <span className="text-gray-400">
-                                       {engagement.retweets} retweets
-                                    </span>
-                                 </div>
-                              )}
-                              {engagement.likes > 0 && (
-                                 <div className="flex items-center px-1.5 py-0.5 bg-gray-800/50 rounded-md border border-gray-700/30">
-                                    <span className="text-gray-400">{engagement.likes} likes</span>
-                                 </div>
-                              )}
+                        {/* Footer */}
+                        <div className="border-t border-gray-700/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
+                           <div className="py-2 px-3.5 flex items-center justify-between">
+                              {/* Engagement metrics */}
+                              <div className="flex items-center gap-3">
+                                 {replyCount > 0 && (
+                                    <div className="flex items-center transition-colors duration-300">
+                                       <MessageCircle className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                          {formatNumber(replyCount)}
+                                       </span>
+                                    </div>
+                                 )}
+
+                                 {retweetCount > 0 && (
+                                    <div className="flex items-center transition-colors duration-300">
+                                       <Share2 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                          {formatNumber(retweetCount)}
+                                       </span>
+                                    </div>
+                                 )}
+
+                                 {likeCount > 0 && (
+                                    <div className="flex items-center transition-colors duration-300">
+                                       <Heart className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
+                                       <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
+                                          {formatNumber(likeCount)}
+                                       </span>
+                                    </div>
+                                 )}
+                              </div>
+
+                              {/* Total engagement counter with trending icon */}
+                              <div className="flex items-center px-2 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+                                 <TrendingUp size={12} className="text-emerald-400 mr-1.5" />
+                                 <span className="text-emerald-400 font-medium text-xs">
+                                    {formatNumber(
+                                       replyCount +
+                                          retweetCount +
+                                          likeCount +
+                                          (engagement.bookmarks || 0)
+                                    )}{' '}
+                                    engagement
+                                 </span>
+                              </div>
                            </div>
-                           <div className="flex items-center px-2 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
-                              <TrendingUp size={12} className="text-emerald-400 mr-1.5" />
-                              <span className="text-emerald-400 font-medium text-xs">
-                                 {totalEngagement} engagement
-                              </span>
+
+                           {/* View indicator strip at bottom */}
+                           <div
+                              className={`border-t py-1.5 px-3.5 ${
+                                 sentiment === 'positive'
+                                    ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/50 to-emerald-900/30'
+                                    : sentiment === 'negative'
+                                    ? 'border-red-500/30 bg-gradient-to-r from-gray-800/50 to-red-900/30'
+                                    : sentiment === 'critical'
+                                    ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/50 to-orange-900/30'
+                                    : 'border-gray-700/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50'
+                              }`}
+                           >
+                              <div
+                                 className={`flex items-center justify-center gap-1.5 ${
+                                    sentiment === 'positive'
+                                       ? 'text-emerald-400'
+                                       : sentiment === 'negative'
+                                       ? 'text-red-400'
+                                       : sentiment === 'critical'
+                                       ? 'text-orange-400'
+                                       : 'text-gray-400 group-hover:text-emerald-400'
+                                 } transition-colors duration-300 text-xs`}
+                              >
+                                 <ExternalLink className="w-3 h-3" />
+                                 <span>View details</span>
+                              </div>
                            </div>
                         </div>
                      </div>
@@ -917,7 +1121,6 @@ const StatsTab = ({ platforms }) => {
                })}
             </div>
          </AnalyticsCard>
-
          <div
             className="h-0.5 w-full bg-gradient-to-r from-emerald-600/0 via-emerald-500/30 to-emerald-600/0 rounded-full animate-pulse"
             style={{ animationDuration: '3s' }}
