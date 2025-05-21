@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import FeedTab from '../components/social/FeedTab';
 import StatsTab from '../components/social/StatsTab';
+import { ShieldCheck } from 'lucide-react';
 
 const SocialMedia = () => {
    const [posts, setPosts] = useState([]);
@@ -149,46 +150,11 @@ const SocialMedia = () => {
             <div className="relative mb-4 md:mb-0">
                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-10 h-10">
                   <div className="relative w-10 h-10">
-                     <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="text-emerald-500 w-10 h-10 relative z-10"
-                     >
-                        <path
-                           d="M2 9.5V4C2 2.89543 2.89543 2 4 2H20C21.1046 2 22 2.89543 22 4V9.5"
-                           stroke="currentColor"
-                           strokeWidth="1.5"
-                        />
-                        <path
-                           d="M2 14.5V20C2 21.1046 2.89543 22 4 22H20C21.1046 22 22 21.1046 22 20V14.5"
-                           stroke="currentColor"
-                           strokeWidth="1.5"
-                        />
-                        <path d="M2 12H22" stroke="currentColor" strokeWidth="1.5" />
-                        <path
-                           d="M10 6H17"
-                           stroke="currentColor"
-                           strokeWidth="1.5"
-                           strokeLinecap="round"
-                        />
-                        <path
-                           d="M7 6H8"
-                           stroke="currentColor"
-                           strokeWidth="1.5"
-                           strokeLinecap="round"
-                        />
-                        <path
-                           d="M7 18H17"
-                           stroke="currentColor"
-                           strokeWidth="1.5"
-                           strokeLinecap="round"
-                        />
-                     </svg>
+                     <ShieldCheck className="text-emerald-500 w-10 h-10 relative z-10" />
                      <div className="absolute inset-0 bg-emerald-500 opacity-30 blur-md rounded-full"></div>
                   </div>
                </div>
-               <h1 className="text-2xl font-medium text-gray-100 ml-14">Social Media Dashboard</h1>
+               <h1 className="text-2xl font-medium text-gray-100 ml-14">Your Social</h1>
             </div>
             <div className="flex items-center space-x-2">
                <div className="relative flex-grow">
@@ -264,7 +230,7 @@ const SocialMedia = () => {
                            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
                         />
                      </svg>
-                     Post Feed
+                   Feed
                   </button>
                   <button
                      onClick={() => handleTabChange('stats')}
@@ -287,7 +253,7 @@ const SocialMedia = () => {
                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                         />
                      </svg>
-                     Analytics
+                     Insights
                   </button>
                </nav>
             </div>

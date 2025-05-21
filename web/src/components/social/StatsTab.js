@@ -82,9 +82,9 @@ const StatsTab = ({ platforms }) => {
    // Ensure consistent color mapping for sentiment across all visualizations
    const sentimentColorMap = {
       positive: COLORS.positive,
-      negative: COLORS.negative, 
+      negative: COLORS.negative,
       critical: COLORS.critical,
-      neutral: COLORS.neutral
+      neutral: COLORS.neutral,
    };
 
    // Load data
@@ -205,9 +205,7 @@ const StatsTab = ({ platforms }) => {
                <h3 className="text-sm font-semibold text-white">{title}</h3>
             </div>
          </div>
-         <div className="p-4">
-            {children}
-         </div>
+         <div className="p-4">{children}</div>
       </div>
    );
 
@@ -233,8 +231,15 @@ const StatsTab = ({ platforms }) => {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-3 border border-gray-700/50 shadow-lg rounded-lg">
                <p className="text-white text-xs font-medium mb-1">{label}</p>
                {payload.map((entry, index) => (
-                  <p key={index} className="text-xs flex items-center gap-1.5 my-0.5" style={{ color: entry.color }}>
-                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+                  <p
+                     key={index}
+                     className="text-xs flex items-center gap-1.5 my-0.5"
+                     style={{ color: entry.color }}
+                  >
+                     <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                     ></span>
                      <span className="font-medium">{entry.name}:</span> {entry.value}
                   </p>
                ))}
@@ -245,9 +250,18 @@ const StatsTab = ({ platforms }) => {
    };
 
    // Custom label for the pie chart with smaller, better positioned text
-   const renderCustomizedPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
-     // Don't render labels inside the pie chart
-     return null;
+   const renderCustomizedPieLabel = ({
+      cx,
+      cy,
+      midAngle,
+      innerRadius,
+      outerRadius,
+      percent,
+      index,
+      name,
+   }) => {
+      // Don't render labels inside the pie chart
+      return null;
    };
 
    // Transform category data for visualization
@@ -268,7 +282,9 @@ const StatsTab = ({ platforms }) => {
                <div className="absolute inset-0 flex items-center justify-center">
                   <Activity className="h-5 w-5 text-emerald-400" />
                </div>
-               <p className="mt-4 text-emerald-400 text-sm animate-pulse">Loading analytics data...</p>
+               <p className="mt-4 text-emerald-400 text-sm animate-pulse">
+                  Loading analytics data...
+               </p>
             </div>
          </div>
       );
@@ -313,10 +329,7 @@ const StatsTab = ({ platforms }) => {
                                  />
                               ))}
                            </Pie>
-                           <Tooltip 
-                              content={<CustomTooltip />} 
-                              cursor={{ fill: 'transparent' }}
-                           />
+                           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
                         </PieChart>
                      </ResponsiveContainer>
 
@@ -326,40 +339,42 @@ const StatsTab = ({ platforms }) => {
                            // Calculate position for each label
                            const angle = (index / sentimentData.length) * 2 * Math.PI;
                            const radius = 100; // Distance from center
-                           
+
                            // Calculate color from the sentiment type
                            const sentimentType = item.name.toLowerCase();
-                           
+
                            let offsetX = 0;
                            let offsetY = 0;
-                           let textAnchor = "middle";
-                           
+                           let textAnchor = 'middle';
+
                            // Position based on the sentiment (assuming 4 sentiments)
-                           if (sentimentType === "positive") {
+                           if (sentimentType === 'positive') {
                               offsetX = -70;
                               offsetY = 65;
-                           } else if (sentimentType === "negative") {
+                           } else if (sentimentType === 'negative') {
                               offsetX = 65;
                               offsetY = 65;
-                           } else if (sentimentType === "critical") {
+                           } else if (sentimentType === 'critical') {
                               offsetX = 75;
                               offsetY = -50;
-                           } else if (sentimentType === "neutral") {
+                           } else if (sentimentType === 'neutral') {
                               offsetX = -75;
                               offsetY = -50;
                            }
-                           
+
                            return (
-                              <div 
+                              <div
                                  key={item.name}
                                  className="absolute flex flex-col items-center text-center"
-                                 style={{ 
+                                 style={{
                                     transform: `translate(${offsetX}px, ${offsetY}px)`,
                                     color: sentimentColorMap[sentimentType],
                                  }}
                               >
                                  <span className="text-xs capitalize">{item.name}</span>
-                                 <span className="text-sm font-bold tracking-tight">{item.percentage}%</span>
+                                 <span className="text-sm font-bold tracking-tight">
+                                    {item.percentage}%
+                                 </span>
                               </div>
                            );
                         })}
@@ -370,7 +385,10 @@ const StatsTab = ({ platforms }) => {
                      {sentimentData.map(item => {
                         const sentimentType = item.name.toLowerCase();
                         return (
-                           <div key={item.name} className="flex items-center bg-gray-900/70 px-2 py-1 rounded-md">
+                           <div
+                              key={item.name}
+                              className="flex items-center bg-gray-900/70 px-2 py-1 rounded-md"
+                           >
                               <div
                                  className="w-2 h-2 rounded-sm mr-1.5"
                                  style={{ backgroundColor: sentimentColorMap[sentimentType] }}
@@ -403,11 +421,16 @@ const StatsTab = ({ platforms }) => {
                            barGap={1}
                            maxBarSize={10}
                         >
-                           <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.medium} horizontal={true} vertical={false} />
-                           <XAxis 
-                              type="number" 
-                              stroke={COLORS.text.secondary} 
-                              fontSize={9} 
+                           <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke={COLORS.border.medium}
+                              horizontal={true}
+                              vertical={false}
+                           />
+                           <XAxis
+                              type="number"
+                              stroke={COLORS.text.secondary}
+                              fontSize={9}
                               tickFormatter={value => value.toLocaleString()}
                               axisLine={false}
                               tickLine={false}
@@ -424,7 +447,7 @@ const StatsTab = ({ platforms }) => {
                               axisLine={false}
                               tickLine={false}
                            />
-                           <Tooltip 
+                           <Tooltip
                               content={<CustomTooltip />}
                               cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                            />
@@ -453,18 +476,18 @@ const StatsTab = ({ platforms }) => {
                               animationDuration={1500}
                               animationBegin={900}
                            />
-                           <Bar 
-                              dataKey="neutral" 
-                              stackId="a" 
-                              fill={sentimentColorMap.neutral} 
-                              name="Neutral" 
+                           <Bar
+                              dataKey="neutral"
+                              stackId="a"
+                              fill={sentimentColorMap.neutral}
+                              name="Neutral"
                               animationDuration={1500}
                               animationBegin={1200}
                            />
                         </BarChart>
                      </ResponsiveContainer>
                   </div>
-                  
+
                   {/* Manual Legend - better positioned and styled */}
                   <div className="flex items-center justify-center mt-2 gap-4">
                      <div className="flex items-center">
@@ -501,47 +524,83 @@ const StatsTab = ({ platforms }) => {
                   >
                      <defs>
                         <linearGradient id="positiveGradient" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor={sentimentColorMap.positive} stopOpacity={0.5}/>
-                           <stop offset="95%" stopColor={sentimentColorMap.positive} stopOpacity={0}/>
+                           <stop
+                              offset="5%"
+                              stopColor={sentimentColorMap.positive}
+                              stopOpacity={0.5}
+                           />
+                           <stop
+                              offset="95%"
+                              stopColor={sentimentColorMap.positive}
+                              stopOpacity={0}
+                           />
                         </linearGradient>
                         <linearGradient id="negativeGradient" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor={sentimentColorMap.negative} stopOpacity={0.5}/>
-                           <stop offset="95%" stopColor={sentimentColorMap.negative} stopOpacity={0}/>
+                           <stop
+                              offset="5%"
+                              stopColor={sentimentColorMap.negative}
+                              stopOpacity={0.5}
+                           />
+                           <stop
+                              offset="95%"
+                              stopColor={sentimentColorMap.negative}
+                              stopOpacity={0}
+                           />
                         </linearGradient>
                         <linearGradient id="criticalGradient" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor={sentimentColorMap.critical} stopOpacity={0.5}/>
-                           <stop offset="95%" stopColor={sentimentColorMap.critical} stopOpacity={0}/>
+                           <stop
+                              offset="5%"
+                              stopColor={sentimentColorMap.critical}
+                              stopOpacity={0.5}
+                           />
+                           <stop
+                              offset="95%"
+                              stopColor={sentimentColorMap.critical}
+                              stopOpacity={0}
+                           />
                         </linearGradient>
                         <linearGradient id="neutralGradient" x1="0" y1="0" x2="0" y2="1">
-                           <stop offset="5%" stopColor={sentimentColorMap.neutral} stopOpacity={0.5}/>
-                           <stop offset="95%" stopColor={sentimentColorMap.neutral} stopOpacity={0}/>
+                           <stop
+                              offset="5%"
+                              stopColor={sentimentColorMap.neutral}
+                              stopOpacity={0.5}
+                           />
+                           <stop
+                              offset="95%"
+                              stopColor={sentimentColorMap.neutral}
+                              stopOpacity={0}
+                           />
                         </linearGradient>
                      </defs>
-                     <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border.medium} vertical={false} />
-                     <XAxis 
-                        dataKey="date" 
-                        stroke={COLORS.text.secondary} 
-                        fontSize={9} 
+                     <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={COLORS.border.medium}
+                        vertical={false}
+                     />
+                     <XAxis
+                        dataKey="date"
+                        stroke={COLORS.text.secondary}
+                        fontSize={9}
                         tick={{ fill: COLORS.text.secondary }}
                         axisLine={false}
                         tickLine={false}
                      />
-                     <YAxis 
-                        stroke={COLORS.text.secondary} 
-                        fontSize={9} 
+                     <YAxis
+                        stroke={COLORS.text.secondary}
+                        fontSize={9}
                         tick={{ fill: COLORS.text.secondary }}
                         tickFormatter={value => value.toLocaleString()}
                         axisLine={false}
                         tickLine={false}
                      />
-                     <Tooltip 
+                     <Tooltip
                         content={<CustomTooltip />}
                         cursor={{ stroke: 'rgba(255, 255, 255, 0.1)', strokeWidth: 1 }}
                      />
-                     <Legend 
-                        iconType="circle" 
-                        iconSize={6} 
-                        wrapperStyle={{ fontSize: "9px", color: COLORS.text.secondary }} 
+                     <Legend
+                        iconType="circle"
+                        iconSize={6}
+                        wrapperStyle={{ fontSize: '9px', color: COLORS.text.secondary }}
                      />
                      <Area
                         type="monotone"
@@ -619,47 +678,55 @@ const StatsTab = ({ platforms }) => {
                         {/* Enhanced sentiment visualization */}
                         <div className="flex items-center space-x-1 mb-2">
                            {/* Sentiment gauges with improved design */}
-                           <div 
+                           <div
                               className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{width: `${Math.max(user.positive_percent, 5)}%`}}
+                              style={{ width: `${Math.max(user.positive_percent, 5)}%` }}
                            >
                               <div className="absolute inset-0 bg-emerald-500/20"></div>
                               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                  <Smile size={12} className="text-emerald-400 mr-1" />
-                                 <span className="text-xs text-emerald-300 font-medium">{user.positive_percent}%</span>
+                                 <span className="text-xs text-emerald-300 font-medium">
+                                    {user.positive_percent}%
+                                 </span>
                               </div>
                            </div>
-                           
-                           <div 
+
+                           <div
                               className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{width: `${Math.max(user.negative_percent, 5)}%`}}
+                              style={{ width: `${Math.max(user.negative_percent, 5)}%` }}
                            >
                               <div className="absolute inset-0 bg-red-500/20"></div>
                               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                  <Frown size={12} className="text-red-400 mr-1" />
-                                 <span className="text-xs text-red-300 font-medium">{user.negative_percent}%</span>
+                                 <span className="text-xs text-red-300 font-medium">
+                                    {user.negative_percent}%
+                                 </span>
                               </div>
                            </div>
-                           
-                           <div 
+
+                           <div
                               className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{width: `${Math.max(user.critical_percent, 5)}%`}}
+                              style={{ width: `${Math.max(user.critical_percent, 5)}%` }}
                            >
                               <div className="absolute inset-0 bg-orange-500/20"></div>
                               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                  <AlertCircle size={12} className="text-orange-400 mr-1" />
-                                 <span className="text-xs text-orange-300 font-medium">{user.critical_percent}%</span>
+                                 <span className="text-xs text-orange-300 font-medium">
+                                    {user.critical_percent}%
+                                 </span>
                               </div>
                            </div>
-                           
-                           <div 
+
+                           <div
                               className="h-8 relative flex-grow bg-gray-800/50 rounded-md overflow-hidden border border-gray-700/30"
-                              style={{width: `${Math.max(user.neutral_percent, 5)}%`}}
+                              style={{ width: `${Math.max(user.neutral_percent, 5)}%` }}
                            >
                               <div className="absolute inset-0 bg-gray-500/20"></div>
                               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                                  <Minus size={12} className="text-gray-400 mr-1" />
-                                 <span className="text-xs text-gray-300 font-medium">{user.neutral_percent}%</span>
+                                 <span className="text-xs text-gray-300 font-medium">
+                                    {user.neutral_percent}%
+                                 </span>
                               </div>
                            </div>
                         </div>
@@ -735,19 +802,27 @@ const StatsTab = ({ platforms }) => {
                         <div className="flex flex-wrap gap-2 text-xs">
                            <div className="flex items-center bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
                               <div className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></div>
-                              <span className="text-gray-300">{topic.positive_percent.toFixed(1)}%</span>
+                              <span className="text-gray-300">
+                                 {topic.positive_percent.toFixed(1)}%
+                              </span>
                            </div>
                            <div className="flex items-center bg-red-500/10 px-2 py-1 rounded-md border border-red-500/20">
                               <div className="w-2 h-2 rounded-full bg-red-500 mr-1.5"></div>
-                              <span className="text-gray-300">{topic.negative_percent.toFixed(1)}%</span>
+                              <span className="text-gray-300">
+                                 {topic.negative_percent.toFixed(1)}%
+                              </span>
                            </div>
                            <div className="flex items-center bg-orange-500/10 px-2 py-1 rounded-md border border-orange-500/20">
                               <div className="w-2 h-2 rounded-full bg-orange-500 mr-1.5"></div>
-                              <span className="text-gray-300">{topic.critical_percent.toFixed(1)}%</span>
+                              <span className="text-gray-300">
+                                 {topic.critical_percent.toFixed(1)}%
+                              </span>
                            </div>
                            <div className="flex items-center bg-gray-500/10 px-2 py-1 rounded-md border border-gray-500/20">
                               <div className="w-2 h-2 rounded-full bg-gray-500 mr-1.5"></div>
-                              <span className="text-gray-300">{topic.neutral_percent.toFixed(1)}%</span>
+                              <span className="text-gray-300">
+                                 {topic.neutral_percent.toFixed(1)}%
+                              </span>
                            </div>
                         </div>
                      </div>
@@ -771,10 +846,14 @@ const StatsTab = ({ platforms }) => {
                      (engagement.likes || 0) +
                      (engagement.bookmarks || 0);
 
-                  const sentimentColor = 
-                     post.sentiment === 'positive' ? 'emerald' :
-                     post.sentiment === 'negative' ? 'red' :
-                     post.sentiment === 'critical' ? 'orange' : 'gray';
+                  const sentimentColor =
+                     post.sentiment === 'positive'
+                        ? 'emerald'
+                        : post.sentiment === 'negative'
+                        ? 'red'
+                        : post.sentiment === 'critical'
+                        ? 'orange'
+                        : 'gray';
 
                   return (
                      <div
@@ -800,18 +879,24 @@ const StatsTab = ({ platforms }) => {
                            </div>
                         </div>
 
-                        <p className="text-gray-200 text-xs mb-3 line-clamp-2 bg-gray-800/30 p-2 rounded-md border border-gray-700/30">{post.post_text}</p>
+                        <p className="text-gray-200 text-xs mb-3 line-clamp-2 bg-gray-800/30 p-2 rounded-md border border-gray-700/30">
+                           {post.post_text}
+                        </p>
 
                         <div className="flex justify-between items-center">
                            <div className="flex flex-wrap gap-2 text-xs">
                               {engagement.replies > 0 && (
                                  <div className="flex items-center px-1.5 py-0.5 bg-gray-800/50 rounded-md border border-gray-700/30">
-                                    <span className="text-gray-400">{engagement.replies} replies</span>
+                                    <span className="text-gray-400">
+                                       {engagement.replies} replies
+                                    </span>
                                  </div>
                               )}
                               {engagement.retweets > 0 && (
                                  <div className="flex items-center px-1.5 py-0.5 bg-gray-800/50 rounded-md border border-gray-700/30">
-                                    <span className="text-gray-400">{engagement.retweets} retweets</span>
+                                    <span className="text-gray-400">
+                                       {engagement.retweets} retweets
+                                    </span>
                                  </div>
                               )}
                               {engagement.likes > 0 && (
@@ -833,8 +918,10 @@ const StatsTab = ({ platforms }) => {
             </div>
          </AnalyticsCard>
 
-         {/* Add subtle animation at the bottom */}
-         <div className="h-0.5 w-full bg-gradient-to-r from-emerald-600/0 via-emerald-500/30 to-emerald-600/0 rounded-full animate-pulse" style={{ animationDuration: '3s' }}></div>
+         <div
+            className="h-0.5 w-full bg-gradient-to-r from-emerald-600/0 via-emerald-500/30 to-emerald-600/0 rounded-full animate-pulse"
+            style={{ animationDuration: '3s' }}
+         ></div>
       </div>
    );
 };
