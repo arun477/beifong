@@ -238,7 +238,7 @@ const SocialMedia = () => {
                </div>
                <h1 className="text-2xl font-medium text-gray-100 ml-14">Your Social</h1>
             </div>
-            <div className="flex items-center space-x-2">
+            {activeTab !== 'stats' && <div className="flex items-center space-x-2">
                <div className="relative flex-grow">
                   <input
                      type="text"
@@ -285,7 +285,7 @@ const SocialMedia = () => {
                      />
                   </svg>
                </button>
-            </div>
+            </div>}
          </div>
 
          <div className="mb-6">
