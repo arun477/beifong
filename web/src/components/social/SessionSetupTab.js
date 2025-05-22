@@ -74,15 +74,15 @@ const SessionSetupTab = () => {
       <div className="max-w-3xl mx-auto">
          <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700/50 rounded-xl shadow-2xl">
             {/* Decorative background elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/10 to-blue-400/10 rounded-full blur-xl transform translate-x-16 -translate-y-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-400/5 to-purple-400/5 rounded-full blur-lg transform -translate-x-12 translate-y-12"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/5 to-blue-400/5 rounded-full blur-xl transform translate-x-16 -translate-y-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-400/3 to-purple-400/3 rounded-full blur-lg transform -translate-x-12 translate-y-12"></div>
             
             <div className="relative p-8">
                {/* Enhanced Header */}
                <div className="flex items-start space-x-4 mb-6">
                   <div className="relative">
-                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-xl blur-md opacity-30"></div>
-                     <div className="relative bg-gradient-to-r from-emerald-500/20 to-blue-500/20 p-3 rounded-xl border border-emerald-400/30">
+                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-xl blur-md opacity-15"></div>
+                     <div className="relative bg-gradient-to-r from-emerald-500/15 to-blue-500/15 p-3 rounded-xl border border-emerald-400/20">
                         <Key className="w-7 h-7 text-emerald-400" />
                      </div>
                   </div>
@@ -118,12 +118,12 @@ const SessionSetupTab = () => {
                      className={`group relative w-full py-4 px-6 rounded-xl font-medium transition-all duration-300 transform ${
                         isLoading || cooldownTime > 0
                            ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed scale-100'
-                           : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg hover:shadow-emerald-500/25 hover:scale-105 active:scale-95'
+                           : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg hover:shadow-emerald-500/15 hover:scale-105 active:scale-95'
                      }`}
                   >
                      {/* Button background glow effect */}
                      {!(isLoading || cooldownTime > 0) && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl blur-xl opacity-15 group-hover:opacity-25 transition-opacity duration-300"></div>
                      )}
                      
                      <div className="relative flex items-center justify-center space-x-3">
