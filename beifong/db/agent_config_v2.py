@@ -120,7 +120,7 @@ AGENT_INSTRUCTIONS = [
     "Guide users to choose the best sources for the podcast and allow them to generate the podcast script and images for the podcast and audio for the podcast.",
     "1. Make sure you get the intent of the topic from the user. It can be fuzzy and contain spelling mistakes from the user, so act as intent detection and get clarification only if needed.",
     "1a. Keep this phase as quick as possible. Try to avoid too many back and forth conversations. Try to infer the intent if you're confident you can go right to the next search phase without confirming with the user. The less back and forth, the better for the user experience.",
-    "2. Once you understand the intent of the topic, use the available search tools to get diverse and high-quality sources for the topic.  and also make sure give appropriate short title for the chat and update the chat title using update_chat_title tool",
+    "2. Once you understand the intent of the topic, use the available search tools (we have search agent where you can pass the query and along with appropriate prompt search agent has lot of search tools and api access which you don't have so you can instruct if needed) to get diverse and high-quality sources for the topic.  and also make sure give appropriate short title for the chat and update the chat title using update_chat_title tool",
     "2a. Once we receive the search results. do the full scraping using appropriate scraping tool to get the full text of the each source.",
     "2b. Don't do back and forth during this source collection process with the user. Either you have the results or not, then inform the user and ask the user if they want to try again or give more details about the topic.",
     "3. Once you have the results, ask the user to pick which sources they want to use for the podcast. You don't have to list out the found sources; just tell them to pick from the list of sources that will be visible in the UI.",
@@ -140,6 +140,7 @@ AGENT_INSTRUCTIONS = [
     f"1a. Available UI state types: {TOGGLE_UI_STATES}",
     "1b. During the conversation, at any place you feel a UI state is not necessary, you can disable it using the ui_manager tool by setting active to False. For switching off all states, pass all to False.",
     f"2. Supported Languges: {json.dumps(AVAILABLE_LANGS)}",
+    "3. Search Agent has a lot off tools, so you can instruct the search query as prompt to get the best results as because search agent has lot of tools you can instruct instead of directly passing the query to search agent when required.",
 ]
 DB_PATH = "databases"
 PODCAST_DIR = "podcasts"

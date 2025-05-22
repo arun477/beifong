@@ -1,17 +1,19 @@
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel, Field
 from enum import Enum
 from textwrap import dedent
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
+import uuid
+
 
 load_dotenv()
 
 
 class SentimentType(str, Enum):
     POSITIVE = "positive"
-    NEGATIVE = "negative" 
+    NEGATIVE = "negative"
     NEUTRAL = "neutral"
     CRITICAL = "critical"
 
@@ -65,60 +67,37 @@ SENTIMENT_AGENT_INSTRUCTIONS = dedent("""
     IMPORTANT: You MUST maintain the exact post_id provided for each post in your analysis.
     IMPORTANT: Categories must be chosen ONLY from the predefined list.
     IMPORTANT: Return analysis for ALL posts provided in the input.
+    IMPORTANT: You can add news tag if you think that could you be used to write news articles.
 """)
 
 
 def analyze_posts_sentiment(posts_data):
-    """
-    Analyze the sentiment and categorize the given posts
-    
-    Args:
-        posts_data: List of post data extracted from X.com
-        
-    Returns:
-        A list of analyzed posts with sentiment and categorization
-    """
-    import uuid
     session_id = str(uuid.uuid4())
-    
-    # Create the agent with instructions specific to sentiment analysis
     analysis_agent = Agent(
         model=OpenAIChat(id="gpt-4o"),
         instructions=SENTIMENT_AGENT_INSTRUCTIONS,
         description=SENTIMENT_AGENT_DESCRIPTION,
         use_json_mode=True,
         response_model=AnalysisResponse,
-        session_id=session_id
+        session_id=session_id,
     )
-    
-    # Format the posts data for the agent
     posts_prompt = "Analyze the sentiment and categorize the following social media posts:\n\n"
-    
-    # Only send posts with text content
     valid_posts = []
     for post in posts_data:
         post_text = post.get("post_text", "")
         post_id = post.get("post_id", "")
-        
         if post_text and post_id:
             valid_posts.append(post)
             posts_prompt += f"POST (ID: {post_id}):\n{post_text}\n\n"
-    
     if not valid_posts:
         return []
-    
-    # Run the agent
     response = analysis_agent.run(posts_prompt, session_id=session_id)
     analysis_results = response.to_dict()["content"]["analyzed_posts"]
-    
-    # Ensure matching IDs and return only valid analyses
     validated_results = []
     valid_post_ids = {post.get("post_id") for post in valid_posts}
-    
     for analysis in analysis_results:
         if analysis.get("post_id") in valid_post_ids:
             validated_results.append(analysis)
         else:
             print(f"Warning: Analysis returned with invalid post_id: {analysis.get('post_id')}")
-    
     return validated_results

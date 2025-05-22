@@ -56,7 +56,7 @@ def wikipedia_search(agent: Agent, query: str, srlimit: int = 5) -> str:
             results.append(result)
         if not results:
             return "No Wikipedia search results found."
-        return json.dumps(results, ensure_ascii=False, indent=2)
+        return f"for all results is_scrapping_required: True, results: {json.dumps(results, ensure_ascii=False, indent=2)}"
     except Exception as e:
         print(f"Error during Wikipedia search: {str(e)}")
         return f"Error in Wikipedia search: {str(e)}"

@@ -7,6 +7,8 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 from textwrap import dedent
 from agents.wikipedia_search import wikipedia_search
 from agents.google_news_discovery import google_news_discovery_run
+from tools.jikan_search import jikan_search
+from tools.embedding_search import embedding_search
 
 
 load_dotenv()
@@ -28,6 +30,10 @@ class ReturnItem(BaseModel):
         ...,
         description="The published date of the content in ISO format, if not available keep it empty",
     )
+    is_scrapping_required: bool = Field(
+        ...,
+        description="Set to True if the content need scraping, False otherwise, default keep it True if not sure",
+    )
 
 
 class SearchResults(BaseModel):
@@ -36,14 +42,14 @@ class SearchResults(BaseModel):
 
 SEARCH_AGENT_DESCRIPTION = "You are a helpful assistant that can search the web for information."
 SEARCH_AGENT_INSTRUCTIONS = dedent("""
-    You are a helpful assistant that can search the web for information.
-    For a given topic, your job is to search the web and return the top 5 sources about the topic.
+    You are a helpful assistant that can search the web or any other sources for information.
+    For a given topic, your job is to search the web or any other sources and return the top 5 sources about the topic.
     Keep the search sources of high quality and reputable, and sources should be relevant to the asked topic.
     Sources should be from diverse platforms with no duplicates.
     IMPORTANT: User queries might be fuzzy or misspelled. Understand the user's intent and act accordingly.
-    IMPORTANT: The output source_name field can be one of ["wikipedia", "general", or any reputable source tag"].
+    IMPORTANT: The output source_name field can be one of ["wikipedia", "general", or any source tag used"].
     IMPORTANT: You have access to different search tools use them when appropriate which one is best for the given search query. Don't use particular tool if not required.
-    IMPORTANT: Make sure you are able to detect what tool to use and use it available tool tags = ["google_news_discovery", "duckduckgo", "wikipedia_search", "unknown"].
+    IMPORTANT: Make sure you are able to detect what tool to use and use it available tool tags = ["google_news_discovery", "duckduckgo", "wikipedia_search", "jikan_search", "unknown"].
     IMPORTANT: If query is news related please prefere google news over other news tools.
     IMPORTANT: If returned sources are not of high quality or not relevant to the asked topic, don't include them in the returned sources.
     """)
@@ -51,7 +57,7 @@ SEARCH_AGENT_INSTRUCTIONS = dedent("""
 
 def search_agent_run(agent: Agent, query: str) -> str:
     """
-    Search Agent which searches the web for relevant sources about the given topic or query.
+    Search Agent which searches the web and other sources for relevant sources about the given topic or query.
     Args:
         agent: The agent instance
         query: The search query
@@ -74,6 +80,8 @@ def search_agent_run(agent: Agent, query: str) -> str:
             google_news_discovery_run,
             DuckDuckGoTools(),
             wikipedia_search,
+            jikan_search,
+            embedding_search,
         ],
         session_id=session_id,
     )

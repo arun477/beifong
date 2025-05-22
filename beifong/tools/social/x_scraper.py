@@ -86,10 +86,3 @@ def crawl_x_profile(profile_url, db_file="x_posts.db"):
             conn.close()
             return post_count
         return post_count
-
-
-if __name__ == "__main__":
-    import sys
-
-    profile = sys.argv[1] if len(sys.argv) > 1 else input("Enter X.com profile: ")
-    crawl_x_profile(profile)

@@ -8,7 +8,6 @@ def setup_session(TARGET_SITE):
     print("🔐 SESSION SETUP MODE")
     print(f"Opening browser with persistent profile at: {USER_DATA_DIR}")
     print(f"Please log in {TARGET_SITE} manually to establish your session")
-
     with sync_playwright() as playwright:
         os.makedirs(USER_DATA_DIR, exist_ok=True)
         browser_context = playwright.chromium.launch_persistent_context(
@@ -21,7 +20,6 @@ def setup_session(TARGET_SITE):
                 page = browser_context.pages[0]
             else:
                 page = browser_context.new_page()
-
             page.goto(TARGET_SITE)
             print("\n✅ Browser is now open. Please:")
             print("1. Log in to your account manually")
@@ -42,7 +40,6 @@ def setup_session_multi(TARGET_SITES):
     print(f"Setting up sessions for {len(TARGET_SITES)} sites:")
     for i, site in enumerate(TARGET_SITES, 1):
         print(f"  {i}. {site}")
-
     with sync_playwright() as playwright:
         os.makedirs(USER_DATA_DIR, exist_ok=True)
         browser_context = playwright.chromium.launch_persistent_context(
@@ -66,7 +63,6 @@ def setup_session_multi(TARGET_SITES):
             print("2. Navigate through the sites as needed")
             print("3. Press Ctrl+C in this terminal when you're done\n")
             print("💡 Tip: Use Ctrl+Tab to switch between tabs")
-
             try:
                 while True:
                     pages[0].wait_for_timeout(1000)

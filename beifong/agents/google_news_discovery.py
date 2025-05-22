@@ -50,4 +50,4 @@ def google_news_discovery_run(
     if keyword:
         results = search_news(google_news, keyword)
     print('google news search found:', len(results))
-    return json.dumps(results)
+    return f"for all results is_scrapping_required: True, results: {json.dumps(results)}"

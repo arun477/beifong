@@ -7,6 +7,7 @@ from db.config import get_tracking_db_path, get_faiss_db_path, get_sources_db_pa
 from db.connection import execute_query
 from utils.load_api_keys import load_api_key
 import traceback
+import json
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 
@@ -20,7 +21,6 @@ def generate_query_embedding(query_text, model=EMBEDDING_MODEL):
         response = client.embeddings.create(input=query_text, model=model)
         return response.data[0].embedding, None
     except Exception as e:
-        print(f"Error generating query embedding: {str(e)}")
         return None, str(e)
 
 
@@ -68,7 +68,6 @@ def get_source_names(source_ids):
         """
         table_exists = execute_query(sources_db_path, check_query, fetch=True)
         if not table_exists:
-            print("Warning: 'sources' table not found in sources database")
             return {}
         placeholders = ",".join(["?"] * len(unique_ids))
         query = f"""
@@ -77,14 +76,13 @@ def get_source_names(source_ids):
         """
         results = execute_query(sources_db_path, query, unique_ids, fetch=True)
         return {str(row["id"]): row["name"] for row in results} if results else {}
-    except Exception as e:
-        print(f"Error getting source names: {e}")
+    except Exception as _:
         return {}
 
 
 def embedding_search(agent: Agent, prompt: str) -> str:
     """
-    Perform a semantic search using embeddings to find articles related to the query.
+    Perform a semantic search using embeddings to find articles related to the query on internal articles databse which are crawled from preselected user rss feeds.
     This search uses vector representations to find semantically similar content,
     filtering for only high-quality matches (similarity score ≥ 85%).
 
@@ -93,31 +91,26 @@ def embedding_search(agent: Agent, prompt: str) -> str:
         prompt: The search query
 
     Returns:
-        A formatted string response with the search results
+        Search results
     """
-    agent.session_state["stage"] = "search"
+    print("Embedding Search Input:", prompt)
     tracking_db_path = get_tracking_db_path()
     index_path, mapping_path = get_faiss_db_path()
     top_k = 20
     similarity_threshold = 0.85
     if not os.path.exists(index_path) or not os.path.exists(mapping_path):
-        print(f"FAISS index not found at {index_path} or mapping not found at {mapping_path}")
         return "Embedding search not available: index files not found. Continuing with other search methods."
     query_embedding, error = generate_query_embedding(prompt)
     if not query_embedding:
-        print(f"Failed to generate query embedding: {error}")
         return f"Semantic search unavailable: {error}. Continuing with other search methods."
     query_vector = np.array([query_embedding]).astype(np.float32)
     try:
         faiss_index, error = load_faiss_index(index_path)
         if error:
-            print(error)
             return f"Semantic search unavailable: {error}. Continuing with other search methods."
         id_map, error = load_id_mapping(mapping_path)
         if error:
-            print(error)
             return f"Semantic search unavailable: {error}. Continuing with other search methods."
-        print(f"Searching FAISS index with {len(id_map)} articles...")
         distances, indices = faiss_index.search(query_vector, top_k)
         results_with_metrics = []
         for i, idx in enumerate(indices[0]):
@@ -130,23 +123,17 @@ def embedding_search(agent: Agent, prompt: str) -> str:
         results_with_metrics.sort(key=lambda x: x[2], reverse=True)
         result_article_ids = [item[3] for item in results_with_metrics]
         if not result_article_ids:
-            print("No results met the similarity threshold")
             return "No high-quality semantic matches found (threshold: 85%). Continuing with other search methods."
         results = get_article_details(tracking_db_path, result_article_ids)
         source_ids = [result.get("source_id") for result in results if result.get("source_id")]
         source_names = get_source_names(source_ids)
         formatted_results = []
         for i, result in enumerate(results):
-            # Get the original similarity score from our filtered results
             article_id = result.get("id")
             similarity = next((item[2] for item in results_with_metrics if item[3] == article_id), 0)
-
-            # Format with percentage for easier human understanding
             similarity_percent = int(similarity * 100)
-
             source_id = str(result.get("source_id", "unknown"))
             source_name = source_names.get(source_id, source_id)
-
             formatted_result = {
                 "id": article_id,
                 "title": f"{result.get('title', 'Untitled')} (Relevance: {similarity_percent}%)",
@@ -158,14 +145,10 @@ def embedding_search(agent: Agent, prompt: str) -> str:
                 "source_name": source_name,
                 "similarity": similarity,
                 "categories": ["semantic"],
+                "is_scrapping_required": False,
             }
             formatted_results.append(formatted_result)
-        existing_results = agent.session_state.get("search_results", [])
-        combined_results = formatted_results + existing_results
-        combined_results = combined_results[:20]
-        agent.session_state["search_results"] = combined_results
-        return f"Found {len(formatted_results)} high-quality semantically relevant articles (similarity ≥ 85%). Continuing with additional search methods."
+        return f"Found {len(formatted_results)}, results: {json.dumps(formatted_results, indent=2)}"
     except Exception as e:
-        print(f"Error during embedding search: {str(e)}")
         traceback.print_exc()
         return f"Error in semantic search: {str(e)}. Continuing with other search methods."

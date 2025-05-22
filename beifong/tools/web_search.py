@@ -2,7 +2,6 @@ import os
 import asyncio
 import multiprocessing
 from typing import Dict, List, Any, Tuple, Optional
-from datetime import datetime
 from pydantic import BaseModel
 from browser_use import Agent as BrowserAgent, Browser
 from browser_use.browser.context import BrowserContextConfig, BrowserContext
@@ -20,8 +19,6 @@ BROWSER_AGENT_MODEL = "gpt-4o"
 
 
 class WebSearchResult(BaseModel):
-    """Model for structured web search results"""
-
     title: str
     url: str
     content: str
@@ -257,7 +254,6 @@ def _web_search(topic: str, session_id: str, task: str) -> Tuple[List[Dict[str, 
 
 
 def web_search(agent: Agent, topic: str, task: str) -> str:
-    return "Temporily not available"
     """
     Synchronous tool for performing web searches using BrowserUse.
 

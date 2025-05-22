@@ -49,6 +49,8 @@ def crawl_urls_batch(search_results):
     url_to_search_results = {}
     unique_urls = []
     for search_result in search_results:
+        if not search_result.get("is_scrapping_required", True):
+            continue
         url = search_result["url"]
         if url not in url_to_search_results:
             url_to_search_results[url] = []
