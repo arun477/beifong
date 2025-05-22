@@ -52,8 +52,13 @@ def get_faiss_db_path():
 def get_internal_sessions_db_path():
     return get_db_path("internal_sessions_db")
 
+
 def get_social_media_db_path():
     return get_db_path("social_media_db")
+
+
+def get_browser_session_path():
+    return "browsers/playwright_persistent_profile"
 
 
 DB_PATH = "databases"

@@ -1,3 +1,3 @@
-import os
+from db.config import get_browser_session_path
 
-USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "playwright_persistent_profile")
+USER_DATA_DIR = get_browser_session_path()

@@ -79,3 +79,4 @@ coverage/
 *.so
 
 debug/
+browsers/
