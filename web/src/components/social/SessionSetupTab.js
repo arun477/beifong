@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Settings, CheckCircle, AlertCircle, Clock, LogIn, Shield, Globe, Zap, ArrowRight } from 'lucide-react';
+import { Settings, CheckCircle, AlertCircle, Clock, Shield, Globe, Zap, ArrowRight, Key } from 'lucide-react';
 
 const SessionSetupTab = () => {
    const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +83,7 @@ const SessionSetupTab = () => {
                   <div className="relative">
                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-xl blur-md opacity-30"></div>
                      <div className="relative bg-gradient-to-r from-emerald-500/20 to-blue-500/20 p-3 rounded-xl border border-emerald-400/30">
-                        <LogIn className="w-7 h-7 text-emerald-400" />
+                        <Key className="w-7 h-7 text-emerald-400" />
                      </div>
                   </div>
                   <div className="flex-1">
@@ -139,7 +139,7 @@ const SessionSetupTab = () => {
                            </>
                         ) : (
                            <>
-                              <LogIn className="w-5 h-5" />
+                              <Key className="w-5 h-5" />
                               <span>Create Login Sessions</span>
                               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
                            </>
