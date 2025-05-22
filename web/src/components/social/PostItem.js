@@ -10,7 +10,8 @@ import {
    AlertCircle,
    Minus,
    ExternalLink,
-   Sparkles
+   Sparkles,
+   Facebook,
 } from 'lucide-react';
 
 // Helper functions
@@ -55,12 +56,8 @@ const getPlatformIcon = platform => {
                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
          );
-      case 'facebook':
-         return (
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-         );
+      case 'facebook.com':
+         return <Facebook className="w-4 h-4 text-blue-600" />;
       case 'instagram':
          return (
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -189,39 +186,51 @@ const PostItem = ({ post, onPostClick }) => {
    };
 
    return (
-      <div 
+      <div
          className="block h-full cursor-pointer transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
          onClick={handleClick}
       >
-         <div className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(sentiment)}`}>
+         <div
+            className={`relative h-full flex flex-col overflow-hidden group backdrop-blur-sm rounded-lg transition-colors duration-300 shadow-md hover:shadow-md ${getSentimentCardStyle(
+               sentiment
+            )}`}
+         >
             {/* Sentiment indicator strip at the top with gradient */}
-            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
-               sentiment === 'positive' 
-                  ? 'from-emerald-500 to-teal-500' 
-                  : sentiment === 'negative' 
-                  ? 'from-red-500 to-red-600' 
-                  : sentiment === 'critical' 
-                  ? 'from-orange-500 to-orange-600' 
-                  : 'from-gray-600 to-gray-700'
-            }`}></div>
-            
+            <div
+               className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                  sentiment === 'positive'
+                     ? 'from-emerald-500 to-teal-500'
+                     : sentiment === 'negative'
+                     ? 'from-red-500 to-red-600'
+                     : sentiment === 'critical'
+                     ? 'from-orange-500 to-orange-600'
+                     : 'from-gray-600 to-gray-700'
+               }`}
+            ></div>
+
             {/* Header */}
-            <div className={`flex flex-col px-3.5 py-2.5 border-b ${
-               sentiment === 'positive' 
-                  ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/80 to-emerald-900/40' 
-                  : sentiment === 'negative' 
-                  ? 'border-red-500/30 bg-gradient-to-r from-gray-800/80 to-red-900/40' 
-                  : sentiment === 'critical' 
-                  ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/80 to-orange-900/40' 
-                  : 'border-gray-700/30 bg-gradient-to-r from-gray-800/80 to-gray-900/80'
-            } backdrop-blur`}>
+            <div
+               className={`flex flex-col px-3.5 py-2.5 border-b ${
+                  sentiment === 'positive'
+                     ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/80 to-emerald-900/40'
+                     : sentiment === 'negative'
+                     ? 'border-red-500/30 bg-gradient-to-r from-gray-800/80 to-red-900/40'
+                     : sentiment === 'critical'
+                     ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/80 to-orange-900/40'
+                     : 'border-gray-700/30 bg-gradient-to-r from-gray-800/80 to-gray-900/80'
+               } backdrop-blur`}
+            >
                {/* Row 1: Author info and platform icon with sentiment icon on right */}
                <div className="flex items-center gap-2.5 justify-between">
                   <div className="flex items-center gap-2.5">
                      {/* Platform Icon */}
                      <div className="min-w-8 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden transition-all duration-300 group-hover:border-gray-600">
                         <div className="flex items-center justify-center w-full h-full">
-                           <div className={`text-${getPlatformColor(post.platform).split('-')[1]} group-hover:text-opacity-90 transition-colors duration-300`}>
+                           <div
+                              className={`text-${
+                                 getPlatformColor(post.platform).split('-')[1]
+                              } group-hover:text-opacity-90 transition-colors duration-300`}
+                           >
                               {getPlatformIcon(post.platform)}
                            </div>
                         </div>
@@ -231,7 +240,11 @@ const PostItem = ({ post, onPostClick }) => {
                      <div className="min-w-0">
                         <div className="flex items-center gap-1">
                            <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
-                              {post.user_display_name || post.author_name || (post.user_handle ? `@${post.user_handle.replace('@', '')}` : 'Unknown Author')}
+                              {post.user_display_name ||
+                                 post.author_name ||
+                                 (post.user_handle
+                                    ? `@${post.user_handle.replace('@', '')}`
+                                    : 'Unknown Author')}
                            </span>
                         </div>
                      </div>
@@ -252,20 +265,22 @@ const PostItem = ({ post, onPostClick }) => {
                      {post.platform?.replace('.com', '') || 'web'}
                   </span>
                   <span className="text-gray-500 mx-1 flex-shrink-0">·</span>
-                  <span className="text-gray-500 flex-shrink-0">{formatDate(post.post_timestamp)}</span>
+                  <span className="text-gray-500 flex-shrink-0">
+                     {formatDate(post.post_timestamp)}
+                  </span>
                </div>
 
                {/* Row 3: Sentiment Indicator with improved styling */}
                <div className="flex items-center mt-2">
                   {/* Sentiment indicator */}
-                  <div 
+                  <div
                      className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
-                        sentiment === 'positive' 
-                           ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-400' 
-                           : sentiment === 'negative' 
-                           ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/50 text-red-400' 
-                           : sentiment === 'critical' 
-                           ? 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/50 text-orange-400' 
+                        sentiment === 'positive'
+                           ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/50 text-emerald-400'
+                           : sentiment === 'negative'
+                           ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-500/50 text-red-400'
+                           : sentiment === 'critical'
+                           ? 'bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/50 text-orange-400'
                            : 'bg-gradient-to-r from-gray-600/30 to-gray-700/30 border border-gray-600/40 text-gray-300'
                      } group-hover:shadow-sm transition-all duration-300`}
                      title={`${sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} sentiment`}
@@ -354,9 +369,24 @@ const PostItem = ({ post, onPostClick }) => {
 
                         {viewCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
-                              <svg className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              <svg
+                                 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                              >
+                                 <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                 />
+                                 <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                 />
                               </svg>
                               <span className="text-xs text-gray-400 group-hover:text-white transition-colors duration-300">
                                  {formatNumber(viewCount)}
@@ -366,26 +396,30 @@ const PostItem = ({ post, onPostClick }) => {
                      </div>
                   </div>
                )}
-               
+
                {/* View indicator strip at bottom */}
-               <div className={`border-t py-1.5 px-3.5 ${
-                  sentiment === 'positive' 
-                     ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/50 to-emerald-900/30' 
-                     : sentiment === 'negative' 
-                     ? 'border-red-500/30 bg-gradient-to-r from-gray-800/50 to-red-900/30' 
-                     : sentiment === 'critical' 
-                     ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/50 to-orange-900/30' 
-                     : 'border-gray-700/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50'
-               }`}>
-                  <div className={`flex items-center justify-center gap-1.5 ${
-                     sentiment === 'positive' 
-                        ? 'text-emerald-400' 
-                        : sentiment === 'negative' 
-                        ? 'text-red-400' 
-                        : sentiment === 'critical' 
-                        ? 'text-orange-400' 
-                        : 'text-gray-400 group-hover:text-emerald-400'
-                  } transition-colors duration-300 text-xs`}>
+               <div
+                  className={`border-t py-1.5 px-3.5 ${
+                     sentiment === 'positive'
+                        ? 'border-emerald-500/30 bg-gradient-to-r from-gray-800/50 to-emerald-900/30'
+                        : sentiment === 'negative'
+                        ? 'border-red-500/30 bg-gradient-to-r from-gray-800/50 to-red-900/30'
+                        : sentiment === 'critical'
+                        ? 'border-orange-500/30 bg-gradient-to-r from-gray-800/50 to-orange-900/30'
+                        : 'border-gray-700/20 bg-gradient-to-r from-gray-800/50 to-gray-900/50'
+                  }`}
+               >
+                  <div
+                     className={`flex items-center justify-center gap-1.5 ${
+                        sentiment === 'positive'
+                           ? 'text-emerald-400'
+                           : sentiment === 'negative'
+                           ? 'text-red-400'
+                           : sentiment === 'critical'
+                           ? 'text-orange-400'
+                           : 'text-gray-400 group-hover:text-emerald-400'
+                     } transition-colors duration-300 text-xs`}
+                  >
                      <ExternalLink className="w-3 h-3" />
                      <span>View details</span>
                   </div>

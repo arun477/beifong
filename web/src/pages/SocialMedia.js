@@ -29,7 +29,7 @@ const SocialMedia = () => {
       total: 0,
    });
    const [isFilterOpen, setIsFilterOpen] = useState(false);
-   
+
    // New state for the post detail panel
    const [selectedPost, setSelectedPost] = useState(null);
    const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -89,14 +89,14 @@ const SocialMedia = () => {
       try {
          const response = await api.socialMedia.getSentiments();
          setSentiments(response.data || []);
-         
+
          // Build stats object for StatsTab
          const sentimentData = response.data || [];
          const statsData = {
             sentiments: sentimentData.reduce((acc, item) => {
                acc[item.sentiment] = item.post_count;
                return acc;
-            }, {})
+            }, {}),
          };
          setStats(statsData);
       } catch (error) {
@@ -148,33 +148,33 @@ const SocialMedia = () => {
    const handleTabChange = tab => {
       setActiveTab(tab);
    };
-   
+
    // Handler for post clicks
-   const handlePostClick = (post) => {
+   const handlePostClick = post => {
       setSelectedPost(post);
       setIsDetailPanelOpen(true);
-      
+
       // Add browser history entry without navigation
       const url = new URL(window.location);
       url.searchParams.set('postId', post.post_id);
       window.history.pushState({}, '', url);
    };
-   
+
    // Handler for closing the detail panel
    const handleCloseDetailPanel = () => {
       setIsDetailPanelOpen(false);
-      
+
       // Remove postId from URL
       const url = new URL(window.location);
       url.searchParams.delete('postId');
       window.history.pushState({}, '', url);
    };
-   
+
    // Check URL for postId on component mount
    useEffect(() => {
       const url = new URL(window.location);
       const postId = url.searchParams.get('postId');
-      
+
       if (postId) {
          const loadPostFromUrl = async () => {
             try {
@@ -188,17 +188,17 @@ const SocialMedia = () => {
                window.history.pushState({}, '', url);
             }
          };
-         
+
          loadPostFromUrl();
       }
    }, []);
-   
+
    // Handle browser back/forward buttons
    useEffect(() => {
-      const handlePopState = (event) => {
+      const handlePopState = event => {
          const url = new URL(window.location);
          const postId = url.searchParams.get('postId');
-         
+
          if (postId) {
             // Load the post if not already selected
             if (!selectedPost || selectedPost.post_id !== postId) {
@@ -211,7 +211,7 @@ const SocialMedia = () => {
                      console.error('Error loading post from URL:', error);
                   }
                };
-               
+
                loadPostFromUrl();
             } else {
                setIsDetailPanelOpen(true);
@@ -221,7 +221,7 @@ const SocialMedia = () => {
             setIsDetailPanelOpen(false);
          }
       };
-      
+
       window.addEventListener('popstate', handlePopState);
       return () => window.removeEventListener('popstate', handlePopState);
    }, [selectedPost]);
@@ -238,19 +238,42 @@ const SocialMedia = () => {
                </div>
                <h1 className="text-2xl font-medium text-gray-100 ml-14">Your Social</h1>
             </div>
-            {activeTab !== 'stats' && <div className="flex items-center space-x-2">
-               <div className="relative flex-grow">
-                  <input
-                     type="text"
-                     value={filters.search}
-                     onChange={e => handleFilterChange('search', e.target.value)}
-                     placeholder="Search posts..."
-                     className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-gray-300 transition-all"
-                  />
-                  <div className="absolute left-3 top-2.5 text-gray-500">
+            {activeTab !== 'stats' && (
+               <div className="flex items-center space-x-2">
+                  <div className="relative flex-grow">
+                     <input
+                        type="text"
+                        value={filters.search}
+                        onChange={e => handleFilterChange('search', e.target.value)}
+                        placeholder="Search posts..."
+                        className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-sm shadow-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-400 text-gray-300 transition-all"
+                     />
+                     <div className="absolute left-3 top-2.5 text-gray-500">
+                        <svg
+                           xmlns="http://www.w3.org/2000/svg"
+                           className="h-5 w-5"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor"
+                        >
+                           <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                           />
+                        </svg>
+                     </div>
+                  </div>
+                  <button
+                     onClick={() => setIsFilterOpen(!isFilterOpen)}
+                     className="flex items-center justify-center p-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-sm shadow-md hover:border-gray-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors duration-200"
+                     aria-expanded={isFilterOpen}
+                     aria-label="Toggle filters"
+                  >
                      <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
+                        className="h-5 w-5 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -259,33 +282,12 @@ const SocialMedia = () => {
                            strokeLinecap="round"
                            strokeLinejoin="round"
                            strokeWidth={2}
-                           d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                           d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
                         />
                      </svg>
-                  </div>
+                  </button>
                </div>
-               <button
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="flex items-center justify-center p-2 bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-sm shadow-md hover:border-gray-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors duration-200"
-                  aria-expanded={isFilterOpen}
-                  aria-label="Toggle filters"
-               >
-                  <svg
-                     xmlns="http://www.w3.org/2000/svg"
-                     className="h-5 w-5 text-gray-400"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke="currentColor"
-                  >
-                     <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                     />
-                  </svg>
-               </button>
-            </div>}
+            )}
          </div>
 
          <div className="mb-6">
@@ -312,7 +314,7 @@ const SocialMedia = () => {
                            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
                         />
                      </svg>
-                   Feed
+                     Feed
                   </button>
                   <button
                      onClick={() => handleTabChange('stats')}
@@ -342,7 +344,7 @@ const SocialMedia = () => {
          </div>
 
          {activeTab === 'feed' && (
-            <FeedTab 
+            <FeedTab
                posts={posts}
                loading={loading}
                error={error}
@@ -361,9 +363,9 @@ const SocialMedia = () => {
                onPostClick={handlePostClick}
             />
          )}
-         
+
          {activeTab === 'stats' && (
-            <StatsTab 
+            <StatsTab
                platforms={platforms}
                sentiments={sentiments}
                categories={categories}
@@ -371,7 +373,7 @@ const SocialMedia = () => {
                onPostClick={handlePostClick}
             />
          )}
-         
+
          {/* Post Detail Slide-out Panel */}
          <PostDetailPanel
             post={selectedPost}

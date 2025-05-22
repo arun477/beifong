@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown, RefreshCw } from 'lucide-react';
 
-const DateRangeFilter = ({ onDateRangeChange }) => {
+const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
    // Preset options
    const presets = [
       { label: 'Last 7 days', days: 7 },
@@ -14,8 +14,8 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
    const [selectedPreset, setSelectedPreset] = useState(presets[0]);
    const [isOpen, setIsOpen] = useState(false);
    const [customRange, setCustomRange] = useState({
-      startDate: formatDateForInput(getDateBefore(7)),
-      endDate: formatDateForInput(new Date())
+      startDate: initialDateRange?.startDate || formatDateForInput(getDateBefore(7)),
+      endDate: initialDateRange?.endDate || formatDateForInput(new Date())
    });
    const [isCustom, setIsCustom] = useState(false);
 
@@ -48,16 +48,47 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
          startDate = new Date(endDate.getFullYear(), 0, 1); // Jan 1 of current year
       } else if (preset.value === 'custom') {
          startDate = new Date(customRange.startDate);
-         setIsCustom(true);
-         return { startDate, endDate };
+         return { startDate, endDate: new Date(customRange.endDate) };
       }
       
-      setIsCustom(false);
       return { 
          startDate, 
          endDate 
       };
    }
+   
+   // Sync internal state with parent props on mount or when props change
+   useEffect(() => {
+      if (initialDateRange) {
+         setCustomRange({
+            startDate: initialDateRange.startDate,
+            endDate: initialDateRange.endDate
+         });
+         
+         // Try to determine which preset matches the date range
+         const start = new Date(initialDateRange.startDate);
+         const end = new Date(initialDateRange.endDate);
+         const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+         
+         let matchingPreset = presets.find(p => p.days === daysDiff);
+         
+         if (matchingPreset) {
+            setSelectedPreset(matchingPreset);
+            setIsCustom(false);
+         } else {
+            // Check if it's year to date
+            const yearStart = new Date(end.getFullYear(), 0, 1);
+            if (start.getTime() === yearStart.getTime()) {
+               setSelectedPreset(presets.find(p => p.value === 'ytd'));
+               setIsCustom(false);
+            } else {
+               // It's a custom range
+               setSelectedPreset(presets.find(p => p.value === 'custom'));
+               setIsCustom(true);
+            }
+         }
+      }
+   }, [initialDateRange]);
    
    // Handle preset selection
    const handlePresetSelect = (preset) => {
@@ -66,34 +97,35 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
       
       const { startDate, endDate } = calculateDateRange(preset);
       
-      // Update custom range values to match the selected preset
-      setCustomRange({
+      const formattedRange = {
          startDate: formatDateForInput(startDate),
          endDate: formatDateForInput(endDate)
-      });
+      };
+      
+      // Update custom range values to match the selected preset
+      setCustomRange(formattedRange);
+      
+      // Set custom flag
+      setIsCustom(preset.value === 'custom');
       
       // Notify parent component
-      onDateRangeChange({
-         startDate: formatDateForInput(startDate),
-         endDate: formatDateForInput(endDate)
-      });
+      onDateRangeChange(formattedRange);
    };
    
    // Handle custom date change
    const handleCustomDateChange = (e) => {
       const { name, value } = e.target;
       
-      setCustomRange(prev => ({
-         ...prev,
+      const newCustomRange = {
+         ...customRange,
          [name]: value
-      }));
+      };
+      
+      setCustomRange(newCustomRange);
       
       // If we're in custom mode, update the range immediately
       if (isCustom) {
-         onDateRangeChange({
-            ...customRange,
-            [name]: value
-         });
+         onDateRangeChange(newCustomRange);
       }
    };
    
@@ -104,6 +136,21 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
       setIsOpen(false);
       
       onDateRangeChange(customRange);
+   };
+
+   // Handle refresh - maintain current filter state
+   const handleRefresh = () => {
+      if (isCustom) {
+         onDateRangeChange(customRange);
+      } else {
+         const { startDate, endDate } = calculateDateRange(selectedPreset);
+         const formattedRange = {
+            startDate: formatDateForInput(startDate),
+            endDate: formatDateForInput(endDate)
+         };
+         setCustomRange(formattedRange);
+         onDateRangeChange(formattedRange);
+      }
    };
 
    return (
@@ -143,7 +190,7 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
                                     selectedPreset.label === preset.label
                                        ? 'bg-emerald-700/30 text-emerald-300 border border-emerald-600/50'
                                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                                 }`}
+                                 } transition-colors`}
                               >
                                  {preset.label}
                               </button>
@@ -189,13 +236,7 @@ const DateRangeFilter = ({ onDateRangeChange }) => {
             <button 
                className="ml-2 p-2 bg-gray-900 hover:bg-gray-800 rounded-sm border border-gray-700 text-gray-400 hover:text-emerald-400 transition-colors"
                title="Refresh data"
-               onClick={() => {
-                  const { startDate, endDate } = calculateDateRange(selectedPreset);
-                  onDateRangeChange({
-                     startDate: formatDateForInput(startDate),
-                     endDate: formatDateForInput(endDate)
-                  });
-               }}
+               onClick={handleRefresh}
             >
                <RefreshCw className="h-4 w-4" />
             </button>
