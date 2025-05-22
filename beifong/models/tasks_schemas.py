@@ -10,7 +10,8 @@ class TaskType(str, Enum):
     podcast_generator = "podcast_generator"
     embedding_processor = "embedding_processor"
     faiss_indexer = "faiss_indexer"
-    social_x_scraper = "social_x_scraper" 
+    social_x_scraper = "social_x_scraper"
+    social_fb_scraper = "social_fb_scraper"
 
 
 TASK_TYPES = {
@@ -40,10 +41,15 @@ TASK_TYPES = {
         "command": "python -m processors.faiss_indexing_processor",
         "description": "Updates FAISS vector index with new article embeddings",
     },
-     "social_x_scraper": {
+    "social_x_scraper": {
         "name": "X.com Scraper",
         "command": "python -m processors.x_scraper_processor",
         "description": "Scrapes X.com profiles and analyzes sentiment",
+    },
+    "social_fb_scraper": {
+        "name": "Facebook.com Scraper",
+        "command": "python -m processors.fb_scraper_processor",
+        "description": "Scrapes Facebook.com profiles and analyzes sentiment",
     },
 }
 
