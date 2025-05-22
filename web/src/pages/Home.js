@@ -380,7 +380,7 @@ const Home = () => {
                      <div className="absolute bottom-0 right-0 h-16 w-16 opacity-10">
                         <BrainCircuit
                            strokeWidth={0.7}
-                           className="w-full h-full text-emerald-500"
+                           className="w-3/4 h-3/4 text-emerald-500"
                         />
                      </div>
                      <div className={cardFlexContainerClasses}>
