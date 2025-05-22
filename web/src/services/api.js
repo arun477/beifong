@@ -253,6 +253,10 @@ const endpoints = {
                date_to: dateTo,
             },
          }),
+
+      setupSession: (sites = null) => {
+         return api.post('/api/social-media/session/setup', null, {});
+      },
    },
 
    API_BASE_URL: API_BASE_URL,

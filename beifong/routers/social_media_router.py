@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Query
 from typing import List, Optional, Dict, Any
 from services.social_media_service import social_media_service
-from models.social_media_schemas import PaginatedPosts, Post  # Import existing schemas
+from models.social_media_schemas import PaginatedPosts, Post
+import threading
+from tools.social.browser import setup_session_multi
 
 router = APIRouter()
 
@@ -136,3 +138,39 @@ async def read_engagement_stats(
 ):
     """Get overall engagement statistics."""
     return await social_media_service.get_engagement_stats(date_from=date_from, date_to=date_to)
+
+
+def _run_browser_setup_background(sites: Optional[List[str]] = None):
+    """Background task to run browser session setup in separate thread."""
+    try:
+        if sites and len(sites) > 1:
+            setup_session_multi(sites)
+        elif sites and len(sites) > 0:
+            setup_session_multi(sites)
+        else:
+            default_sites = ["https://x.com", "https://facebook.com"]
+            setup_session_multi(default_sites)
+    except Exception as e:
+        print(f"Browser setup error: {e}")
+
+
+@router.post("/session/setup")
+async def setup_browser_session(sites: Optional[List[str]] = Query(None, description="List of sites to setup sessions for")):
+    """
+    Trigger browser session setup in a completely separate thread.
+    This will open a browser window for manual login to social media platforms.
+    The API immediately returns while the browser setup runs independently.
+    """
+    # Start the browser setup in a completely separate daemon thread
+    thread = threading.Thread(
+        target=_run_browser_setup_background,
+        args=(sites,),
+        daemon=True,  # Dies when main program exits
+    )
+    thread.start()
+
+    return {
+        "status": "ok",
+        "message": "Browser session setup triggered successfully",
+        "note": "Browser window will open shortly for manual authentication",
+    }
