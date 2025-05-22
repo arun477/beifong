@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 
 const Sidebar = ({ onNewSession, onSessionSelect }) => {
@@ -318,36 +319,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          path: '/social-media',
          icon: (
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
-               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path
-                     d="M21 7.5C21 5.3 19.2 3.5 17 3.5C14.8 3.5 13 5.3 13 7.5C13 9.7 14.8 11.5 17 11.5C19.2 11.5 21 9.7 21 7.5Z"
-                     strokeWidth="1"
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                  />
-                  <path
-                     d="M11 21.5C11 19.3 9.2 17.5 7 17.5C4.8 17.5 3 19.3 3 21.5C3 23.7 4.8 25.5 7 25.5C9.2 25.5 11 23.7 11 21.5Z"
-                     strokeWidth="1"
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                  />
-                  <path
-                     d="M21 21.5C21 19.3 19.2 17.5 17 17.5C14.8 17.5 13 19.3 13 21.5C13 23.7 14.8 25.5 17 25.5C19.2 25.5 21 23.7 21 21.5Z"
-                     strokeWidth="1"
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                  />
-                  <path
-                     d="M11 7.5C11 5.3 9.2 3.5 7 3.5C4.8 3.5 3 5.3 3 7.5C3 9.7 4.8 11.5 7 11.5C9.2 11.5 11 9.7 11 7.5Z"
-                     strokeWidth="1"
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                  />
-                  <path d="M11 9.5L13 9.5" strokeWidth="1" strokeLinecap="round" />
-                  <path d="M11 19.5L13 19.5" strokeWidth="1" strokeLinecap="round" />
-                  <path d="M9 13.5L9 15.5" strokeWidth="1" strokeLinecap="round" />
-                  <path d="M19 13.5L19 15.5" strokeWidth="1" strokeLinecap="round" />
-               </svg>
+              <ShieldCheck className="w-3 h-3" />
             </span>
          ),
       },
