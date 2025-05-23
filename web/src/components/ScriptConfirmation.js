@@ -100,10 +100,7 @@ const ScriptConfirmation = ({
             /^## (.*$)/gm,
             '<h2 class="text-sm font-semibold mt-2 mb-1 text-gray-100">$1</h2>'
          )
-         .replace(
-            /^### (.*$)/gm,
-            '<h3 class="text-xs font-medium mt-2 mb-1 text-gray-200">$3</h3>'
-         )
+         .replace(/^### (.*$)/gm, '<h3 class="text-xs font-medium mt-2 mb-1 text-gray-200">$3</h3>')
          .replace(/\[([^\]]+)\]:/g, '<strong class="text-emerald-400">$1:</strong>')
          .replace(/\n/g, '<br>');
 
@@ -175,9 +172,7 @@ const ScriptConfirmation = ({
                               <FileText className="w-3 h-3 text-emerald-400" />
                            </div>
                            <div>
-                              <h3 className="text-sm font-semibold text-white">
-                                 Script Preview
-                              </h3>
+                              <h3 className="text-sm font-semibold text-white">Script Preview</h3>
                            </div>
                         </div>
                         <button
@@ -304,24 +299,25 @@ const ScriptConfirmation = ({
             </div>
          </div>
 
-         {/* Enhanced Full Script Modal */}
          {isModalOpen && (
-            <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border border-gray-700/50 w-full max-w-5xl h-[80vh] flex flex-col shadow-xl">
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border border-gray-700/50 w-full max-w-full sm:max-w-5xl h-full sm:h-[80vh] flex flex-col shadow-xl">
                   {/* Modal Header */}
-                  <div className="px-4 py-3 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
-                     <div>
-                        <h3 className="text-lg font-semibold text-white">
+                  <div className="px-3 sm:px-4 py-3 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
+                     <div className="min-w-0 flex-1">
+                        <h3 className="text-base sm:text-lg font-semibold text-white truncate">
                            Complete Script
                         </h3>
                         {hasStructuredScript && scriptData.title && (
-                           <p className="text-sm text-gray-400 mt-0.5">{scriptData.title}</p>
+                           <p className="text-xs sm:text-sm text-gray-400 mt-0.5 truncate">
+                              {scriptData.title}
+                           </p>
                         )}
                      </div>
                      <button
                         onClick={onToggleModal}
                         disabled={isProcessing}
-                        className="p-1.5 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="ml-2 p-1.5 text-gray-400 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                      >
                         <X className="w-4 h-4" />
                      </button>
@@ -330,34 +326,30 @@ const ScriptConfirmation = ({
                   {/* Script Content */}
                   <div className="flex-1 overflow-hidden">
                      {hasStructuredScript ? (
-                        <div className="flex h-full">
-                           {/* Section Navigation */}
-                           <div className="w-56 border-r border-gray-700/30 bg-gray-800/30 overflow-y-auto flex-shrink-0">
-                              <div className="p-3">
-                                 <h4 className="text-sm font-medium text-gray-300 mb-2">
+                        <div className="flex flex-col sm:flex-row h-full">
+                           {/* Section Navigation - Mobile: Horizontal scrolling, Desktop: Sidebar */}
+                           <div className="sm:w-56 border-b sm:border-b-0 sm:border-r border-gray-700/30 bg-gray-800/30 flex-shrink-0">
+                              {/* Mobile: Horizontal scroll */}
+                              <div className="sm:hidden p-2">
+                                 <h4 className="text-xs font-medium text-gray-300 mb-2">
                                     Sections
                                  </h4>
-                                 <div className="space-y-1.5">
+                                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                                     {scriptData.sections.map((section, index) => (
                                        <button
                                           key={index}
                                           onClick={() => setSelectedSection(index)}
-                                          className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-all duration-200 ${
+                                          className={`flex-shrink-0 px-3 py-2 rounded-md text-xs transition-all duration-200 ${
                                              selectedSection === index
                                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                                                : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                                                : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30 bg-gray-700/20'
                                           }`}
                                        >
-                                          <div className="font-medium">
+                                          <div className="font-medium whitespace-nowrap">
                                              {formatSectionType(section.type)}
                                           </div>
-                                          {section.title && (
-                                             <div className="text-[10px] text-gray-500 mt-0.5 truncate">
-                                                {section.title}
-                                             </div>
-                                          )}
                                           {section.dialog && (
-                                             <div className="text-[10px] text-gray-500 mt-0.5">
+                                             <div className="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap">
                                                 {section.dialog.length} lines
                                              </div>
                                           )}
@@ -365,50 +357,86 @@ const ScriptConfirmation = ({
                                     ))}
                                  </div>
                               </div>
+
+                              {/* Desktop: Vertical sidebar */}
+                              <div className="hidden sm:block h-full overflow-y-auto">
+                                 <div className="p-3">
+                                    <h4 className="text-sm font-medium text-gray-300 mb-2">
+                                       Sections
+                                    </h4>
+                                    <div className="space-y-1.5">
+                                       {scriptData.sections.map((section, index) => (
+                                          <button
+                                             key={index}
+                                             onClick={() => setSelectedSection(index)}
+                                             className={`w-full text-left px-2 py-1.5 rounded-md text-xs transition-all duration-200 ${
+                                                selectedSection === index
+                                                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                                   : 'text-gray-400 hover:text-gray-300 hover:bg-gray-700/30'
+                                             }`}
+                                          >
+                                             <div className="font-medium">
+                                                {formatSectionType(section.type)}
+                                             </div>
+                                             {section.title && (
+                                                <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+                                                   {section.title}
+                                                </div>
+                                             )}
+                                             {section.dialog && (
+                                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                                   {section.dialog.length} lines
+                                                </div>
+                                             )}
+                                          </button>
+                                       ))}
+                                    </div>
+                                 </div>
+                              </div>
                            </div>
 
                            {/* Script Content */}
                            <div className="flex-1 overflow-y-auto">
-                              <div className="p-4">
+                              <div className="p-2 sm:p-4">
                                  {scriptData.sections.map((section, sectionIndex) => (
                                     <div
                                        key={sectionIndex}
-                                       className={`mb-6 ${
+                                       className={`mb-4 sm:mb-6 ${
                                           selectedSection !== null &&
                                           selectedSection !== sectionIndex
                                              ? 'hidden'
                                              : ''
                                        }`}
                                     >
-                                       <div className="mb-3">
-                                          <h2 className="text-base font-semibold text-white mb-1">
+                                       <div className="mb-2 sm:mb-3">
+                                          <h2 className="text-sm sm:text-base font-semibold text-white mb-1">
                                              {formatSectionType(section.type)}
                                              {section.title && ` - ${section.title}`}
                                           </h2>
                                           <div className="h-px bg-gradient-to-r from-emerald-500/50 to-transparent" />
                                        </div>
                                        {section.dialog ? (
-                                          <div className="space-y-3">
+                                          <div className="space-y-2 sm:space-y-3">
                                              {section.dialog.map((line, lineIndex) => (
                                                 <div
                                                    key={lineIndex}
-                                                   className="flex gap-3 items-start"
+                                                   className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:items-start"
                                                 >
                                                    <div
                                                       className={`flex-shrink-0 px-2 py-1 text-[10px] font-medium bg-gradient-to-r ${getSpeakerColor(
                                                          line.speaker
-                                                      )} text-white rounded-full min-w-14 text-center`}
+                                                      )} text-white rounded-full text-center self-start sm:min-w-14`}
                                                    >
                                                       {line.speaker}
                                                    </div>
-                                                   <div className="flex-1 text-gray-300 text-sm leading-relaxed pt-0.5">
+                                                   <div className="flex-1 text-gray-300 text-xs sm:text-sm leading-relaxed">
                                                       {line.text}
                                                    </div>
                                                 </div>
                                              ))}
                                           </div>
                                        ) : (
-                                          <div className="text-gray-400 italic text-sm">
+                                          <div className="text-gray-400 italic text-xs sm:text-sm">
                                              No dialog for this section
                                           </div>
                                        )}
@@ -417,9 +445,9 @@ const ScriptConfirmation = ({
 
                                  {/* Sources Section */}
                                  {scriptData.sources && scriptData.sources.length > 0 && (
-                                    <div className="mt-6 pt-4 border-t border-gray-700/30">
-                                       <h3 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
-                                          <Globe className="w-4 h-4" />
+                                    <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-700/30">
+                                       <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center gap-2">
+                                          <Globe className="w-3 h-3 sm:w-4 sm:h-4" />
                                           Sources
                                        </h3>
                                        <div className="space-y-2">
@@ -438,7 +466,7 @@ const ScriptConfirmation = ({
                                                    <div className="text-emerald-400 group-hover:text-emerald-300 text-xs font-medium truncate">
                                                       {new URL(source).hostname}
                                                    </div>
-                                                   <div className="text-gray-500 text-[10px] truncate mt-0.5">
+                                                   <div className="text-gray-500 text-[10px] truncate mt-0.5 break-all">
                                                       {source}
                                                    </div>
                                                 </div>
@@ -451,9 +479,9 @@ const ScriptConfirmation = ({
                            </div>
                         </div>
                      ) : (
-                        <div className="p-4 overflow-y-auto h-full">
+                        <div className="p-2 sm:p-4 overflow-y-auto h-full">
                            <div
-                              className="prose prose-invert prose-sm max-w-none"
+                              className="prose prose-invert prose-sm max-w-none text-xs sm:text-sm"
                               dangerouslySetInnerHTML={{ __html: formatScriptMarkdown(scriptText) }}
                            />
                         </div>
@@ -461,25 +489,25 @@ const ScriptConfirmation = ({
                   </div>
 
                   {/* Modal Footer */}
-                  <div className="px-4 py-3 border-t border-gray-700/30 flex justify-end flex-shrink-0">
+                  <div className="px-3 sm:px-4 py-3 border-t border-gray-700/30 flex justify-end flex-shrink-0">
                      <button
                         onClick={() => {
                            onToggleModal();
                            onApprove();
                         }}
                         disabled={isProcessing}
-                        className={`flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
+                        className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 border border-emerald-500/30 ${
                            isProcessing ? 'opacity-70 cursor-not-allowed' : ''
                         }`}
                      >
                         {isProcessing ? (
                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                               Processing...
                            </>
                         ) : (
                            <>
-                              <Check className="w-4 h-4" />
+                              <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                               Approve Script
                            </>
                         )}

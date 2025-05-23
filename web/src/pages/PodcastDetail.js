@@ -148,7 +148,7 @@ const PodcastDetail = () => {
    const [newTitle, setNewTitle] = useState('');
    const [isFullScriptOpen, setIsFullScriptOpen] = useState(false);
    const [isSourcesOpen, setIsSourcesOpen] = useState(false);
-   
+
    // New state for carousel
    const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
    const carouselIntervalRef = useRef(null);
@@ -184,12 +184,12 @@ const PodcastDetail = () => {
    useEffect(() => {
       if (podcast && podcast.banner_images && podcast.banner_images.length > 1) {
          carouselIntervalRef.current = setInterval(() => {
-            setCurrentBannerIndex(prevIndex => 
+            setCurrentBannerIndex(prevIndex =>
                prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
             );
          }, 5000); // Change image every 5 seconds
       }
-      
+
       return () => {
          if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
       };
@@ -197,17 +197,17 @@ const PodcastDetail = () => {
 
    const nextBanner = () => {
       if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
-      
+
       // Reset the interval when manually changing
       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-      
-      setCurrentBannerIndex(prevIndex => 
+
+      setCurrentBannerIndex(prevIndex =>
          prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
       );
-      
+
       // Restart the interval
       carouselIntervalRef.current = setInterval(() => {
-         setCurrentBannerIndex(prevIndex => 
+         setCurrentBannerIndex(prevIndex =>
             prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
          );
       }, 5000);
@@ -215,17 +215,17 @@ const PodcastDetail = () => {
 
    const prevBanner = () => {
       if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
-      
+
       // Reset the interval when manually changing
       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-      
-      setCurrentBannerIndex(prevIndex => 
+
+      setCurrentBannerIndex(prevIndex =>
          prevIndex === 0 ? podcast.banner_images.length - 1 : prevIndex - 1
       );
-      
+
       // Restart the interval
       carouselIntervalRef.current = setInterval(() => {
-         setCurrentBannerIndex(prevIndex => 
+         setCurrentBannerIndex(prevIndex =>
             prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
          );
       }, 5000);
@@ -386,13 +386,13 @@ const PodcastDetail = () => {
    }
 
    return (
-      <div className="min-h-screen py-4 px-4 relative overflow-hidden" >
+      <div className="min-h-screen py-4 px-4 relative overflow-hidden">
          {/* Banner Image Background */}
          {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
-                           <div className="fixed inset-0 w-full h-full z-0">
+            <div className="fixed inset-0 w-full h-full z-0">
                {/* Current banner as background */}
                <div className="absolute inset-0 w-full h-full opacity-90">
-                  <img 
+                  <img
                      src={`${apiService.API_BASE_URL}/podcast_img/${podcast.banner_images[currentBannerIndex]}`}
                      alt="Background"
                      className="w-full h-full object-cover blur-xl transition-all duration-1500 ease-in-out bg-banner-background"
@@ -403,7 +403,7 @@ const PodcastDetail = () => {
                </div>
             </div>
          )}
-         
+
          {/* Standard Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -442,7 +442,7 @@ const PodcastDetail = () => {
                      {/* Carousel Container */}
                      <div className="h-full w-full relative">
                         {bannerImages.map((image, index) => (
-                           <div 
+                           <div
                               key={index}
                               className={`absolute inset-0 transition-opacity duration-500 ${
                                  currentBannerIndex === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
@@ -452,26 +452,27 @@ const PodcastDetail = () => {
                                  src={`${apiService.API_BASE_URL}/podcast_img/${image}`}
                                  alt={`Banner ${index + 1}`}
                                  className="w-full h-full object-cover transition-transform duration-700 ease-in-out"
-                                 style={{ 
-                                    transform: currentBannerIndex === index ? 'scale(1)' : 'scale(1.1)',
+                                 style={{
+                                    transform:
+                                       currentBannerIndex === index ? 'scale(1)' : 'scale(1.1)',
                                  }}
                               />
                            </div>
                         ))}
-                        
+
                         {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/30 z-20" />
-                        
+
                         {/* Navigation Buttons */}
                         {bannerImages.length > 1 && (
                            <>
-                              <button 
+                              <button
                                  onClick={prevBanner}
                                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
                               >
                                  <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
                               </button>
-                              <button 
+                              <button
                                  onClick={nextBanner}
                                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
                               >
@@ -479,7 +480,7 @@ const PodcastDetail = () => {
                               </button>
                            </>
                         )}
-                        
+
                         {/* Indicators */}
                         {bannerImages.length > 1 && (
                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
@@ -489,10 +490,13 @@ const PodcastDetail = () => {
                                     onClick={() => {
                                        setCurrentBannerIndex(index);
                                        // Reset interval
-                                       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+                                       if (carouselIntervalRef.current)
+                                          clearInterval(carouselIntervalRef.current);
                                        carouselIntervalRef.current = setInterval(() => {
-                                          setCurrentBannerIndex(prevIndex => 
-                                             prevIndex === bannerImages.length - 1 ? 0 : prevIndex + 1
+                                          setCurrentBannerIndex(prevIndex =>
+                                             prevIndex === bannerImages.length - 1
+                                                ? 0
+                                                : prevIndex + 1
                                           );
                                        }, 5000);
                                     }}
@@ -509,7 +513,7 @@ const PodcastDetail = () => {
                      </div>
                   </div>
                )}
-               
+
                {/* Fallback to single banner if no carousel but has banner */}
                {!hasBannerCarousel && hasBanner && (
                   <div className="h-80 relative overflow-hidden mb-16">
@@ -582,20 +586,20 @@ const PodcastDetail = () => {
                   <div className="flex flex-wrap justify-center gap-1.5">
                      {podcastData.language_code && (
                         <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50">
- <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-3 w-3 mr-0.5"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-                                       />
-                                    </svg>
+                           <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3 mr-0.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                           >
+                              <path
+                                 strokeLinecap="round"
+                                 strokeLinejoin="round"
+                                 strokeWidth={2}
+                                 d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                              />
+                           </svg>
                            <span>{getLanguageName(podcastData.language_code)}</span>
                         </div>
                      )}
@@ -609,7 +613,7 @@ const PodcastDetail = () => {
                </div>
 
                {/* Rest of the component remains the same... */}
-               
+
                {/* Compact Audio Section */}
                {hasAudio && (
                   <div className="px-4 py-3">
@@ -772,7 +776,7 @@ const PodcastDetail = () => {
 
             {/* Script Sidebar */}
             {isFullScriptOpen && hasScript && (
-               <div className="fixed inset-y-0 right-0 z-50 flex">
+               <div className="fixed inset-0 z-50 flex">
                   {/* Backdrop - clicking this closes the sidebar */}
                   <div
                      className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -782,9 +786,9 @@ const PodcastDetail = () => {
                      }}
                   ></div>
 
-                  {/* Sidebar panel with inline animation */}
+                  {/* Sidebar panel with mobile-responsive sizing */}
                   <div
-                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
+                     className="relative ml-auto w-full sm:max-w-md max-w-full bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
                      style={{
                         animation: 'slideInRight 0.3s ease-out forwards',
                      }}
@@ -814,7 +818,7 @@ const PodcastDetail = () => {
                      </div>
 
                      {/* Content with emerald accents */}
-                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                     <div className="overflow-y-auto h-[calc(100%-80px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30 px-2 sm:px-0">
                         {/* Script sections - always open */}
                         {content.sections.map((section, sectionIndex) => (
                            <div
@@ -822,7 +826,7 @@ const PodcastDetail = () => {
                               className="border-gray-700/20 pb-4 last:border-0"
                            >
                               {/* Non-interactive section header */}
-                              <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
+                              <div className="px-2 sm:px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
                                  <div className="flex items-center">
                                     <h3 className="text-sm font-medium text-emerald-400">
                                        {section.type?.charAt(0).toUpperCase() +
@@ -833,7 +837,7 @@ const PodcastDetail = () => {
 
                               {/* Section content - always visible */}
                               {section.dialog && (
-                                 <div className="px-4 pt-2">
+                                 <div className="px-2 sm:px-4 pt-2">
                                     {section.dialog.map((line, lineIndex) => (
                                        <div key={lineIndex} className="mb-3 last:mb-0">
                                           <div
@@ -859,7 +863,7 @@ const PodcastDetail = () => {
 
             {/* Sources Sidebar */}
             {isSourcesOpen && hasSources && (
-               <div className="fixed inset-y-0 right-0 z-50 flex">
+               <div className="fixed inset-0 z-50 flex">
                   {/* Backdrop - clicking this closes the sidebar */}
                   <div
                      className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -869,9 +873,9 @@ const PodcastDetail = () => {
                      }}
                   ></div>
 
-                  {/* Sidebar panel with inline animation */}
+                  {/* Sidebar panel with mobile-responsive sizing */}
                   <div
-                     className="relative ml-auto w-full max-w-md bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
+                     className="relative ml-auto w-full sm:max-w-md max-w-full bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
                      style={{
                         animation: 'slideInRight 0.3s ease-out forwards',
                      }}
@@ -896,7 +900,7 @@ const PodcastDetail = () => {
                      </div>
 
                      {/* Content with emerald accents */}
-                     <div className="overflow-y-auto h-[calc(100%-48px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                     <div className="overflow-y-auto h-[calc(100%-80px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
                         {sources.map((source, index) => {
                            const sourceUrl = typeof source === 'string' ? source : source.url;
                            let hostname = '';
@@ -912,7 +916,7 @@ const PodcastDetail = () => {
                                  href={sourceUrl}
                                  target="_blank"
                                  rel="noopener noreferrer"
-                                 className="block px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
+                                 className="block px-2 sm:px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
                               >
                                  <div className="flex items-start">
                                     <div className="flex-shrink-0 pt-1">
@@ -924,7 +928,7 @@ const PodcastDetail = () => {
                                        <h3 className="font-medium text-emerald-400 group-hover:text-emerald-300 transition-colors truncate">
                                           {hostname}
                                        </h3>
-                                       <p className="text-sm text-gray-400 mt-1 line-clamp-2">
+                                       <p className="text-sm text-gray-400 mt-1 line-clamp-2 break-all">
                                           {sourceUrl}
                                        </p>
                                        <div className="mt-2 flex items-center text-xs text-gray-500">
@@ -1033,14 +1037,20 @@ const PodcastDetail = () => {
                   opacity: 1;
                }
             }
-            
+
             /* Subtle background glow effect */
             @keyframes subtle-background-glow {
-               0% { filter: brightness(1) saturate(0.8); }
-               50% { filter: brightness(1.1) saturate(1); }
-               100% { filter: brightness(1) saturate(0.8); }
+               0% {
+                  filter: brightness(1) saturate(0.8);
+               }
+               50% {
+                  filter: brightness(1.1) saturate(1);
+               }
+               100% {
+                  filter: brightness(1) saturate(0.8);
+               }
             }
-            
+
             .bg-banner-background {
                animation: subtle-background-glow 10s infinite ease-in-out;
             }
