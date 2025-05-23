@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from fastapi import HTTPException
 import json
 from datetime import datetime
@@ -25,10 +25,6 @@ class SessionService:
 
     @staticmethod
     def get_session(session_id: str) -> Dict[str, Any]:
-        """
-        Get a specific session state by session_id.
-        If the session doesn't exist, creates a new one with the INITIAL_SESSION_STATE.
-        """
         try:
             with get_db_connection("internal_sessions_db") as conn:
                 cursor = conn.cursor()
@@ -39,18 +35,14 @@ class SessionService:
                 """
                 cursor.execute(query, (session_id,))
                 session = cursor.fetchone()
-
                 if not session:
-                    # Initialize a new session since it doesn't exist
                     return SessionService._initialize_session(session_id)
-
                 session_dict = dict(session)
                 if session_dict.get("state"):
                     try:
                         session_dict["state"] = json.loads(session_dict["state"])
                     except json.JSONDecodeError:
                         session_dict["state"] = {}
-
                 return session_dict
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -59,7 +51,6 @@ class SessionService:
 
     @staticmethod
     def _initialize_session(session_id: str) -> Dict[str, Any]:
-        """Initialize a new session with the default INITIAL_SESSION_STATE."""
         try:
             with get_db_connection("internal_sessions_db") as conn:
                 cursor = conn.cursor()
@@ -71,39 +62,28 @@ class SessionService:
                 current_time = datetime.now().isoformat()
                 cursor.execute(insert_query, (session_id, state_json, current_time))
                 conn.commit()
-
                 return {"session_id": session_id, "state": INITIAL_SESSION_STATE, "created_at": current_time}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error initializing session: {str(e)}")
 
     @staticmethod
     def save_session(session_id: str, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Create or update a session state."""
         try:
             state_json = json.dumps(state)
-
             with get_db_connection("internal_sessions_db") as conn:
                 cursor = conn.cursor()
-                # Use a transaction for safety
                 conn.execute("BEGIN IMMEDIATE")
-
-                # Check if session exists within the transaction
                 existing_query = "SELECT session_id FROM session_state WHERE session_id = ?"
                 cursor.execute(existing_query, (session_id,))
                 existing_session = cursor.fetchone()
-
                 if existing_session:
-                    # Update existing session
                     update_query = "UPDATE session_state SET state = ? WHERE session_id = ?"
                     cursor.execute(update_query, (state_json, session_id))
                 else:
-                    # Create new session
                     insert_query = "INSERT INTO session_state (session_id, state, created_at) VALUES (?, ?, ?)"
                     current_time = datetime.now().isoformat()
                     cursor.execute(insert_query, (session_id, state_json, current_time))
-
                 conn.commit()
-
             return SessionService.get_session(session_id)
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -112,23 +92,17 @@ class SessionService:
 
     @staticmethod
     def delete_session(session_id: str) -> Dict[str, str]:
-        """Delete a session state."""
         try:
             with get_db_connection("internal_sessions_db") as conn:
                 cursor = conn.cursor()
-
-                # Check if session exists first
                 existing_query = "SELECT session_id FROM session_state WHERE session_id = ?"
                 cursor.execute(existing_query, (session_id,))
                 existing_session = cursor.fetchone()
-
                 if not existing_session:
                     raise HTTPException(status_code=404, detail="Session not found")
-
                 delete_query = "DELETE FROM session_state WHERE session_id = ?"
                 cursor.execute(delete_query, (session_id,))
                 conn.commit()
-
                 return {"message": f"Session with ID {session_id} successfully deleted"}
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -137,7 +111,6 @@ class SessionService:
 
     @staticmethod
     def list_sessions(page: int = 1, per_page: int = 10, search: Optional[str] = None) -> Dict[str, Any]:
-        """List all sessions with pagination and optional search."""
         try:
             with get_db_connection("internal_sessions_db") as conn:
                 cursor = conn.cursor()
@@ -147,7 +120,6 @@ class SessionService:
                     "FROM session_state",
                 ]
                 query_params = []
-
                 if search:
                     query_parts.append("WHERE session_id LIKE ?")
                     search_param = f"%{search}%"
@@ -157,24 +129,19 @@ class SessionService:
                     "SELECT session_id, created_at",
                     "SELECT COUNT(*)",
                 )
-
                 cursor.execute(count_query, tuple(query_params))
                 total_count = cursor.fetchone()[0]
-
                 query_parts.append("ORDER BY created_at DESC")
                 query_parts.append("LIMIT ? OFFSET ?")
                 query_params.extend([per_page, offset])
-
                 sessions_query = " ".join(query_parts)
                 cursor.execute(sessions_query, tuple(query_params))
                 sessions = [dict(row) for row in cursor.fetchall()]
-
                 total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
                 has_next = page < total_pages
                 has_prev = page > 1
-
                 return {
-                    "items": sessions,
+                    "items": sessions,  
                     "total": total_count,
                     "page": page,
                     "per_page": per_page,

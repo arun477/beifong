@@ -29,73 +29,54 @@ class SocialMediaService:
                 "WHERE 1=1",
             ]
             query_params = []
-
             if platform:
                 query_parts.append("AND platform = ?")
                 query_params.append(platform)
-
             if user_handle:
                 query_parts.append("AND user_handle = ?")
                 query_params.append(user_handle)
-
             if sentiment:
                 query_parts.append("AND sentiment = ?")
                 query_params.append(sentiment)
-
             if category:
                 query_parts.append("AND categories LIKE ?")
                 query_params.append(f'%"{category}"%')
-
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 query_params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
                 query_params.append(date_to)
-
             if search:
                 query_parts.append("AND (post_text LIKE ? OR user_display_name LIKE ? OR user_handle LIKE ?)")
                 search_param = f"%{search}%"
                 query_params.extend([search_param, search_param, search_param])
-
-            # Count total matching posts
             count_query = " ".join(query_parts).replace("SELECT *", "SELECT COUNT(*)")
             total_posts = await social_media_db.execute_query(count_query, tuple(query_params), fetch=True, fetch_one=True)
             total_count = total_posts.get("COUNT(*)", 0) if total_posts else 0
-
-            # Get paginated posts
             query_parts.append("ORDER BY datetime(post_timestamp) DESC, post_id DESC")
             query_parts.append("LIMIT ? OFFSET ?")
             query_params.extend([per_page, offset])
             posts_query = " ".join(query_parts)
             posts_data = await social_media_db.execute_query(posts_query, tuple(query_params), fetch=True)
-
-            # Process the posts (parse JSON fields)
             posts = []
             for post in posts_data:
                 post_dict = dict(post)
-
-                # Parse JSON fields
                 if post_dict.get("media"):
                     try:
                         post_dict["media"] = json.loads(post_dict["media"])
                     except json.JSONDecodeError:
                         post_dict["media"] = []
-
                 if post_dict.get("categories"):
                     try:
                         post_dict["categories"] = json.loads(post_dict["categories"])
                     except json.JSONDecodeError:
                         post_dict["categories"] = []
-
                 if post_dict.get("tags"):
                     try:
                         post_dict["tags"] = json.loads(post_dict["tags"])
                     except json.JSONDecodeError:
                         post_dict["tags"] = []
-
-                # Create engagement object
                 post_dict["engagement"] = {
                     "replies": post_dict.pop("engagement_reply_count", 0),
                     "retweets": post_dict.pop("engagement_retweet_count", 0),
@@ -103,13 +84,10 @@ class SocialMediaService:
                     "bookmarks": post_dict.pop("engagement_bookmark_count", 0),
                     "views": post_dict.pop("engagement_view_count", 0),
                 }
-
                 posts.append(post_dict)
-
             total_pages = (total_count + per_page - 1) // per_page if total_count > 0 else 0
             has_next = page < total_pages
             has_prev = page > 1
-
             return PaginatedPosts(
                 items=posts,
                 total=total_count,
@@ -129,32 +107,24 @@ class SocialMediaService:
         try:
             query = "SELECT * FROM posts WHERE post_id = ?"
             post = await social_media_db.execute_query(query, (post_id,), fetch=True, fetch_one=True)
-
             if not post:
                 raise HTTPException(status_code=404, detail="Post not found")
-
             post_dict = dict(post)
-
-            # Parse JSON fields
             if post_dict.get("media"):
                 try:
                     post_dict["media"] = json.loads(post_dict["media"])
                 except json.JSONDecodeError:
                     post_dict["media"] = []
-
             if post_dict.get("categories"):
                 try:
                     post_dict["categories"] = json.loads(post_dict["categories"])
                 except json.JSONDecodeError:
                     post_dict["categories"] = []
-
             if post_dict.get("tags"):
                 try:
                     post_dict["tags"] = json.loads(post_dict["tags"])
                 except json.JSONDecodeError:
                     post_dict["tags"] = []
-
-            # Create engagement object
             post_dict["engagement"] = {
                 "replies": post_dict.pop("engagement_reply_count", 0),
                 "retweets": post_dict.pop("engagement_retweet_count", 0),
@@ -162,7 +132,6 @@ class SocialMediaService:
                 "bookmarks": post_dict.pop("engagement_bookmark_count", 0),
                 "views": post_dict.pop("engagement_view_count", 0),
             }
-
             return post_dict
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -187,18 +156,14 @@ class SocialMediaService:
                 """
             ]
             params = []
-
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
                 params.append(date_to)
-
             query_parts.append("GROUP BY sentiment ORDER BY post_count DESC")
             query = " ".join(query_parts)
-            
             return await social_media_db.execute_query(query, tuple(params), fetch=True)
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -215,43 +180,33 @@ class SocialMediaService:
         """Get top users by post count."""
         query_parts = ["SELECT user_handle, user_display_name, COUNT(*) as post_count", "FROM posts", "WHERE user_handle IS NOT NULL"]
         params = []
-
         if platform:
             query_parts.append("AND platform = ?")
             params.append(platform)
-            
         if date_from:
             query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
             params.append(date_from)
-
         if date_to:
             query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
             params.append(date_to)
-
         query_parts.extend(["GROUP BY user_handle", "ORDER BY post_count DESC", "LIMIT ?"])
         params.append(limit)
-
         query = " ".join(query_parts)
         return await social_media_db.execute_query(query, tuple(params), fetch=True)
 
     async def get_categories(self, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get all categories with post counts."""
         try:
-            # We'll need to build a more complex query for date-filtered categories
             query_parts = ["SELECT categories FROM posts WHERE categories IS NOT NULL"]
             params = []
-            
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
-                params.append(date_to)
-                
+                params.append(date_to) 
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
             category_counts = {}
             for row in result:
                 if row.get("categories"):
@@ -264,7 +219,6 @@ class SocialMediaService:
                                 category_counts[category] = 1
                     except json.JSONDecodeError:
                         pass
-
             return [{"category": category, "post_count": count} for category, count in sorted(category_counts.items(), key=lambda x: x[1], reverse=True)]
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -295,33 +249,25 @@ class SocialMediaService:
                 """
             ]
             params = []
-
             if platform:
                 query_parts.append("AND platform = ?")
                 params.append(platform)
-                
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
                 params.append(date_to)
-
             query_parts.extend(["GROUP BY user_handle, user_display_name", "ORDER BY total_posts DESC", "LIMIT ?"])
             params.append(limit)
-
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
-            # Calculate percentages
             for user in result:
                 total = user["total_posts"]
                 user["positive_percent"] = (user["positive_count"] / total) * 100 if total > 0 else 0
                 user["negative_percent"] = (user["negative_count"] / total) * 100 if total > 0 else 0
                 user["neutral_percent"] = (user["neutral_count"] / total) * 100 if total > 0 else 0
                 user["critical_percent"] = (user["critical_count"] / total) * 100 if total > 0 else 0
-
             return result
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -331,10 +277,8 @@ class SocialMediaService:
     async def get_category_sentiment(self, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get sentiment distribution by category."""
         try:
-            # We need to build a complex query with date filtering for category sentiment
             date_filter = ""
             params = []
-            
             if date_from or date_to:
                 date_filter = "WHERE "
                 if date_from:
@@ -342,11 +286,9 @@ class SocialMediaService:
                     params.append(date_from)
                     if date_to:
                         date_filter += " AND "
-                
                 if date_to:
                     date_filter += "datetime(p.post_timestamp) <= datetime(?)"
                     params.append(date_to)
-            
             query = f"""
             WITH category_data AS (
                 SELECT 
@@ -374,17 +316,13 @@ class SocialMediaService:
             ORDER BY 
                 total_count DESC
             """
-
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
-            # Calculate percentages
             for category in result:
                 total = category["total_count"]
                 category["positive_percent"] = (category["positive_count"] / total) * 100 if total > 0 else 0
                 category["negative_percent"] = (category["negative_count"] / total) * 100 if total > 0 else 0
                 category["neutral_percent"] = (category["neutral_count"] / total) * 100 if total > 0 else 0
                 category["critical_percent"] = (category["critical_count"] / total) * 100 if total > 0 else 0
-
             return result
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -413,15 +351,12 @@ class SocialMediaService:
                 """
             ]
             params = []
-            
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
-                params.append(date_to)
-                
+                params.append(date_to)  
             query_parts.append(
                 """
                 GROUP BY 
@@ -444,18 +379,14 @@ class SocialMediaService:
                 """
             )
             params.append(limit)
-
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
-            # Calculate percentages
             for topic in result:
                 total = topic["total_count"]
                 topic["positive_percent"] = (topic["positive_count"] / total) * 100 if total > 0 else 0
                 topic["negative_percent"] = (topic["negative_count"] / total) * 100 if total > 0 else 0
                 topic["neutral_percent"] = (topic["neutral_count"] / total) * 100 if total > 0 else 0
                 topic["critical_percent"] = (topic["critical_count"] / total) * 100 if total > 0 else 0
-
             return result
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -470,8 +401,6 @@ class SocialMediaService:
     ) -> List[Dict[str, Any]]:
         """Get sentiment trends over time."""
         try:
-            # Create a date range table to ensure all dates are represented
-            # even if there are no posts on some days
             date_range_query = ""
             if date_from and date_to:
                 date_range_query = f"""
@@ -485,7 +414,6 @@ class SocialMediaService:
                 SELECT date as post_date FROM date_range
                 """
             else:
-                # If no date range provided, use the default days parameter
                 days_ago = (datetime.now() - timedelta(days=30)).isoformat()
                 date_range_query = f"""
                 WITH RECURSIVE date_range(date) AS (
@@ -497,7 +425,6 @@ class SocialMediaService:
                 )
                 SELECT date as post_date FROM date_range
                 """
-            
             query_parts = [
                 f"""
                 WITH dates AS (
@@ -517,24 +444,18 @@ class SocialMediaService:
                 """
             ]
             params = []
-
             if platform:
                 query_parts.append("AND posts.platform = ?")
                 params.append(platform)
-
             query_parts.append("GROUP BY dates.post_date ORDER BY dates.post_date")
-
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
-            # Calculate percentages
             for day in result:
                 total = day["total_count"]
                 day["positive_percent"] = (day["positive_count"] / total) * 100 if total > 0 else 0
                 day["negative_percent"] = (day["negative_count"] / total) * 100 if total > 0 else 0
                 day["neutral_percent"] = (day["neutral_count"] / total) * 100 if total > 0 else 0
                 day["critical_percent"] = (day["critical_count"] / total) * 100 if total > 0 else 0
-
             return result
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -562,50 +483,37 @@ class SocialMediaService:
                 """
             ]
             params = []
-
             if sentiment:
                 query_parts.append("AND sentiment = ?")
-                params.append(sentiment)
-                
+                params.append(sentiment)  
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
                 params.append(date_to)
-
             query_parts.extend(["ORDER BY total_engagement DESC", "LIMIT ?"])
             params.append(limit)
-
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True)
-
-            # Process each post for API response
             processed_posts = []
             for post in result:
                 post_dict = dict(post)
-
-                # Parse JSON fields
                 if post_dict.get("media"):
                     try:
                         post_dict["media"] = json.loads(post_dict["media"])
                     except json.JSONDecodeError:
                         post_dict["media"] = []
-
                 if post_dict.get("categories"):
                     try:
                         post_dict["categories"] = json.loads(post_dict["categories"])
                     except json.JSONDecodeError:
                         post_dict["categories"] = []
-
                 if post_dict.get("tags"):
                     try:
                         post_dict["tags"] = json.loads(post_dict["tags"])
                     except json.JSONDecodeError:
                         post_dict["tags"] = []
-
-                # Create engagement object
                 post_dict["engagement"] = {
                     "replies": post_dict.pop("engagement_reply_count", 0),
                     "retweets": post_dict.pop("engagement_retweet_count", 0),
@@ -613,9 +521,7 @@ class SocialMediaService:
                     "bookmarks": post_dict.pop("engagement_bookmark_count", 0),
                     "views": post_dict.pop("engagement_view_count", 0),
                 }
-
                 processed_posts.append(post_dict)
-
             return processed_posts
         except Exception as e:
             if isinstance(e, HTTPException):
@@ -649,29 +555,20 @@ class SocialMediaService:
                 """
             ]
             params = []
-            
             if date_from:
                 query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
                 params.append(date_from)
-
             if date_to:
                 query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
                 params.append(date_to)
-
             query = " ".join(query_parts)
             result = await social_media_db.execute_query(query, tuple(params), fetch=True, fetch_one=True)
-
             if not result:
                 return {"avg_engagement": 0, "total_posts": 0, "unique_authors": 0}
-
             result_dict = dict(result)
-
-            # Calculate average overall engagement
             result_dict["avg_engagement"] = (
                 result_dict["avg_replies"] + result_dict["avg_retweets"] + result_dict["avg_likes"] + result_dict["avg_bookmarks"]
             )
-
-            # Top platforms by post count
             platform_query_parts = [
                 """
                 SELECT 
@@ -681,26 +578,21 @@ class SocialMediaService:
                 WHERE 1=1
                 """
             ]
-            
             if date_from:
                 platform_query_parts.append("AND datetime(post_timestamp) >= datetime(?)")
-            
             if date_to:
                 platform_query_parts.append("AND datetime(post_timestamp) <= datetime(?)")
-                
             platform_query_parts.extend([
                 "GROUP BY platform",
                 "ORDER BY post_count DESC",
                 "LIMIT 10"
             ])
-
             platforms = await social_media_db.execute_query(
                 " ".join(platform_query_parts), 
                 tuple(params), 
                 fetch=True
             )
             result_dict["platforms"] = platforms
-
             return result_dict
         except Exception as e:
             if isinstance(e, HTTPException):

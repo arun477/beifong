@@ -1,7 +1,9 @@
 import os
 import sqlite3
 import asyncio
+import time
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor
 from services.db_service import get_db_path
 
 
@@ -9,6 +11,10 @@ from services.db_service import get_db_path
 def db_connection(db_path):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA cache_size=10000")
+    conn.execute("PRAGMA temp_store=MEMORY")
     try:
         yield conn
     finally:
@@ -16,10 +22,11 @@ def db_connection(db_path):
 
 
 def init_sources_db():
-    """Initialize the sources database."""
+    start_time = time.time()
     db_path = get_db_path("sources_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS sources (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,14 +71,17 @@ def init_sources_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_categories_source_id ON source_categories(source_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_categories_category_id ON source_categories(category_id)")
         conn.commit()
-    print("Sources database initialized.")
+
+    elapsed = time.time() - start_time
+    print(f"Sources database initialized in {elapsed:.3f}s")
 
 
 def init_tracking_db():
-    """Initialize the feed tracking database."""
+    start_time = time.time()
     db_path = get_db_path("tracking_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS feed_tracking (
             feed_id INTEGER PRIMARY KEY,
@@ -141,27 +151,33 @@ def init_tracking_db():
             FOREIGN KEY (article_id) REFERENCES crawled_articles(id)
         )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_feed_id ON feed_entries(feed_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_link ON feed_entries(link)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawled_articles_url ON crawled_articles(url)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawled_articles_entry_id ON crawled_articles(entry_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_feed_entries_crawl_status ON feed_entries(crawl_status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawled_articles_processed ON crawled_articles(processed)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawled_articles_ai_status ON crawled_articles(ai_status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_article_categories_article_id ON article_categories(article_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_article_categories_category_name ON article_categories(category_name)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_article_embeddings_article_id ON article_embeddings(article_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_article_embeddings_in_faiss ON article_embeddings(in_faiss_index)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_crawled_articles_embedding_status ON crawled_articles(embedding_status)")
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_feed_entries_feed_id ON feed_entries(feed_id)",
+            "CREATE INDEX IF NOT EXISTS idx_feed_entries_link ON feed_entries(link)",
+            "CREATE INDEX IF NOT EXISTS idx_crawled_articles_url ON crawled_articles(url)",
+            "CREATE INDEX IF NOT EXISTS idx_crawled_articles_entry_id ON crawled_articles(entry_id)",
+            "CREATE INDEX IF NOT EXISTS idx_feed_entries_crawl_status ON feed_entries(crawl_status)",
+            "CREATE INDEX IF NOT EXISTS idx_crawled_articles_processed ON crawled_articles(processed)",
+            "CREATE INDEX IF NOT EXISTS idx_crawled_articles_ai_status ON crawled_articles(ai_status)",
+            "CREATE INDEX IF NOT EXISTS idx_article_categories_article_id ON article_categories(article_id)",
+            "CREATE INDEX IF NOT EXISTS idx_article_categories_category_name ON article_categories(category_name)",
+            "CREATE INDEX IF NOT EXISTS idx_article_embeddings_article_id ON article_embeddings(article_id)",
+            "CREATE INDEX IF NOT EXISTS idx_article_embeddings_in_faiss ON article_embeddings(in_faiss_index)",
+            "CREATE INDEX IF NOT EXISTS idx_crawled_articles_embedding_status ON crawled_articles(embedding_status)",
+        ]
+        for index_sql in indexes:
+            cursor.execute(index_sql)
         conn.commit()
-    print("Tracking database initialized.")
+    elapsed = time.time() - start_time
+    print(f"Tracking database initialized in {elapsed:.3f}s")
 
 
 def init_podcasts_db():
-    """Initialize the podcasts database."""
+    start_time = time.time()
     db_path = get_db_path("podcasts_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS podcasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,19 +194,25 @@ def init_podcasts_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcasts_date ON podcasts(date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcasts_audio_generated ON podcasts(audio_generated)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcasts_tts_engine ON podcasts(tts_engine)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcasts_language_code ON podcasts(language_code)")
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_podcasts_date ON podcasts(date)",
+            "CREATE INDEX IF NOT EXISTS idx_podcasts_audio_generated ON podcasts(audio_generated)",
+            "CREATE INDEX IF NOT EXISTS idx_podcasts_tts_engine ON podcasts(tts_engine)",
+            "CREATE INDEX IF NOT EXISTS idx_podcasts_language_code ON podcasts(language_code)",
+        ]
+        for index_sql in indexes:
+            cursor.execute(index_sql)
         conn.commit()
-    print("Podcasts database initialized.")
+    elapsed = time.time() - start_time
+    print(f"Podcasts database initialized in {elapsed:.3f}s")
 
 
 def init_tasks_db():
-    """Initialize the tasks database."""
+    start_time = time.time()
     db_path = get_db_path("tasks_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -234,16 +256,21 @@ def init_tasks_db():
             image_prompt TEXT
         )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tasks_enabled ON tasks(enabled)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tasks_frequency ON tasks(frequency, frequency_unit)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tasks_last_run ON tasks(last_run)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_task_executions_task_id ON task_executions(task_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_task_executions_status ON task_executions(status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_task_executions_start_time ON task_executions(start_time)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcast_configs_is_active ON podcast_configs(is_active)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_podcast_configs_name ON podcast_configs(name)")
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_tasks_enabled ON tasks(enabled)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_frequency ON tasks(frequency, frequency_unit)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_last_run ON tasks(last_run)",
+            "CREATE INDEX IF NOT EXISTS idx_task_executions_task_id ON task_executions(task_id)",
+            "CREATE INDEX IF NOT EXISTS idx_task_executions_status ON task_executions(status)",
+            "CREATE INDEX IF NOT EXISTS idx_task_executions_start_time ON task_executions(start_time)",
+            "CREATE INDEX IF NOT EXISTS idx_podcast_configs_is_active ON podcast_configs(is_active)",
+            "CREATE INDEX IF NOT EXISTS idx_podcast_configs_name ON podcast_configs(name)",
+        ]
+        for index_sql in indexes:
+            cursor.execute(index_sql)
         conn.commit()
-    print("Tasks database initialized.")
+    elapsed = time.time() - start_time
+    print(f"Tasks database initialized in {elapsed:.3f}s")
 
 
 async def init_agent_session_db():
@@ -252,10 +279,11 @@ async def init_agent_session_db():
 
 
 def init_internal_sessions_db():
-    """Initialize the internal sessions database."""
+    start_time = time.time()
     db_path = get_db_path("internal_sessions_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
+        cursor.execute("BEGIN TRANSACTION")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS session_state (
             session_id TEXT PRIMARY KEY,
@@ -265,16 +293,17 @@ def init_internal_sessions_db():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_session_state_session_id ON session_state(session_id)")
         conn.commit()
-    print("Internal sessions database initialized.")
-    
-    
+    elapsed = time.time() - start_time
+    print(f"Internal sessions database initialized in {elapsed:.3f}s")
+
+
 def init_social_media_db():
-    """Initialize the social media database."""
+    start_time = time.time()
     db_path = get_db_path("social_media_db")
     with db_connection(db_path) as conn:
         cursor = conn.cursor()
-        # Main posts table (from existing schema)
-        cursor.execute('''
+        cursor.execute("BEGIN TRANSACTION")
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS posts (
             post_id TEXT PRIMARY KEY,
             platform TEXT,
@@ -289,10 +318,9 @@ def init_social_media_db():
             engagement_reply_count INTEGER,
             engagement_retweet_count INTEGER,
             engagement_like_count INTEGER,
-            engagement_like_count INTEGER,
             engagement_bookmark_count INTEGER,
             engagement_view_count INTEGER,
-            media TEXT,  -- Stored as JSON
+            media TEXT,
             media_count INTEGER,
             is_ad BOOLEAN,
             sentiment TEXT,
@@ -302,33 +330,40 @@ def init_social_media_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        ''')
-        
-        # Add indexes for better performance
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_platform ON posts(platform)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_user_handle ON posts(user_handle)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_post_timestamp ON posts(post_timestamp)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_sentiment ON posts(sentiment)")
-          
+        """)
+        indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_posts_platform ON posts(platform)",
+            "CREATE INDEX IF NOT EXISTS idx_posts_user_handle ON posts(user_handle)",
+            "CREATE INDEX IF NOT EXISTS idx_posts_post_timestamp ON posts(post_timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_posts_sentiment ON posts(sentiment)",
+        ]
+        for index_sql in indexes:
+            cursor.execute(index_sql)
         conn.commit()
-    print("Social media database initialized.")
+    elapsed = time.time() - start_time
+    print(f"Social media database initialized in {elapsed:.3f}s")
 
 
 async def init_databases():
-    """Initialize all databases."""
+    total_start = time.time()
     print("Initializing all databases...")
     for db_name in ["sources_db", "tracking_db", "podcasts_db", "tasks_db"]:
         db_path = get_db_path(db_name)
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    init_sources_db()
-    init_tracking_db()
-    init_podcasts_db()
-    init_tasks_db()
-    init_internal_sessions_db()
-    init_social_media_db()
-    print("All databases initialized.")
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = [
+            loop.run_in_executor(executor, init_sources_db),
+            loop.run_in_executor(executor, init_tracking_db),
+            loop.run_in_executor(executor, init_podcasts_db),
+            loop.run_in_executor(executor, init_tasks_db),
+            loop.run_in_executor(executor, init_internal_sessions_db),
+            loop.run_in_executor(executor, init_social_media_db),
+        ]
+        await asyncio.gather(*tasks)
+    total_elapsed = time.time() - total_start
+    print(f"All databases initialized in {total_elapsed:.3f}s")
 
 
 def init_all_databases():
-    """Run database initialization synchronously."""
     asyncio.run(init_databases())

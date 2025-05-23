@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 import uvicorn
 import os
 import aiofiles
+from contextlib import asynccontextmanager
 from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router, social_media_router
 from services.db_init import init_databases
 from dotenv import load_dotenv
@@ -17,7 +18,24 @@ CLIENT_BUILD_PATH = os.environ.get(
     "../web/build",
 )
 
-app = FastAPI(title="Beifong API", description="Beifong API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up application...")
+    os.makedirs("databases", exist_ok=True)
+    os.makedirs("podcasts/audio", exist_ok=True)
+    os.makedirs("podcasts/images", exist_ok=True)
+    os.makedirs("podcasts/recordings", exist_ok=True)
+    await init_databases()
+    if not os.path.exists(CLIENT_BUILD_PATH):
+        print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
+    print("Application startup complete!")
+    yield
+    print("Shutting down application...")
+    print("Shutdown complete")
+
+
+app = FastAPI(title="Beifong API", description="Beifong API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,23 +44,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    os.makedirs("databases", exist_ok=True)
-    os.makedirs("podcasts/audio", exist_ok=True)
-    os.makedirs("podcasts/images", exist_ok=True)
-    os.makedirs("podcasts/recordings", exist_ok=True)
-    await init_databases()
-    if not os.path.exists(CLIENT_BUILD_PATH):
-        print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    print("Shutting down application...")
-    print("Shutdown complete")
 
 
 app.include_router(article_router.router, prefix="/api/articles", tags=["articles"])

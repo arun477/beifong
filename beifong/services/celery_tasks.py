@@ -3,11 +3,7 @@ from agno.models.openai import OpenAIChat
 from agno.storage.sqlite import SqliteStorage
 import os
 from dotenv import load_dotenv
-import multiprocessing
-
-multiprocessing.set_start_method("spawn", force=True)
 from services.celery_app import app, SessionLockedTask
-
 from db.config import get_agent_session_db_path
 from db.agent_config_v2 import (
     AGENT_DESCRIPTION,
@@ -37,6 +33,7 @@ def agent_chat(self, session_id, message):
         db_file = get_agent_session_db_path()
         os.makedirs(os.path.dirname(db_file), exist_ok=True)
         from services.internal_session_service import SessionService
+
         session_state = SessionService.get_session(session_id).get("state", INITIAL_SESSION_STATE)
 
         _agent = Agent(

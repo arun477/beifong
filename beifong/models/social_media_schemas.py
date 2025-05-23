@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -22,7 +22,7 @@ class PostEngagement(BaseModel):
     views: Optional[int] = None
 
 class MediaItem(BaseModel):
-    type: str  # image, video, etc.
+    type: str 
     url: str
 
 class Post(PostBase):
