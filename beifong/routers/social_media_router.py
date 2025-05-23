@@ -8,7 +8,7 @@ from tools.social.browser import setup_session_multi
 router = APIRouter()
 
 
-@router.get("/", response_model=PaginatedPosts)  # Use the existing PaginatedPosts model
+@router.get("/", response_model=PaginatedPosts)
 async def read_posts(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
@@ -36,7 +36,7 @@ async def read_posts(
     )
 
 
-@router.get("/{post_id}", response_model=Post)  # Use the existing Post model
+@router.get("/{post_id}", response_model=Post)
 async def read_post(post_id: str):
     """
     Get a specific social media post by ID.
@@ -79,7 +79,6 @@ async def read_categories(
     return await social_media_service.get_categories(date_from=date_from, date_to=date_to)
 
 
-# New analytics endpoints
 @router.get("/users/sentiment", response_model=List[Dict[str, Any]])
 async def read_user_sentiment(
     limit: int = Query(10, ge=1, le=50, description="Number of users to return"),
@@ -161,14 +160,12 @@ async def setup_browser_session(sites: Optional[List[str]] = Query(None, descrip
     This will open a browser window for manual login to social media platforms.
     The API immediately returns while the browser setup runs independently.
     """
-    # Start the browser setup in a completely separate daemon thread
     thread = threading.Thread(
         target=_run_browser_setup_background,
         args=(sites,),
-        daemon=True,  # Dies when main program exits
+        daemon=True,
     )
     thread.start()
-
     return {
         "status": "ok",
         "message": "Browser session setup triggered successfully",
