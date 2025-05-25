@@ -276,14 +276,14 @@ def process_all_active_configs_v2(
             results.append(result)
             if "error" not in result:
                 stats = result.get("processing_stats", {})
-                print(f"✅ Success - Podcast ID: {result.get('podcast_id', 'Unknown')}")
-                print(f"   Sources: {stats.get('confirmed_results', 0)} articles processed")
-                print(f"   Images: {stats.get('images_generated', 0)} generated")
-                print(f"   Audio: {'Yes' if stats.get('audio_generated') else 'No'}")
+                print(f"Success - Podcast ID: {result.get('podcast_id', 'Unknown')}")
+                print(f"Sources: {stats.get('confirmed_results', 0)} articles processed")
+                print(f"Images: {stats.get('images_generated', 0)} generated")
+                print(f"Audio: {'Yes' if stats.get('audio_generated') else 'No'}")
             else:
-                print(f"❌ Failed: {result['error']}")
+                print(f"Failed: {result['error']}")
         except Exception as e:
-            print(f"❌ ERROR: Error generating podcast for config {config_id}: {e}")
+            print(f"ERROR: Error generating podcast for config {config_id}: {e}")
             results.append({"config_id": config_id, "config_name": config_name, "error": str(e)})
     return results
 
@@ -296,7 +296,7 @@ def main():
         return 1
     output_dir = PODCAST_ASSETS_DIR
     debug = False
-    print("🚀 Starting Enhanced Agent-Based Podcast Generation System")
+    print("Starting Enhanced Agent-Based Podcast Generation System")
     print("=" * 60)
     results = process_all_active_configs_v2(
         openai_api_key=openai_api_key,
@@ -305,7 +305,7 @@ def main():
         debug=debug,
     )
     print("\n" + "=" * 60)
-    print("📊 PODCAST GENERATION RESULTS SUMMARY")
+    print("PODCAST GENERATION RESULTS SUMMARY")
     print("=" * 60)
     successful = 0
     failed = 0
@@ -313,18 +313,18 @@ def main():
         config_id = result.get("config_id", "Unknown")
         config_name = result.get("config_name", "Unknown")
         if "error" in result:
-            print(f"❌ Config {config_id} ({config_name}): {result['error']}")
+            print(f"Config {config_id} ({config_name}): {result['error']}")
             failed += 1
         else:
             podcast_id = result.get("podcast_id", "Unknown")
             stats = result.get("processing_stats", {})
-            print(f"✅ Config {config_id} ({config_name}): Success")
-            print(f"   └── Podcast ID: {podcast_id}")
-            print(f"   └── Sources: {stats.get('confirmed_results', 0)} articles")
-            print(f"   └── Images: {stats.get('images_generated', 0)} generated")
+            print(f"Config {config_id} ({config_name}): Success")
+            print(f"Podcast ID: {podcast_id}")
+            print(f"Sources: {stats.get('confirmed_results', 0)} articles")
+            print(f"Images: {stats.get('images_generated', 0)} generated")
             successful += 1
     print("=" * 60)
-    print(f"📈 FINAL STATS: {successful} successful, {failed} failed out of {len(results)} total")
+    print(f"FINAL STATS: {successful} successful, {failed} failed out of {len(results)} total")
     print("=" * 60)
     return 0
 
