@@ -776,177 +776,172 @@ const PodcastDetail = () => {
 
             {/* Script Sidebar */}
             {isFullScriptOpen && hasScript && (
-               <div className="fixed inset-0 z-50 flex">
-                  {/* Backdrop - clicking this closes the sidebar */}
+               <div className="fixed inset-0 z-50">
+                  {/* Backdrop */}
                   <div
-                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                      onClick={() => setIsFullScriptOpen(false)}
-                     style={{
-                        animation: 'fadeIn 0.2s ease-out forwards',
-                     }}
                   ></div>
 
-                  {/* Sidebar panel with mobile-responsive sizing */}
-                  <div
-                     className="relative ml-auto w-full sm:max-w-md max-w-full bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
-                     style={{
-                        animation: 'slideInRight 0.3s ease-out forwards',
-                     }}
-                  >
-                     {/* Header with emerald accent */}
-                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-gray-700/30 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-                        <div className="relative flex items-center justify-between">
-                           <div className="flex items-center min-w-0">
-                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
-                                 <FileText className="w-4 h-4 text-emerald-400" />
-                              </div>
-                              <div className="min-w-0">
-                                 <h2 className="text-lg font-semibold text-white truncate">
-                                    Podcast Script
-                                 </h2>
-                                 <p className="text-xs text-gray-400 truncate">{content.title}</p>
-                              </div>
-                           </div>
-                           <button
-                              onClick={() => setIsFullScriptOpen(false)}
-                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
-                           >
-                              <X className="w-5 h-5" />
-                           </button>
-                        </div>
-                     </div>
-
-                     {/* Content with emerald accents */}
-                     <div className="overflow-y-auto h-[calc(100%-80px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30 px-2 sm:px-0">
-                        {/* Script sections - always open */}
-                        {content.sections.map((section, sectionIndex) => (
-                           <div
-                              key={sectionIndex}
-                              className="border-gray-700/20 pb-4 last:border-0"
-                           >
-                              {/* Non-interactive section header */}
-                              <div className="px-2 sm:px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
-                                 <div className="flex items-center">
-                                    <h3 className="text-sm font-medium text-emerald-400">
-                                       {section.type?.charAt(0).toUpperCase() +
-                                          section.type?.slice(1)}
-                                    </h3>
+                  {/* Sidebar Panel */}
+                  <div className="absolute inset-0 flex justify-end">
+                     <div
+                        className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
+                           isFullScriptOpen ? 'translate-x-0' : 'translate-x-full'
+                        }`}
+                     >
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
+                           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                           <div className="relative flex items-center justify-between">
+                              <div className="flex items-center min-w-0 flex-1">
+                                 <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                    <FileText className="w-4 h-4 text-emerald-400" />
+                                 </div>
+                                 <div className="min-w-0 flex-1">
+                                    <h2 className="text-lg font-semibold text-white truncate">
+                                       Podcast Script
+                                    </h2>
+                                    <p className="text-xs text-gray-400 truncate">
+                                       {content.title}
+                                    </p>
                                  </div>
                               </div>
-
-                              {/* Section content - always visible */}
-                              {section.dialog && (
-                                 <div className="px-2 sm:px-4 pt-2">
-                                    {section.dialog.map((line, lineIndex) => (
-                                       <div key={lineIndex} className="mb-3 last:mb-0">
-                                          <div
-                                             className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
-                                                line.speaker
-                                             )} text-white rounded mb-1`}
-                                          >
-                                             {line.speaker}
-                                          </div>
-                                          <div className="text-gray-300 text-sm leading-relaxed">
-                                             {line.text}
-                                          </div>
-                                       </div>
-                                    ))}
-                                 </div>
-                              )}
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               </div>
-            )}
-
-            {/* Sources Sidebar */}
-            {isSourcesOpen && hasSources && (
-               <div className="fixed inset-0 z-50 flex">
-                  {/* Backdrop - clicking this closes the sidebar */}
-                  <div
-                     className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
-                     onClick={() => setIsSourcesOpen(false)}
-                     style={{
-                        animation: 'fadeIn 0.2s ease-out forwards',
-                     }}
-                  ></div>
-
-                  {/* Sidebar panel with mobile-responsive sizing */}
-                  <div
-                     className="relative ml-auto w-full sm:max-w-md max-w-full bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 h-full shadow-2xl overflow-hidden border-l border-gray-700/50 backdrop-blur-xl"
-                     style={{
-                        animation: 'slideInRight 0.3s ease-out forwards',
-                     }}
-                  >
-                     {/* Header with emerald accent */}
-                     <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm">
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
-                        <div className="relative flex items-center justify-between">
-                           <div className="flex items-center">
-                              <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3">
-                                 <Globe className="w-4 h-4 text-emerald-400" />
-                              </div>
-                              <h2 className="text-lg font-semibold text-white">Sources</h2>
-                           </div>
-                           <button
-                              onClick={() => setIsSourcesOpen(false)}
-                              className="p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded"
-                           >
-                              <X className="w-5 h-5" />
-                           </button>
-                        </div>
-                     </div>
-
-                     {/* Content with emerald accents */}
-                     <div className="overflow-y-auto h-[calc(100%-80px)] scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
-                        {sources.map((source, index) => {
-                           const sourceUrl = typeof source === 'string' ? source : source.url;
-                           let hostname = '';
-                           try {
-                              hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
-                           } catch (e) {
-                              hostname = 'Unknown Source';
-                           }
-
-                           return (
-                              <a
-                                 key={index}
-                                 href={sourceUrl}
-                                 target="_blank"
-                                 rel="noopener noreferrer"
-                                 className="block px-2 sm:px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
+                              <button
+                                 onClick={() => setIsFullScriptOpen(false)}
+                                 className="ml-2 p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
                               >
-                                 <div className="flex items-start">
-                                    <div className="flex-shrink-0 pt-1">
-                                       <div className="p-1.5 bg-gradient-to-br from-gray-800 to-gray-700 rounded-lg flex items-center justify-center group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-200">
-                                          <SourceIcon url={sourceUrl} />
-                                       </div>
-                                    </div>
-                                    <div className="ml-3 flex-1 min-w-0">
-                                       <h3 className="font-medium text-emerald-400 group-hover:text-emerald-300 transition-colors truncate">
-                                          {hostname}
+                                 <X className="w-5 h-5" />
+                              </button>
+                           </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                           {content.sections.map((section, sectionIndex) => (
+                              <div
+                                 key={sectionIndex}
+                                 className="border-gray-700/20 pb-4 last:border-0"
+                              >
+                                 {/* Section header */}
+                                 <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
+                                    <div className="flex items-center">
+                                       <h3 className="text-sm font-medium text-emerald-400">
+                                          {section.type?.charAt(0).toUpperCase() +
+                                             section.type?.slice(1)}
                                        </h3>
-                                       <p className="text-sm text-gray-400 mt-1 line-clamp-2 break-all">
-                                          {sourceUrl}
-                                       </p>
-                                       <div className="mt-2 flex items-center text-xs text-gray-500">
-                                          <ExternalLink className="w-3 h-3 mr-1 text-emerald-500/70 group-hover:translate-x-0.5 transition-transform duration-200" />
-                                          <span className="group-hover:text-gray-400 transition-colors">
-                                             View source
-                                          </span>
-                                       </div>
                                     </div>
                                  </div>
-                              </a>
-                           );
-                        })}
+
+                                 {/* Section content */}
+                                 {section.dialog && (
+                                    <div className="px-4 pt-2">
+                                       {section.dialog.map((line, lineIndex) => (
+                                          <div key={lineIndex} className="mb-3 last:mb-0">
+                                             <div
+                                                className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                   line.speaker
+                                                )} text-white rounded mb-1`}
+                                             >
+                                                {line.speaker}
+                                             </div>
+                                             <div className="text-gray-300 text-sm leading-relaxed">
+                                                {line.text}
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 )}
+                              </div>
+                           ))}
+                        </div>
                      </div>
                   </div>
                </div>
             )}
 
+            {isSourcesOpen && hasSources && (
+               <div className="fixed inset-0 z-50">
+                  {/* Backdrop */}
+                  <div
+                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                     onClick={() => setIsSourcesOpen(false)}
+                  ></div>
+
+                  {/* Sidebar Panel */}
+                  <div className="absolute inset-0 flex justify-end">
+                     <div
+                        className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
+                           isSourcesOpen ? 'translate-x-0' : 'translate-x-full'
+                        }`}
+                     >
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
+                           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                           <div className="relative flex items-center justify-between">
+                              <div className="flex items-center min-w-0 flex-1">
+                                 <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                    <Globe className="w-4 h-4 text-emerald-400" />
+                                 </div>
+                                 <h2 className="text-lg font-semibold text-white">Sources</h2>
+                              </div>
+                              <button
+                                 onClick={() => setIsSourcesOpen(false)}
+                                 className="ml-2 p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+                              >
+                                 <X className="w-5 h-5" />
+                              </button>
+                           </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                           {sources.map((source, index) => {
+                              const sourceUrl = typeof source === 'string' ? source : source.url;
+                              let hostname = '';
+                              try {
+                                 hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
+                              } catch (e) {
+                                 hostname = 'Unknown Source';
+                              }
+
+                              return (
+                                 <a
+                                    key={index}
+                                    href={sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
+                                 >
+                                    <div className="flex items-start">
+                                       <div className="flex-shrink-0 pt-1">
+                                          <div className="p-1.5 bg-gradient-to-br from-gray-800 to-gray-700 rounded-lg flex items-center justify-center group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-200">
+                                             <SourceIcon url={sourceUrl} />
+                                          </div>
+                                       </div>
+                                       <div className="ml-3 flex-1 min-w-0">
+                                          <h3 className="font-medium text-emerald-400 group-hover:text-emerald-300 transition-colors truncate">
+                                             {hostname}
+                                          </h3>
+                                          <p className="text-sm text-gray-400 mt-1 line-clamp-2 break-all">
+                                             {sourceUrl}
+                                          </p>
+                                          <div className="mt-2 flex items-center text-xs text-gray-500">
+                                             <ExternalLink className="w-3 h-3 mr-1 text-emerald-500/70 group-hover:translate-x-0.5 transition-transform duration-200" />
+                                             <span className="group-hover:text-gray-400 transition-colors">
+                                                View source
+                                             </span>
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </a>
+                              );
+                           })}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            )}
             {/* Edit Modal */}
             {showEditModal && (
                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">

@@ -6,16 +6,16 @@ from fastapi.responses import JSONResponse
 import aiosqlite
 from redis.asyncio import ConnectionPool, Redis
 from db.config import get_agent_session_db_path
-from db.agent_config import (
+from db.agent_config_v2 import (
     PODCAST_DIR,
     PODCAST_AUIDO_DIR,
     PODCAST_IMG_DIR,
     PODCAST_RECORDINGS_DIR,
+    AVAILABLE_LANGS
 )
 from services.celery_tasks import agent_chat
 from dotenv import load_dotenv
 from services.internal_session_service import SessionService
-from db.agent_config_v2 import AVAILABLE_LANGS
 
 load_dotenv()
 

@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agno.tools.duckduckgo import DuckDuckGoTools
 from textwrap import dedent
-from agents.wikipedia_search import wikipedia_search
-from agents.google_news_discovery import google_news_discovery_run
+from tools.wikipedia_search import wikipedia_search
+from tools.google_news_discovery import google_news_discovery_run
 from tools.jikan_search import jikan_search
 from tools.embedding_search import embedding_search
 from tools.social_media_search import social_media_search, social_media_trending_search

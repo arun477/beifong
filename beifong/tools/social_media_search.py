@@ -81,6 +81,7 @@ def social_media_trending_search(agent: Agent, limit: int = 10) -> str:
     Get trending positive news posts from social media.
     Returns trending news posts in standard results format.
 
+
     Args:
         agent: The agent instance
         limit: Maximum number of trending results (default: 10)

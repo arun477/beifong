@@ -11,7 +11,7 @@ from db.podcast_configs import get_podcast_config, get_all_podcast_configs
 from db.agent_config_v2 import AVAILABLE_LANGS
 from utils.tts_engine_selector import generate_podcast_audio
 from utils.load_api_keys import load_api_key
-from agents.session_state_manager import _save_podcast_to_database_sync
+from tools.session_state_manager import _save_podcast_to_database_sync
 
 PODCAST_ASSETS_DIR = "podcasts"
 

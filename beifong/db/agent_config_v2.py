@@ -141,6 +141,7 @@ AGENT_INSTRUCTIONS = [
     "1b. During the conversation, at any place you feel a UI state is not necessary, you can disable it using the ui_manager tool by setting active to False. For switching off all states, pass all to False.",
     f"2. Supported Languges: {json.dumps(AVAILABLE_LANGS)}",
     "3. Search Agent has a lot off tools, so you can instruct the search query as prompt to get the best results as because search agent has lot of tools you can instruct instead of directly passing the query to search agent when required.",
+    "4. You are not allowed to include year or date in your seach query construction for the search agent unless that request explicilty with yeear or date  come for the users.",
 ]
 DB_PATH = "databases"
 PODCAST_DIR = "podcasts"

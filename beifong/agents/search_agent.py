@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from agno.tools.duckduckgo import DuckDuckGoTools
 from textwrap import dedent
-from agents.wikipedia_search import wikipedia_search
-from agents.google_news_discovery import google_news_discovery_run
+from tools.wikipedia_search import wikipedia_search
+from tools.google_news_discovery import google_news_discovery_run
 from tools.jikan_search import jikan_search
 from tools.embedding_search import embedding_search
 from tools.social_media_search import social_media_search, social_media_trending_search
+from tools.search_articles import search_articles
+
 
 
 
@@ -57,6 +59,7 @@ SEARCH_AGENT_INSTRUCTIONS = dedent("""
     IMPORTANT: If returned sources are not of high quality or not relevant to the asked topic, don't include them in the returned sources.
     IMPORTANT: Never include dates to the search query unless user explicitly asks for it.
     IMPORTANT: You are allowed to use appropriate tools to get the best results even the single tool return enough results diverse check is better.
+    
     """)
 
 
@@ -88,7 +91,8 @@ def search_agent_run(agent: Agent, query: str) -> str:
             jikan_search,
             embedding_search,
             social_media_search,
-            social_media_trending_search
+            social_media_trending_search,
+            search_articles
         ],
         session_id=session_id,
     )

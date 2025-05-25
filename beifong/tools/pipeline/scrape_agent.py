@@ -2,7 +2,7 @@ from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from agents.browser_crawler import create_browser_crawler
+from tools.browser_crawler import create_browser_crawler
 from textwrap import dedent
 import uuid
 
@@ -50,8 +50,12 @@ def crawl_urls_batch(search_results):
     url_to_search_results = {}
     unique_urls = []
     for search_result in search_results:
+        if not search_result.get("url", False):
+            continue
         if not search_result.get("is_scrapping_required", True):
             continue
+        if not search_result.get('original_url'):
+            search_result['original_url'] = search_result['url']
         url = search_result["url"]
         if url not in url_to_search_results:
             url_to_search_results[url] = []

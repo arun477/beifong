@@ -23,6 +23,7 @@ CLIENT_BUILD_PATH = os.environ.get(
 async def lifespan(app: FastAPI):
     print("Starting up application...")
     os.makedirs("databases", exist_ok=True)
+    os.makedirs("browsers", exist_ok=True)
     os.makedirs("podcasts/audio", exist_ok=True)
     os.makedirs("podcasts/images", exist_ok=True)
     os.makedirs("podcasts/recordings", exist_ok=True)
@@ -183,4 +184,4 @@ async def serve_react(full_path: str, request: Request):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True, timeout_keep_alive=120, timeout_graceful_shutdown=120)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, timeout_keep_alive=120, timeout_graceful_shutdown=120)
