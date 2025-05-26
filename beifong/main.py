@@ -183,5 +183,5 @@ async def serve_react(full_path: str, request: Request):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 7000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, timeout_keep_alive=120, timeout_graceful_shutdown=120)
