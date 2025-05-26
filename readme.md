@@ -14,6 +14,7 @@ Beifong generates high-quality podcasts from news articles and web content you t
 ### Prerequisites
 
 -   Python 3.11+
+-   Redis Server
 -   OpenAI API key
 -   (Optional) ElevenLabs API key
 
@@ -30,6 +31,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Install browser
+playwright install
 
 # (Optional but recommended) Download demo content
 # Navigate to the beifong directory if not already there
