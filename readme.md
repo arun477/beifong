@@ -1,4 +1,6 @@
 # 🦉 Beifong: Your Junk-Free, Personalized Podcasts
+![image](https://github.com/user-attachments/assets/b2f24f12-6f80-46fa-aa31-ee42e17765b1)
+
 
 Beifong generates high-quality podcasts from news articles and web content you trust and curate. It handles the complete pipeline from data collection and analysis to production of scripts, visuals, and audio.
 
