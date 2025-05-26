@@ -26,7 +26,7 @@ def download_file(url, dest_path):
     response = requests.get(url, stream=True)
     response.raise_for_status()
     
-    # Get file size from headers if available
+    
     total_size = int(response.headers.get('content-length', 0))
     block_size = 8192
     
@@ -43,10 +43,8 @@ def extract_zip(zip_path, extract_to):
     print("✂ extracting demo content...")
     
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        # Get total number of files in the zip
         total_files = len(zip_ref.infolist())
         
-        # Extract with progress bar
         with tqdm(total=total_files, desc="Extraction Progress") as pbar:
             for file in zip_ref.infolist():
                 zip_ref.extract(file, extract_to)
