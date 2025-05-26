@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.git/
+.gitignore
+web/node_modules/
+beifong/databases/
+beifong/podcasts/
+beifong/browsers/
+beifong/.env
+*.log
