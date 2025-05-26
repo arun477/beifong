@@ -3,10 +3,9 @@ import sys
 import tempfile
 import requests
 import zipfile
-import shutil
 from tqdm import tqdm
 
-DEMO_URL = "https://github.com/arun477/beifong/releases/download/v0.1-demo/demo_content.zip"
+DEMO_URL = "https://github.com/arun477/beifong/releases/download/v1.2.0/demo_content.zip"
 TARGET_DIRS = ["databases", "podcasts"]
 
 
