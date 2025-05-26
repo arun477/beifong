@@ -9,7 +9,7 @@ const PonyoChatIcon = ({
 }) => {
    // Get base URL with fallback to prevent undefined
    const baseUrl = api?.API_BASE_URL || '';
-   const imageUrl = `${baseUrl}/images/ponyo.png`;
+   const imageUrl = `${baseUrl}/server_static/images/ponyo.png`;
 
    // Add a subtle hover animation effect
    const [isHovered, setIsHovered] = useState(false);
