@@ -89,9 +89,9 @@ npm start
 
 ### Three Ways to Use Beifong
 
-1. **Interactive UI**: Create podcasts step-by-step in the web interface
-2. **API Integration**: Call endpoints for programmatic podcast generation
-3. **Automated Scheduling**: Configure regular podcast creation with templates
+1. **Interactive UI**
+2. **API Integration**
+3. **Automated Scheduling**
 
 ### Processor Pipeline
 
