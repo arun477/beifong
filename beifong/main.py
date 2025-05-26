@@ -5,14 +5,39 @@ from fastapi.responses import FileResponse, StreamingResponse
 import uvicorn
 import os
 import aiofiles
-from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router
+from contextlib import asynccontextmanager
+from routers import article_router, podcast_router, source_router, task_router, podcast_config_router, async_podcast_agent_router, social_media_router
 from services.db_init import init_databases
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 CLIENT_BUILD_PATH = os.environ.get(
     "CLIENT_BUILD_PATH",
     "../web/build",
 )
-app = FastAPI(title="Beifong API", description="Beifong API", version="1.0.0")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up application...")
+    os.makedirs("databases", exist_ok=True)
+    os.makedirs("browsers", exist_ok=True)
+    os.makedirs("podcasts/audio", exist_ok=True)
+    os.makedirs("podcasts/images", exist_ok=True)
+    os.makedirs("podcasts/recordings", exist_ok=True)
+    await init_databases()
+    if not os.path.exists(CLIENT_BUILD_PATH):
+        print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
+    print("Application startup complete!")
+    yield
+    print("Shutting down application...")
+    print("Shutdown complete")
+
+
+app = FastAPI(title="Beifong API", description="Beifong API", version="1.0.0", lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,74 +47,17 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize directories and databases on application startup."""
-    os.makedirs("databases", exist_ok=True)
-    os.makedirs("podcasts/audio", exist_ok=True)
-    os.makedirs("podcasts/images", exist_ok=True)
-    os.makedirs("podcasts/recordings", exist_ok=True)
-    await init_databases()
-    if not os.path.exists(CLIENT_BUILD_PATH):
-        print(f"WARNING: React client build path not found: {CLIENT_BUILD_PATH}")
-
-
 app.include_router(article_router.router, prefix="/api/articles", tags=["articles"])
 app.include_router(source_router.router, prefix="/api/sources", tags=["sources"])
 app.include_router(podcast_router.router, prefix="/api/podcasts", tags=["podcasts"])
 app.include_router(task_router.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(podcast_config_router.router, prefix="/api/podcast-configs", tags=["podcast-configs"])
 app.include_router(async_podcast_agent_router.router, prefix="/api/podcast-agent", tags=["podcast-agent"])
-
-
-@app.get("/api")
-async def api_info():
-    return {
-        "message": "Welcome to the Tech News API!",
-        "version": "1.0.0",
-        "endpoints": {
-            "articles": {
-                "list": "/api/articles",
-                "detail": "/api/articles/{article_id}",
-                "sources": "/api/articles/sources/list",
-                "categories": "/api/articles/categories/list",
-            },
-            "sources": {
-                "list": "/api/sources",
-                "detail": "/api/sources/{source_id}",
-                "by_name": "/api/sources/by-name/{name}",
-                "categories": "/api/sources/categories",
-                "by_category": "/api/sources/by-category/{category_name}",
-                "feeds": "/api/sources/{source_id}/feeds",
-            },
-            "podcasts": {
-                "list": "/api/podcasts",
-                "detail": "/api/podcasts/{podcast_id}",
-                "by_identifier": "/api/podcasts/by-identifier/{identifier}",
-                "formats": "/api/podcasts/formats",
-                "audio": "/api/podcasts/audio/{filename}",
-            },
-            "tasks": {
-                "list": "/api/tasks",
-                "detail": "/api/tasks/{task_id}",
-                "pending": "/api/tasks/pending",
-                "executions": "/api/tasks/executions",
-                "stats": "/api/tasks/stats",
-            },
-            "podcast_agent": {
-                "session": "/api/podcast-agent/session",
-                "chat": "/api/podcast-agent/chat",
-                "status": "/api/podcast-agent/status",
-                "sessions": "/api/podcast-agent/sessions",
-                "session_history": "/api/podcast-agent/session_history",
-            },
-        },
-    }
+app.include_router(social_media_router.router, prefix="/api/social-media", tags=["social-media"])
 
 
 @app.get("/stream-audio/{filename}")
 async def stream_audio(filename: str, request: Request):
-    """Stream audio files with support for HTTP Range requests for seeking functionality."""
     audio_path = os.path.join("podcasts/audio", filename)
     if not os.path.exists(audio_path):
         return Response(status_code=404, content="Audio file not found")
@@ -132,7 +100,6 @@ async def stream_audio(filename: str, request: Request):
 
 @app.get("/stream-recording/{session_id}/{filename}")
 async def stream_recording(session_id: str, filename: str, request: Request):
-    """Stream web search recording videos with support for HTTP Range requests."""
     recording_path = os.path.join("podcasts/recordings", session_id, filename)
     if not os.path.exists(recording_path):
         return Response(status_code=404, content="Recording video not found")
@@ -154,14 +121,14 @@ async def stream_recording(session_id: str, filename: str, request: Request):
         "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Content-Length": str(content_length),
         "Content-Disposition": f"inline; filename={filename}",
-        "Content-Type": "video/webm",  # BrowserUse recordings are typically webm format
+        "Content-Type": "video/webm",
     }
 
     async def file_streamer():
         async with aiofiles.open(recording_path, "rb") as f:
             await f.seek(start)
             remaining = content_length
-            chunk_size = 64 * 1024  # 64KB chunks
+            chunk_size = 64 * 1024
             while remaining > 0:
                 chunk = await f.read(min(chunk_size, remaining))
                 if not chunk:
@@ -174,6 +141,7 @@ async def stream_recording(session_id: str, filename: str, request: Request):
 
 
 app.mount("/audio", StaticFiles(directory="podcasts/audio"), name="audio")
+app.mount("/server_static", StaticFiles(directory="static"), name="server_static")
 app.mount("/podcast_img", StaticFiles(directory="podcasts/images"), name="podcast_img")
 if os.path.exists(os.path.join(CLIENT_BUILD_PATH, "static")):
     app.mount("/static", StaticFiles(directory=os.path.join(CLIENT_BUILD_PATH, "static")), name="react_static")

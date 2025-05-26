@@ -75,7 +75,10 @@ async def get_podcast(podcast_id: int = Path(..., description="The ID of the pod
     sources = podcast.get("sources", [])
     if "sources" in podcast:
         del podcast["sources"]
-    return {"podcast": podcast, "content": content, "audio_url": audio_url, "sources": sources}
+    banner_images = podcast.get("banner_images", [])
+    if "banner_images" in podcast:
+        del podcast["banner_images"]
+    return {"podcast": podcast, "content": content, "audio_url": audio_url, "sources": sources, "banner_images": banner_images}
 
 
 @router.get("/by-identifier/{identifier}", response_model=PodcastDetail)
@@ -95,7 +98,10 @@ async def get_podcast_by_identifier(identifier: str = Path(..., description="The
     sources = podcast.get("sources", [])
     if "sources" in podcast:
         del podcast["sources"]
-    return {"podcast": podcast, "content": content, "audio_url": audio_url, "sources": sources}
+    banner_images = podcast.get("banner_images", [])
+    if "banner_images" in podcast:
+        del podcast["banner_images"]
+    return {"podcast": podcast, "content": content, "audio_url": audio_url, "sources": sources, "banner_images": banner_images}
 
 
 @router.post("/", response_model=Podcast)

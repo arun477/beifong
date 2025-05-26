@@ -12,6 +12,8 @@ DEFAULT_DB_PATHS = {
     "agent_session_db": "databases/agent_sessions.db",
     "faiss_index_db": "databases/faiss/article_index.faiss",
     "faiss_mapping_file": "databases/faiss/article_id_map.npy",
+    "internal_sessions_db": "databases/internal_sessions.db",
+    "social_media_db": "databases/social_media.db",
 }
 
 
@@ -45,3 +47,22 @@ def get_agent_session_db_path():
 
 def get_faiss_db_path():
     return get_db_path("faiss_index_db"), get_db_path("faiss_mapping_file")
+
+
+def get_internal_sessions_db_path():
+    return get_db_path("internal_sessions_db")
+
+
+def get_social_media_db_path():
+    return get_db_path("social_media_db")
+
+
+def get_browser_session_path():
+    return "browsers/playwright_persistent_profile"
+
+
+DB_PATH = "databases"
+PODCAST_DIR = "podcasts"
+PODCAST_IMG_DIR = PODCAST_DIR + "/images"
+PODCAST_AUIDO_DIR = PODCAST_DIR + "/audio"
+PODCAST_RECORDINGS_DIR = PODCAST_DIR + "/recordings"

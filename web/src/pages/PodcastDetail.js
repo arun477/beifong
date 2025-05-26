@@ -1,7 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import {
+   ChevronDown,
+   ChevronUp,
+   Eye,
+   FileText,
+   Globe,
+   Calendar,
+   Volume2,
+   Play,
+   ExternalLink,
+   Users,
+   Sparkles,
+   X,
+   Download,
+   Edit3,
+   Trash2,
+   Info,
+   Pause,
+   ChevronLeft,
+   ChevronRight,
+} from 'lucide-react';
 import apiService from '../services/api';
 
+// Existing helper functions
 const formatTtsEngineName = engine => {
    if (!engine) return '';
    return engine;
@@ -16,19 +38,7 @@ const SourceIcon = ({ url }) => {
    const [iconUrl, setIconUrl] = useState(null);
    const [isIconReady, setIsIconReady] = useState(false);
    const defaultIconSvg = (
-      <svg
-         className="w-4 h-4 text-emerald-400 transition-transform duration-200 group-hover:scale-110"
-         fill="none"
-         viewBox="0 0 24 24"
-         stroke="currentColor"
-      >
-         <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-         />
-      </svg>
+      <ExternalLink className="w-4 h-4 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
    );
 
    useEffect(() => {
@@ -64,15 +74,60 @@ const SourceIcon = ({ url }) => {
          isMounted = false;
       };
    }, [url]);
+
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
+
    return (
       <img
          src={iconUrl}
          alt="Source icon"
-         className="w-4 h-4 object-contain transition-transform duration-200 group-hover:scale-110"
+         className="w-4 h-4 object-contain transition-transform duration-200"
       />
+   );
+};
+
+const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
+   const displaySources = sources.slice(0, maxIcons);
+
+   return (
+      <div className="flex -space-x-2 mr-2 relative">
+         {/* Subtle glow behind icons */}
+         <div className="absolute inset-0 bg-emerald-500/10 blur-md rounded-full"></div>
+
+         {displaySources.map((source, index) => {
+            const sourceUrl = typeof source === 'string' ? source : source.url;
+            return (
+               <div
+                  key={index}
+                  className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600/50 flex items-center justify-center overflow-hidden relative group"
+                  style={{
+                     zIndex: displaySources.length - index,
+                     boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
+                  }}
+               >
+                  {/* Hover effect - emerald glow */}
+                  <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                  {/* Icon container */}
+                  <div className="relative z-10 w-4 h-4 flex items-center justify-center">
+                     <SourceIcon url={sourceUrl} />
+                  </div>
+               </div>
+            );
+         })}
+
+         {/* Counter badge for extra sources */}
+         {sources.length > maxIcons && (
+            <div
+               className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600/30 to-teal-600/30 border border-emerald-500/30 flex items-center justify-center text-xs font-medium text-emerald-400"
+               style={{ zIndex: 0 }}
+            >
+               +{sources.length - maxIcons}
+            </div>
+         )}
+      </div>
    );
 };
 
@@ -84,16 +139,19 @@ const PodcastDetail = () => {
    const [error, setError] = useState(null);
    const [isPlaying, setIsPlaying] = useState(false);
    const [audioError, setAudioError] = useState(null);
-   const [audioLoading, setAudioLoading] = useState(false);
    const [waveform, setWaveform] = useState([]);
-   const [pulseSize, setPulseSize] = useState(1);
    const audioRef = useRef(null);
    const animationRef = useRef(null);
-   const pulseRef = useRef(null);
    const [showEditModal, setShowEditModal] = useState(false);
    const [isSaving, setIsSaving] = useState(false);
    const [actionError, setActionError] = useState(null);
    const [newTitle, setNewTitle] = useState('');
+   const [isFullScriptOpen, setIsFullScriptOpen] = useState(false);
+   const [isSourcesOpen, setIsSourcesOpen] = useState(false);
+
+   // New state for carousel
+   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+   const carouselIntervalRef = useRef(null);
 
    useEffect(() => {
       const fetchPodcast = async () => {
@@ -113,13 +171,65 @@ const PodcastDetail = () => {
          }
       };
       fetchPodcast();
-      const initialWaveform = Array.from({ length: 40 }, () => Math.random() * 0.4 + 0.1);
+      // Generate frequency bars
+      const initialWaveform = Array.from({ length: 32 }, () => Math.random() * 80 + 20);
       setWaveform(initialWaveform);
       return () => {
          if (animationRef.current) cancelAnimationFrame(animationRef.current);
-         if (pulseRef.current) cancelAnimationFrame(pulseRef.current);
+         if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
       };
    }, [identifier]);
+
+   // Auto-advance carousel
+   useEffect(() => {
+      if (podcast && podcast.banner_images && podcast.banner_images.length > 1) {
+         carouselIntervalRef.current = setInterval(() => {
+            setCurrentBannerIndex(prevIndex =>
+               prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+            );
+         }, 5000); // Change image every 5 seconds
+      }
+
+      return () => {
+         if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      };
+   }, [podcast]);
+
+   const nextBanner = () => {
+      if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
+
+      // Reset the interval when manually changing
+      if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+
+      setCurrentBannerIndex(prevIndex =>
+         prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+      );
+
+      // Restart the interval
+      carouselIntervalRef.current = setInterval(() => {
+         setCurrentBannerIndex(prevIndex =>
+            prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+         );
+      }, 5000);
+   };
+
+   const prevBanner = () => {
+      if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
+
+      // Reset the interval when manually changing
+      if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+
+      setCurrentBannerIndex(prevIndex =>
+         prevIndex === 0 ? podcast.banner_images.length - 1 : prevIndex - 1
+      );
+
+      // Restart the interval
+      carouselIntervalRef.current = setInterval(() => {
+         setCurrentBannerIndex(prevIndex =>
+            prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
+         );
+      }, 5000);
+   };
 
    useEffect(() => {
       const handleKeyPress = e => {
@@ -150,28 +260,19 @@ const PodcastDetail = () => {
 
    useEffect(() => {
       if (isPlaying) {
-         let frameCount = 0;
          const animateWaveform = () => {
-            frameCount++;
-            if (frameCount % 3 === 0) {
-               setWaveform(prevWaveform =>
-                  prevWaveform.map(height => {
-                     let newHeight = height + (Math.random() * 0.2 - 0.1);
-                     newHeight = Math.max(0.1, Math.min(0.8, newHeight));
-                     return newHeight;
-                  })
-               );
-            }
-            const pulseFrequency = 1000;
-            const pulseAmount =
-               Math.sin(((Date.now() % pulseFrequency) / pulseFrequency) * Math.PI * 2) * 0.05 + 1;
-            setPulseSize(pulseAmount);
+            setWaveform(prevWaveform =>
+               prevWaveform.map((height, index) => {
+                  let newHeight = height + (Math.random() * 20 - 10);
+                  newHeight = Math.max(20, Math.min(100, newHeight));
+                  return newHeight;
+               })
+            );
             animationRef.current = requestAnimationFrame(animateWaveform);
          };
          animationRef.current = requestAnimationFrame(animateWaveform);
       } else {
          if (animationRef.current) cancelAnimationFrame(animationRef.current);
-         setPulseSize(1);
       }
       return () => {
          if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -224,32 +325,103 @@ const PodcastDetail = () => {
       if (!dateString) return '';
       const date = new Date(dateString.replace(' ', 'T'));
       if (isNaN(date)) return 'Invalid Date';
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
       return date.toLocaleDateString(undefined, options);
+   };
+
+   // Speaker color mapping
+   const speakerColors = {
+      ALEX: 'from-slate-600 to-slate-700',
+      MORGAN: 'from-gray-600 to-gray-700',
+      default: 'from-zinc-600 to-zinc-700',
+   };
+
+   const getSpeakerColor = speaker => {
+      return speakerColors[speaker] || speakerColors.default;
    };
 
    if (loading) {
       return (
-         <div className="max-w-4xl mx-auto py-12 text-center">
-            <div className="w-12 h-12 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-            <p className="text-gray-400">Loading podcast...</p>
+         <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+               <div className="w-12 h-12 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+               <p className="text-gray-400">Loading podcast...</p>
+            </div>
          </div>
       );
    }
 
    if (error) {
       return (
-         <div className="max-w-4xl mx-auto p-4">
+         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-l-4 border-red-500 p-4 rounded-sm shadow-sm mb-4 text-red-400">
                {error}
             </div>
+         </div>
+      );
+   }
+
+   if (!podcast) {
+      return (
+         <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-l-4 border-yellow-500 p-4 rounded-sm shadow-sm mb-4 text-yellow-300">
+               Podcast not found.
+            </div>
+         </div>
+      );
+   }
+
+   const { podcast: podcastData, content, audio_url, sources } = podcast;
+   const hasAudio = podcastData.audio_generated && audio_url;
+   const hasBanner = !!podcastData.banner_img;
+   const bannerImages = podcast.banner_images || [];
+   const hasBannerCarousel = Array.isArray(bannerImages) && bannerImages.length > 0;
+   const hasSources = Array.isArray(sources) && sources.length > 0;
+   const hasScript = content && content.sections && content.sections.length > 0;
+   let streamingAudioUrl = '';
+   if (hasAudio) {
+      const originalAudioUrl = audio_url;
+      const filename = originalAudioUrl.split('/').pop();
+      streamingAudioUrl = `${apiService.API_BASE_URL}/stream-audio/${filename}`;
+   }
+
+   return (
+      <div className="min-h-screen py-4 px-4 relative overflow-hidden">
+         {/* Banner Image Background */}
+         {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
+            <div className="fixed inset-0 w-full h-full z-0">
+               {/* Current banner as background */}
+               <div className="absolute inset-0 w-full h-full opacity-90">
+                  <img
+                     src={`${apiService.API_BASE_URL}/podcast_img/${podcast.banner_images[currentBannerIndex]}`}
+                     alt="Background"
+                     className="w-full h-full object-cover blur-xl transition-all duration-1500 ease-in-out bg-banner-background"
+                     style={{ transform: 'scale(1.05)' }}
+                  />
+                  {/* Gradient overlay for better readability */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-gray-900/90 via-gray-900/80 to-gray-900/95" />
+               </div>
+            </div>
+         )}
+
+         {/* Standard Background effects */}
+         <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div
+               className="absolute bottom-20 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse"
+               style={{ animationDelay: '1s' }}
+            ></div>
+         </div>
+
+         <div className="max-w-lg mx-auto relative z-10">
+            {/* Back Button */}
             <button
                onClick={handleGoBack}
-               className="text-gray-300 hover:text-emerald-300 flex items-center transition-colors duration-200 group"
+               className="text-gray-300 hover:text-emerald-300 flex items-center mb-3 transition-colors duration-200 group"
             >
                <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200"
+                  className="h-4 w-4 mr-1 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                >
@@ -261,103 +433,162 @@ const PodcastDetail = () => {
                </svg>
                Back
             </button>
-         </div>
-      );
-   }
 
-   if (!podcast) {
-      return (
-         <div className="max-w-4xl mx-auto p-4">
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-l-4 border-yellow-500 p-4 rounded-sm shadow-sm mb-4 text-yellow-300">
-               Podcast not found.
-            </div>
-            <Link
-               to="/podcasts"
-               className="text-gray-300 hover:text-emerald-300 flex items-center transition-colors duration-200 group"
-            >
-               <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+            {/* Ultra Compact Card */}
+            <div className="bg-gradient-to-br from-gray-900/80 via-gray-850/80 to-gray-800/80 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl backdrop-blur-lg">
+               {/* Banner Carousel */}
+               {hasBannerCarousel && (
+                  <div className="h-65 relative overflow-hidden mb-16">
+                     {/* Carousel Container */}
+                     <div className="h-full w-full relative">
+                        {bannerImages.map((image, index) => (
+                           <div
+                              key={index}
+                              className={`absolute inset-0 transition-opacity duration-500 ${
+                                 currentBannerIndex === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                              }`}
+                           >
+                              <img
+                                 src={`${apiService.API_BASE_URL}/podcast_img/${image}`}
+                                 alt={`Banner ${index + 1}`}
+                                 className="w-full h-full object-cover transition-transform duration-700 ease-in-out"
+                                 style={{
+                                    transform:
+                                       currentBannerIndex === index ? 'scale(1)' : 'scale(1.1)',
+                                 }}
+                              />
+                           </div>
+                        ))}
+
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/30 z-20" />
+
+                        {/* Navigation Buttons */}
+                        {bannerImages.length > 1 && (
+                           <>
+                              <button
+                                 onClick={prevBanner}
+                                 className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
+                              >
+                                 <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+                              </button>
+                              <button
+                                 onClick={nextBanner}
+                                 className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-black/30 backdrop-blur-sm text-white/70 hover:text-white hover:bg-black/50 transition-all duration-200 hover:scale-110 border border-white/10 group"
+                              >
+                                 <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                              </button>
+                           </>
+                        )}
+
+                        {/* Indicators */}
+                        {bannerImages.length > 1 && (
+                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
+                              {bannerImages.map((_, index) => (
+                                 <button
+                                    key={index}
+                                    onClick={() => {
+                                       setCurrentBannerIndex(index);
+                                       // Reset interval
+                                       if (carouselIntervalRef.current)
+                                          clearInterval(carouselIntervalRef.current);
+                                       carouselIntervalRef.current = setInterval(() => {
+                                          setCurrentBannerIndex(prevIndex =>
+                                             prevIndex === bannerImages.length - 1
+                                                ? 0
+                                                : prevIndex + 1
+                                          );
+                                       }, 5000);
+                                    }}
+                                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                       currentBannerIndex === index
+                                          ? 'bg-emerald-400 w-6'
+                                          : 'bg-white/30 hover:bg-white/50'
+                                    }`}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                 />
+                              ))}
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               )}
+
+               {/* Fallback to single banner if no carousel but has banner */}
+               {!hasBannerCarousel && hasBanner && (
+                  <div className="h-80 relative overflow-hidden mb-16">
+                     <img
+                        src={`${apiService.API_BASE_URL}/podcast_img/${podcastData.banner_img}`}
+                        alt={content.title || 'Podcast'}
+                        className="w-full h-full object-cover"
+                     />
+                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
+                  </div>
+               )}
+
+               {/* Header content overlay */}
+               <div
+                  className={`${
+                     hasBanner || hasBannerCarousel ? 'absolute top-64 left-0 right-0 z-30' : ''
+                  } px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-900/90 backdrop-blur-md border-b border-gray-700/30`}
                >
-                  <path
-                     fillRule="evenodd"
-                     d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                     clipRule="evenodd"
-                  />
-               </svg>
-               Back to podcasts
-            </Link>
-         </div>
-      );
-   }
-
-   const { podcast: podcastData, content, audio_url, sources } = podcast;
-   const hasAudio = podcastData.audio_generated && audio_url;
-   const hasBanner = !!podcastData.banner_img;
-   const hasSources = Array.isArray(sources) && sources.length > 0;
-   let streamingAudioUrl = '';
-   if (hasAudio) {
-      const originalAudioUrl = audio_url;
-      const filename = originalAudioUrl.split('/').pop();
-      streamingAudioUrl = `${apiService.API_BASE_URL}/stream-audio/${filename}`;
-   }
-
-   return (
-      <div className="max-w-5xl mx-auto p-3">
-         <button
-            onClick={handleGoBack}
-            className="text-gray-300 hover:text-emerald-300 flex items-center mb-4 transition-colors duration-200 group"
-         >
-            <svg
-               xmlns="http://www.w3.org/2000/svg"
-               className="h-4 w-4 mr-1 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200"
-               viewBox="0 0 20 20"
-               fill="currentColor"
-            >
-               <path
-                  fillRule="evenodd"
-                  d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-                  clipRule="evenodd"
-               />
-            </svg>
-            Back
-         </button>
-         <div className={`${hasSources ? 'grid grid-cols-1 lg:grid-cols-4 gap-4' : ''}`}>
-            <div className={`${hasSources ? 'lg:col-span-3' : ''}`}>
-               <div className="bg-gradient-to-br from-gray-800 to-gray-900 shadow-md rounded-sm overflow-hidden mb-5 relative">
-                  <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-emerald-800 to-transparent opacity-60"></div>
-                  <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-gray-300 p-4 border-b border-gray-700 relative">
-                     <div className="absolute top-2 right-2 flex space-x-2 z-10">
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                  <div className="relative flex justify-between items-center">
+                     <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div
+                           className={`p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg transition-all duration-300 ${
+                              isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+                           }`}
+                        >
+                           <Volume2
+                              className={`w-4 h-4 text-emerald-400 transition-all duration-300 ${
+                                 isPlaying ? 'scale-110' : ''
+                              }`}
+                           />
+                        </div>
+                        <div className="min-w-0">
+                           <h3 className="text-base font-semibold text-white truncate">
+                              {content.title || `Podcast - ${formatDate(podcastData.date)}`}
+                           </h3>
+                           <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(podcastData.date)}
+                              {isPlaying && (
+                                 <span className="flex items-center gap-1 text-emerald-400 ml-1">
+                                    <Play className="w-2.5 h-2.5" />
+                                    <span className="text-xs">Playing</span>
+                                 </span>
+                              )}
+                           </p>
+                        </div>
+                     </div>
+                     <div className="flex gap-1">
                         <button
                            onClick={() => setShowEditModal(true)}
-                           className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded-full text-gray-400 hover:text-blue-400 transition-colors duration-200 shadow-md"
+                           className="p-1.5 text-gray-400 hover:text-blue-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
                            title="Edit Title"
                         >
-                           <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                           >
-                              <path
-                                 strokeLinecap="round"
-                                 strokeLinejoin="round"
-                                 strokeWidth={2}
-                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                           </svg>
+                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                            onClick={handleDelete}
-                           className="p-1.5 bg-gray-800 hover:bg-gray-700 rounded-full text-gray-400 hover:text-red-400 transition-colors duration-200 shadow-md"
+                           className="p-1.5 text-gray-400 hover:text-red-400 transition-all duration-200 hover:bg-gray-700/30 rounded"
                            title="Delete Podcast"
                         >
+                           <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Compact Metadata Tags */}
+               <div className="px-4 py-2 mt-16">
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                     {podcastData.language_code && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-900/80 to-blue-800/80 text-blue-200 border border-blue-800/50">
                            <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
+                              className="h-3 w-3 mr-0.5"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
@@ -366,367 +597,342 @@ const PodcastDetail = () => {
                                  strokeLinecap="round"
                                  strokeLinejoin="round"
                                  strokeWidth={2}
-                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                 d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
                               />
                            </svg>
-                        </button>
-                     </div>
-                     <div className="flex items-start">
-                        <div className="flex-shrink-0 mr-4">
-                           {hasBanner ? (
-                              <div className="w-32 h-32 relative transform perspective-800 transition-all duration-300 hover:rotate-y-6 hover:rotate-x-2 group">
-                                 <div className="w-full h-full rounded-md overflow-hidden shadow-xl border border-gray-600 transform -rotate-y-1 -rotate-x-1 hover:scale-105 transition-transform duration-500 relative z-20">
-                                    <img
-                                       src={
-                                          apiService.API_BASE_URL +
-                                          '/podcast_img/' +
-                                          podcastData.banner_img
-                                       }
-                                       alt={content.title || 'Podcast'}
-                                       className="w-full h-full object-cover"
-                                    />
-                                 </div>
-                                 <div className="absolute -bottom-2 -right-2 w-full h-full bg-gray-900 rounded-md opacity-40 blur-sm z-10 transform scale-95 transition-transform duration-300 group-hover:scale-100"></div>
-                                 <div className="absolute inset-0 bg-emerald-500 opacity-0 group-hover:opacity-10 rounded-md blur-md z-0 transition-opacity duration-300"></div>
-                              </div>
-                           ) : (
-                              <div className="w-32 h-32 bg-gradient-to-b from-gray-700 to-gray-800 rounded-md flex items-center justify-center border border-gray-600 shadow-lg transform hover:rotate-y-6 hover:rotate-x-2 transition-all duration-300 relative perspective-800">
-                                 <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-14 w-14 text-emerald-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                 >
-                                    <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                                    />
-                                 </svg>
-                                 <div className="absolute -bottom-2 -right-2 w-full h-full bg-gray-900 rounded-md opacity-40 blur-sm z-10 transform scale-95"></div>
-                              </div>
-                           )}
+                           <span>{getLanguageName(podcastData.language_code)}</span>
                         </div>
-                        <div className="flex-grow pt-2">
-                           <h1 className="text-xl md:text-2xl font-medium mb-2 leading-tight text-gray-100">
-                              {content.title || `Podcast - ${formatDate(podcastData.date)}`}
-                           </h1>
-                           <div className="flex flex-wrap items-start gap-2 mb-1">
-                              <div className="flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-800 to-gray-700 text-gray-300 border border-gray-700">
-                                 <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-3.5 w-3.5 mr-1 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                 >
-                                    <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                 </svg>
-                                 <span>{formatDate(podcastData.date)}</span>
-                              </div>
-                              {podcastData.language_code && (
-                                 <div className="flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-blue-900 to-blue-800 text-blue-200 border border-blue-800">
-                                    <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-3.5 w-3.5 mr-1"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
-                                       />
-                                    </svg>
-                                    <span>{getLanguageName(podcastData.language_code)}</span>
-                                 </div>
-                              )}
-                              {podcastData.tts_engine && (
-                                 <div className="flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-purple-900 to-purple-800 text-purple-200 border border-purple-800">
-                                    <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-3 w-3 mr-0.5"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                       strokeWidth={2}
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M3 7 Q9 2 12 7 T21 7 M3 12 Q9 9 12 12 T21 12 M3 17 Q9 13 12 17 T21 17"
-                                       />
-                                    </svg>
-                                    <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
-                                 </div>
-                              )}
-                              {podcastData.audio_generated && (
-                                 <div className="flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-emerald-900 to-emerald-800 text-emerald-200 border border-emerald-800">
-                                    <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-3.5 w-3.5 mr-1"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-                                       />
-                                    </svg>
-                                    <span>Audio</span>
-                                 </div>
-                              )}
-                              {hasSources && (
-                                 <div className="flex items-center px-2 py-1 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-gray-400 border border-gray-700">
-                                    <svg
-                                       className="h-3.5 w-3.5 mr-1 text-emerald-500"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={1.5}
-                                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                                       />
-                                    </svg>
-                                    <span>
-                                       {sources.length} source
-                                       {sources.length !== 1 ? 's' : ''}
-                                    </span>
-                                 </div>
-                              )}
+                     )}
+                     {podcastData.tts_engine && (
+                        <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-900/80 to-purple-800/80 text-purple-200 border border-purple-800/50">
+                           <Sparkles className="w-3 h-3 mr-1" />
+                           <span>{formatTtsEngineName(podcastData.tts_engine)}</span>
+                        </div>
+                     )}
+                  </div>
+               </div>
+
+               {/* Rest of the component remains the same... */}
+
+               {/* Compact Audio Section */}
+               {hasAudio && (
+                  <div className="px-4 py-3">
+                     <div className="relative">
+                        {/* Simplified frequency visualization */}
+                        <div className="absolute inset-0 overflow-hidden rounded-lg">
+                           <div className="flex items-end justify-center h-full gap-px p-2">
+                              {waveform.map((height, index) => (
+                                 <div
+                                    key={index}
+                                    className={`bg-gradient-to-t from-emerald-600/30 to-teal-400/30 rounded-full transition-all duration-300 ${
+                                       isPlaying ? 'animate-pulse' : 'opacity-40'
+                                    }`}
+                                    style={{
+                                       width: '2px',
+                                       height: isPlaying ? `${height}%` : '20%',
+                                       animationDelay: `${index * 30}ms`,
+                                       animationDuration: `${1000 + Math.random() * 300}ms`,
+                                    }}
+                                 />
+                              ))}
                            </div>
                         </div>
-                     </div>
-                  </div>
-                  {hasAudio && (
-                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-4 py-4 border-b border-gray-700">
-                        <div className="flex flex-col">
+
+                        {/* Audio Controls */}
+                        <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
                            {audioError ? (
-                              <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-red-500 p-3 rounded-sm mb-2">
-                                 <div className="flex">
-                                    <div className="flex-shrink-0">
-                                       <svg
-                                          className="h-5 w-5 text-red-400"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          viewBox="0 0 20 20"
-                                          fill="currentColor"
-                                          aria-hidden="true"
-                                       >
-                                          <path
-                                             fillRule="evenodd"
-                                             d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-4.707a1 1 0 001.414 0L12 12.07l1.293 1.293a1 1 0 001.414-1.414L13.414 10l1.293-1.293a1 1 0 00-1.414-1.414L12 8.586l-1.293-1.293a1 1 0 00-1.414 1.414L10.586 10l-1.293 1.293a1 1 0 000 1.414z"
-                                             clipRule="evenodd"
-                                          />
-                                       </svg>
-                                    </div>
-                                    <div className="ml-3">
-                                       <p className="text-sm text-red-300 font-medium">
-                                          Audio Error
-                                       </p>
-                                       <p className="text-sm text-red-200">{audioError}</p>
-                                    </div>
-                                 </div>
+                              <div className="flex items-center gap-2 text-red-400">
+                                 <Info className="w-4 h-4" />
+                                 <span className="text-xs">{audioError}</span>
                               </div>
                            ) : (
-                              <>
-                                 <div className="bg-gray-900 rounded-md border border-gray-700 p-3 mb-3">
-                                    <audio
-                                       ref={audioRef}
-                                       className="w-full"
-                                       src={streamingAudioUrl}
-                                       controls
-                                       preload="auto"
-                                       onPlay={() => setIsPlaying(true)}
-                                       onPause={() => setIsPlaying(false)}
-                                       onEnded={() => setIsPlaying(false)}
-                                       onError={e => {
-                                          console.error('Audio playback error:', e);
-                                          setAudioError(
-                                             'There was an error playing this audio file.'
-                                          );
-                                       }}
-                                       style={{
-                                          height: '40px',
-                                          borderRadius: '4px',
-                                          backgroundColor: '#111827',
-                                          color: '#10B981',
-                                       }}
-                                    />
-                                 </div>
-                                 <div className="bg-gray-900 rounded-sm h-10 overflow-hidden relative border border-gray-700 mb-1">
-                                    <div className="flex h-full items-center justify-center gap-px px-2">
-                                       {waveform.map((height, index) => (
-                                          <div
-                                             key={index}
-                                             style={{
-                                                height: `${height * 100}%`,
-                                                transition: 'height 0.1s ease-in-out',
-                                             }}
-                                             className={`w-0.5 ${
-                                                index < waveform.length / 3
-                                                   ? 'bg-gradient-to-t from-emerald-900 to-emerald-500'
-                                                   : index < (2 * waveform.length) / 3
-                                                   ? 'bg-gradient-to-t from-emerald-800 to-emerald-400'
-                                                   : 'bg-gradient-to-t from-emerald-900 to-emerald-500'
-                                             } rounded-sm`}
-                                          />
-                                       ))}
-                                    </div>
-                                 </div>
-                                 <div className="flex justify-center text-xs text-gray-600 flex-wrap gap-2">
-                                    <span className="inline-flex items-center">
-                                       <kbd className="px-1 bg-gray-700 rounded-sm text-xs">
-                                          Space
-                                       </kbd>
-                                       <span className="mx-1 text-xs">Play/Pause</span>
-                                    </span>
-                                    <span className="mx-1 hidden sm:inline">|</span>
-                                    <span className="inline-flex items-center">
-                                       <kbd className="px-1 bg-gray-700 rounded-sm text-xs">←</kbd>
-                                       <kbd className="px-1 bg-gray-700 rounded-sm ml-1 text-xs">
-                                          →
-                                       </kbd>
-                                       <span className="mx-1 text-xs">Seek</span>
-                                    </span>
-                                    <span className="mx-1 hidden sm:inline">|</span>
-                                    <span className="inline-flex items-center">
-                                       <kbd className="px-1 bg-gray-700 rounded-sm text-xs">M</kbd>
-                                       <span className="mx-1 text-xs">Mute</span>
-                                    </span>
-                                 </div>
-                              </>
+                              <audio
+                                 ref={audioRef}
+                                 controls
+                                 className="w-full h-8"
+                                 src={streamingAudioUrl}
+                                 onPlay={() => setIsPlaying(true)}
+                                 onPause={() => setIsPlaying(false)}
+                                 onEnded={() => setIsPlaying(false)}
+                                 onError={e => {
+                                    console.error('Audio playback error:', e);
+                                    setAudioError('There was an error playing this audio file.');
+                                 }}
+                              >
+                                 Your browser does not support the audio element.
+                              </audio>
                            )}
+                        </div>
+
+                        {/* Pulsing Ring Animation when playing */}
+                        {isPlaying && (
+                           <div className="absolute inset-0 rounded-lg pointer-events-none">
+                              <div className="absolute inset-0 border border-emerald-500/20 rounded-lg animate-ping" />
+                              <div className="absolute inset-1 border border-emerald-400/10 rounded-lg animate-pulse" />
+                           </div>
+                        )}
+                     </div>
+
+                     {/* Compact Audio Info */}
+                     <div className="mt-2 text-center">
+                        <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
+                           <Sparkles
+                              className={`w-3 h-3 transition-all duration-300 ${
+                                 isPlaying ? 'text-emerald-400' : ''
+                              }`}
+                           />
+                           High-quality podcast audio
+                           {isPlaying && (
+                              <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded">
+                                 ♪ Playing
+                              </span>
+                           )}
+                        </p>
+                     </div>
+                  </div>
+               )}
+
+               {/* Compact Actions Section */}
+               <div className="px-4 py-3 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
+                  <div className="flex justify-center gap-3">
+                     {hasScript && (
+                        <button
+                           onClick={() => setIsFullScriptOpen(true)}
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
+                        >
+                           {/* Subtle background glow on hover */}
+                           <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                           {/* Icon with emerald accent */}
+                           <div className="p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                              <FileText className="w-3 h-3 text-emerald-400" />
+                           </div>
+
+                           {/* Text */}
+                           <span className="relative z-10">Script</span>
+                        </button>
+                     )}
+
+                     {hasSources && (
+                        <button
+                           onClick={() => setIsSourcesOpen(true)}
+                           className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
+                        >
+                           {/* Subtle background glow on hover */}
+                           <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
+
+                           {/* Icon stack */}
+                           <StackedSourceIcons sources={sources} />
+
+                           {/* Text */}
+                           <span className="relative z-10">Sources</span>
+                        </button>
+                     )}
+                  </div>
+
+                  {/* Keyboard shortcuts - More compact */}
+                  {hasAudio && (
+                     <div className="mt-2 text-center">
+                        <div className="flex justify-center text-xs text-gray-500 gap-2">
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">
+                                 Space
+                              </kbd>
+                              Play
+                           </span>
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">←→</kbd>
+                              Seek
+                           </span>
+                           <span className="flex items-center gap-1">
+                              <kbd className="px-1.5 py-0.5 bg-gray-700/50 rounded text-xs">M</kbd>
+                              Mute
+                           </span>
                         </div>
                      </div>
                   )}
-                  <div className="p-5 max-w-none">
-                     {content.sections &&
-                        content.sections.map((section, sectionIndex) => (
-                           <div key={sectionIndex} className="mb-5 last:mb-0">
-                              {section.type && section.type !== 'dialog' && (
-                                 <h2 className="text-base font-medium text-gray-100 border-b border-gray-700 pb-2 mb-3">
-                                    {section.type.charAt(0).toUpperCase() + section.type.slice(1)}
-                                 </h2>
-                              )}
-                              {section.dialog &&
-                                 section.dialog.map((line, lineIndex) => (
-                                    <div
-                                       key={lineIndex}
-                                       className="mb-3 flex items-start space-x-2.5"
-                                    >
-                                       <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-gradient-to-r from-gray-900 to-gray-800 text-emerald-300 border border-gray-700 mt-1">
-                                          {line.speaker}
-                                       </span>
-                                       <p className="text-gray-400 text-sm leading-relaxed">
-                                          {line.text}
-                                       </p>
-                                    </div>
-                                 ))}
+               </div>
+
+               {/* Floating Audio Waves Animation when playing */}
+               {isPlaying && hasAudio && (
+                  <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl">
+                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
+                        <div
+                           className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping"
+                           style={{ animationDuration: '3s' }}
+                        />
+                        <div
+                           className="absolute inset-8 border border-teal-400/10 rounded-full animate-ping"
+                           style={{ animationDuration: '2s', animationDelay: '0.5s' }}
+                        />
+                        <div
+                           className="absolute inset-16 border border-emerald-300/10 rounded-full animate-ping"
+                           style={{ animationDuration: '4s', animationDelay: '1s' }}
+                        />
+                     </div>
+                  </div>
+               )}
+            </div>
+
+            {/* Script Sidebar */}
+            {isFullScriptOpen && hasScript && (
+               <div className="fixed inset-0 z-50">
+                  {/* Backdrop */}
+                  <div
+                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                     onClick={() => setIsFullScriptOpen(false)}
+                  ></div>
+
+                  {/* Sidebar Panel */}
+                  <div className="absolute inset-0 flex justify-end">
+                     <div
+                        className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
+                           isFullScriptOpen ? 'translate-x-0' : 'translate-x-full'
+                        }`}
+                     >
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
+                           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                           <div className="relative flex items-center justify-between">
+                              <div className="flex items-center min-w-0 flex-1">
+                                 <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                    <FileText className="w-4 h-4 text-emerald-400" />
+                                 </div>
+                                 <div className="min-w-0 flex-1">
+                                    <h2 className="text-lg font-semibold text-white truncate">
+                                       Podcast Script
+                                    </h2>
+                                    <p className="text-xs text-gray-400 truncate">
+                                       {content.title}
+                                    </p>
+                                 </div>
+                              </div>
+                              <button
+                                 onClick={() => setIsFullScriptOpen(false)}
+                                 className="ml-2 p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+                              >
+                                 <X className="w-5 h-5" />
+                              </button>
                            </div>
-                        ))}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
+                           {content.sections.map((section, sectionIndex) => (
+                              <div
+                                 key={sectionIndex}
+                                 className="border-gray-700/20 pb-4 last:border-0"
+                              >
+                                 {/* Section header */}
+                                 <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
+                                    <div className="flex items-center">
+                                       <h3 className="text-sm font-medium text-emerald-400">
+                                          {section.type?.charAt(0).toUpperCase() +
+                                             section.type?.slice(1)}
+                                       </h3>
+                                    </div>
+                                 </div>
+
+                                 {/* Section content */}
+                                 {section.dialog && (
+                                    <div className="px-4 pt-2">
+                                       {section.dialog.map((line, lineIndex) => (
+                                          <div key={lineIndex} className="mb-3 last:mb-0">
+                                             <div
+                                                className={`inline-flex px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                   line.speaker
+                                                )} text-white rounded mb-1`}
+                                             >
+                                                {line.speaker}
+                                             </div>
+                                             <div className="text-gray-300 text-sm leading-relaxed">
+                                                {line.text}
+                                             </div>
+                                          </div>
+                                       ))}
+                                    </div>
+                                 )}
+                              </div>
+                           ))}
+                        </div>
+                     </div>
                   </div>
                </div>
-            </div>
-            {hasSources && (
-               <div className="lg:col-span-1">
-                  <div className="sticky top-4">
-                     <div className="bg-gradient-to-br from-gray-800 to-gray-900 shadow-md rounded-sm border border-gray-700/40 overflow-hidden">
-                        {/* Sources Header */}
-                        <div className="flex items-center px-3 py-2 bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700/60">
-                           <svg
-                              className="w-3.5 h-3.5 text-emerald-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                           >
-                              <path
-                                 strokeLinecap="round"
-                                 strokeLinejoin="round"
-                                 strokeWidth={1.5}
-                                 d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                              />
-                           </svg>
-                           <span className="text-xs text-emerald-500 font-medium ml-1.5 uppercase tracking-wider">
-                              Sources
-                           </span>
-                           <div className="ml-auto text-xs text-gray-500">{sources.length}</div>
+            )}
+
+            {isSourcesOpen && hasSources && (
+               <div className="fixed inset-0 z-50">
+                  {/* Backdrop */}
+                  <div
+                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                     onClick={() => setIsSourcesOpen(false)}
+                  ></div>
+
+                  {/* Sidebar Panel */}
+                  <div className="absolute inset-0 flex justify-end">
+                     <div
+                        className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
+                           isSourcesOpen ? 'translate-x-0' : 'translate-x-full'
+                        }`}
+                     >
+                        {/* Header */}
+                        <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
+                           <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
+                           <div className="relative flex items-center justify-between">
+                              <div className="flex items-center min-w-0 flex-1">
+                                 <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg mr-3 flex-shrink-0">
+                                    <Globe className="w-4 h-4 text-emerald-400" />
+                                 </div>
+                                 <h2 className="text-lg font-semibold text-white">Sources</h2>
+                              </div>
+                              <button
+                                 onClick={() => setIsSourcesOpen(false)}
+                                 className="ml-2 p-1.5 text-gray-400 hover:text-white transition-all duration-200 hover:bg-gray-700/30 rounded flex-shrink-0"
+                              >
+                                 <X className="w-5 h-5" />
+                              </button>
+                           </div>
                         </div>
-                        <div className="max-h-[70vh] overflow-y-auto p-2 space-y-1.5">
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
                            {sources.map((source, index) => {
-                              let sourceUrl, sourceTitle, sourceHost;
-                              if (typeof source === 'string') {
-                                 sourceUrl = source;
-                                 sourceTitle = source;
-                              } else {
-                                 sourceUrl = source.url || '';
-                                 sourceTitle = source.title || 'Untitled Source';
-                                 sourceHost = source.source || '';
-                              }
-                              let hostname;
+                              const sourceUrl = typeof source === 'string' ? source : source.url;
+                              let hostname = '';
                               try {
                                  hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
                               } catch (e) {
-                                 hostname = sourceHost || 'Unknown Source';
+                                 hostname = 'Unknown Source';
                               }
-                              const displayUrl =
-                                 sourceUrl.length > 36
-                                    ? sourceUrl.substring(0, 36) + '...'
-                                    : sourceUrl;
+
                               return (
                                  <a
                                     key={index}
                                     href={sourceUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    title={sourceTitle}
-                                    className="group flex flex-col p-2 rounded bg-gray-800/40 hover:bg-gray-800/80 text-gray-300 
-                           hover:text-emerald-300 transition-all duration-150 border border-gray-700/20 
-                           hover:border-emerald-600/30 hover:shadow-sm block"
+                                    className="block px-4 py-3 border-b border-gray-700/30 hover:bg-gray-800/50 transition-colors group"
                                  >
-                                    {sourceTitle && sourceTitle !== sourceUrl && (
-                                       <div className="text-xs font-medium text-emerald-400 mb-1 truncate group-hover:text-emerald-300">
-                                          {sourceTitle}
+                                    <div className="flex items-start">
+                                       <div className="flex-shrink-0 pt-1">
+                                          <div className="p-1.5 bg-gradient-to-br from-gray-800 to-gray-700 rounded-lg flex items-center justify-center group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-200">
+                                             <SourceIcon url={sourceUrl} />
+                                          </div>
                                        </div>
-                                    )}
-                                    <div className="flex items-center">
-                                       <div className="flex-shrink-0 w-4 h-4 mr-1.5 opacity-80 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <SourceIcon url={sourceUrl} />
+                                       <div className="ml-3 flex-1 min-w-0">
+                                          <h3 className="font-medium text-emerald-400 group-hover:text-emerald-300 transition-colors truncate">
+                                             {hostname}
+                                          </h3>
+                                          <p className="text-sm text-gray-400 mt-1 line-clamp-2 break-all">
+                                             {sourceUrl}
+                                          </p>
+                                          <div className="mt-2 flex items-center text-xs text-gray-500">
+                                             <ExternalLink className="w-3 h-3 mr-1 text-emerald-500/70 group-hover:translate-x-0.5 transition-transform duration-200" />
+                                             <span className="group-hover:text-gray-400 transition-colors">
+                                                View source
+                                             </span>
+                                          </div>
                                        </div>
-                                       <span className="text-xs truncate flex-grow font-medium">
-                                          {hostname}
-                                       </span>
-                                       <svg
-                                          className="w-3 h-3 text-gray-500 group-hover:text-emerald-400 ml-1 opacity-0 
-                                 group-hover:opacity-100 transition-all"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                          stroke="currentColor"
-                                       >
-                                          <path
-                                             strokeLinecap="round"
-                                             strokeLinejoin="round"
-                                             strokeWidth={2}
-                                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                          />
-                                       </svg>
-                                    </div>
-                                    <div className="mt-0.5 ml-5 text-[9px] text-gray-500 group-hover:text-gray-400 truncate">
-                                       {displayUrl}
                                     </div>
                                  </a>
                               );
@@ -736,77 +942,114 @@ const PodcastDetail = () => {
                   </div>
                </div>
             )}
-         </div>
-         {showEditModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-               <div className="bg-gray-800 border border-gray-700 rounded-sm shadow-lg max-w-md w-full p-6">
-                  <h3 className="text-xl font-medium text-gray-100 mb-3">Edit Podcast Title</h3>
-                  {actionError && (
-                     <div className="bg-red-900 border-l-4 border-red-500 text-red-300 p-4 mb-4 rounded-sm">
-                        {actionError}
+            {/* Edit Modal */}
+            {showEditModal && (
+               <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
+                  <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl max-w-md w-full p-8">
+                     <h3 className="text-xl font-bold text-gray-100 mb-4">Edit Podcast Title</h3>
+                     {actionError && (
+                        <div className="bg-red-900/30 border border-red-500/50 text-red-300 p-4 mb-4 rounded-xl backdrop-blur-sm">
+                           {actionError}
+                        </div>
+                     )}
+                     <div className="mb-6">
+                        <label
+                           htmlFor="podcastTitle"
+                           className="block text-sm font-medium text-gray-300 mb-2"
+                        >
+                           Title
+                        </label>
+                        <input
+                           type="text"
+                           id="podcastTitle"
+                           value={newTitle}
+                           onChange={e => setNewTitle(e.target.value)}
+                           className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600/50 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all"
+                           placeholder="Enter podcast title"
+                        />
                      </div>
-                  )}
-                  <div className="mb-4">
-                     <label
-                        htmlFor="podcastTitle"
-                        className="block text-sm font-medium text-gray-300 mb-1"
-                     >
-                        Title
-                     </label>
-                     <input
-                        type="text"
-                        id="podcastTitle"
-                        value={newTitle}
-                        onChange={e => setNewTitle(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        placeholder="Enter podcast title"
-                     />
-                  </div>
-                  <div className="flex justify-end space-x-3">
-                     <button
-                        onClick={() => setShowEditModal(false)}
-                        className="px-4 py-2 bg-gray-700 text-gray-300 rounded-sm hover:bg-gray-600"
-                        disabled={isSaving}
-                     >
-                        Cancel
-                     </button>
-                     <button
-                        onClick={handleTitleUpdate}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-sm hover:bg-emerald-700 flex items-center"
-                        disabled={isSaving}
-                     >
-                        {isSaving ? (
-                           <>
-                              <svg
-                                 className="animate-spin h-4 w-4 mr-2 text-white"
-                                 xmlns="http://www.w3.org/2000/svg"
-                                 fill="none"
-                                 viewBox="0 0 24 24"
-                              >
-                                 <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                 ></circle>
-                                 <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                 ></path>
-                              </svg>
-                              Saving...
-                           </>
-                        ) : (
-                           'Save Changes'
-                        )}
-                     </button>
+                     <div className="flex justify-end space-x-3">
+                        <button
+                           onClick={() => setShowEditModal(false)}
+                           className="px-6 py-3 bg-gray-800/50 text-gray-300 rounded-xl hover:bg-gray-700/50 transition-all backdrop-blur-sm border border-gray-700/50"
+                           disabled={isSaving}
+                        >
+                           Cancel
+                        </button>
+                        <button
+                           onClick={handleTitleUpdate}
+                           className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 flex items-center transition-all"
+                           disabled={isSaving}
+                        >
+                           {isSaving ? (
+                              <>
+                                 <svg
+                                    className="animate-spin h-4 w-4 mr-2 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                 >
+                                    <circle
+                                       className="opacity-25"
+                                       cx="12"
+                                       cy="12"
+                                       r="10"
+                                       stroke="currentColor"
+                                       strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                       className="opacity-75"
+                                       fill="currentColor"
+                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                 </svg>
+                                 Saving...
+                              </>
+                           ) : (
+                              'Save Changes'
+                           )}
+                        </button>
+                     </div>
                   </div>
                </div>
-            </div>
-         )}
+            )}
+         </div>
+         <style jsx>{`
+            @keyframes slideInRight {
+               from {
+                  transform: translateX(100%);
+               }
+               to {
+                  transform: translateX(0);
+               }
+            }
+
+            @keyframes fadeIn {
+               from {
+                  opacity: 0;
+               }
+               to {
+                  opacity: 1;
+               }
+            }
+
+            /* Subtle background glow effect */
+            @keyframes subtle-background-glow {
+               0% {
+                  filter: brightness(1) saturate(0.8);
+               }
+               50% {
+                  filter: brightness(1.1) saturate(1);
+               }
+               100% {
+                  filter: brightness(1) saturate(0.8);
+               }
+            }
+
+            .bg-banner-background {
+               animation: subtle-background-glow 10s infinite ease-in-out;
+            }
+         `}</style>
       </div>
    );
 };

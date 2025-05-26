@@ -99,7 +99,7 @@ class PodcastService:
         try:
             query = """
             SELECT id, title, date, audio_generated, audio_path, banner_img_path,
-                language_code, tts_engine, created_at
+                language_code, tts_engine, created_at, banner_images
             FROM podcasts
             WHERE id = ?
             """
@@ -126,6 +126,13 @@ class PodcastService:
                 except json.JSONDecodeError:
                     sources = []
             podcast["sources"] = sources
+            
+            try:
+                banner_images = json.loads(podcast.get("banner_images", "[]"))
+            except json.JSONDecodeError:
+                banner_images = []
+            podcast["banner_images"] = banner_images
+            
             return podcast
         except Exception as e:
             if isinstance(e, HTTPException):

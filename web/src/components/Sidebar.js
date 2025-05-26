@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import api from '../services/api';
 
 const Sidebar = ({ onNewSession, onSessionSelect }) => {
@@ -10,7 +11,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    const [navExpanded, setNavExpanded] = useState(false);
    const [pagination, setPagination] = useState({
       page: 1,
-      perPage: 5,
+      perPage: 8,
       totalPages: 1,
       total: 0,
    });
@@ -85,7 +86,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    };
 
    const handleSessionSelect = id => {
-      navigate(`/studio/chat/${id}`);
+      window.location.href = `/studio/chat/${id}`;
       if (onSessionSelect) {
          onSessionSelect();
       }
@@ -135,40 +136,45 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    const getStatusBadge = stage => {
       const statusConfig = {
          welcome: {
-            class: 'bg-blue-900 text-blue-300 border-blue-700',
+            class: 'bg-blue-900/30 text-blue-300 border-blue-600/30',
             label: 'start',
          },
          searching: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
+            class: 'bg-indigo-900/30 text-indigo-300 border-indigo-600/30',
             label: 'searching',
          },
          source_selection: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
-            label: 'source',
+            class: 'bg-purple-900/30 text-purple-300 border-purple-600/30',
+            label: 'sources',
          },
          script: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
+            class: 'bg-teal-900/30 text-teal-300 border-teal-600/30',
             label: 'script',
          },
          banner: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
+            class: 'bg-orange-900/30 text-orange-300 border-orange-600/30',
             label: 'banner',
          },
+         image: {
+            class: 'bg-orange-900/30 text-orange-300 border-orange-600/30',
+            label: 'image',
+         },
+
          audio: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
+            class: 'bg-rose-900/30 text-rose-300 border-rose-600/30',
             label: 'audio',
          },
          web_search: {
-            class: 'bg-indigo-900 text-indigo-300 border-indigo-700',
+            class: 'bg-cyan-900/30 text-cyan-300 border-cyan-600/30',
             label: 'search',
          },
          complete: {
-            class: 'bg-emerald-900 text-emerald-300 border-emerald-700',
+            class: 'bg-emerald-900/30 text-emerald-300 border-emerald-600/30',
             label: 'complete',
          },
       };
       const config = statusConfig[stage] || {
-         class: 'bg-gray-800 text-gray-300 border-gray-700',
+         class: 'bg-gray-800/30 text-gray-300 border-gray-600/30',
          label: stage ? stage.charAt(0).toUpperCase() + stage.slice(1) : 'Unknown',
       };
       return config;
@@ -177,17 +183,17 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    const renderPagination = () => {
       if (sessions.length === 0 || pagination.totalPages <= 1) return null;
       return (
-         <div className="flex items-center justify-between mt-4 mb-2 px-1">
+         <div className="flex items-center justify-between mt-2 mb-1 px-1">
             <button
                onClick={handlePrevPage}
                disabled={pagination.page === 1}
-               className={`p-1 rounded text-xs ${
+               className={`p-1 rounded-md transition-all duration-200 ${
                   pagination.page === 1
                      ? 'text-gray-600 cursor-not-allowed'
-                     : 'text-gray-400 hover:text-emerald-400 hover:bg-gray-800'
+                     : 'text-gray-400 hover:text-emerald-400 hover:bg-gray-800/50'
                }`}
             >
-               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                      strokeLinecap="round"
                      strokeLinejoin="round"
@@ -196,19 +202,19 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   />
                </svg>
             </button>
-            <span className="text-xs text-gray-500">
-               {pagination.page} / {pagination.totalPages}
-            </span>
+            <div className="text-xs text-gray-400 bg-gray-800/30 px-2 py-0.5 rounded-md border border-gray-700/30">
+               {pagination.page} of {pagination.totalPages}
+            </div>
             <button
                onClick={handleNextPage}
                disabled={pagination.page === pagination.totalPages}
-               className={`p-1 rounded text-xs ${
+               className={`p-1 rounded-md transition-all duration-200 ${
                   pagination.page === pagination.totalPages
                      ? 'text-gray-600 cursor-not-allowed'
-                     : 'text-gray-400 hover:text-emerald-400 hover:bg-gray-800'
+                     : 'text-gray-400 hover:text-emerald-400 hover:bg-gray-800/50'
                }`}
             >
-               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                      strokeLinecap="round"
                      strokeLinejoin="round"
@@ -226,8 +232,8 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          name: 'Home',
          path: '/',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
-               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                      strokeLinecap="round"
                      strokeLinejoin="round"
@@ -242,8 +248,8 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          name: 'Articles',
          path: '/articles',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
-               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M19 5V19H5V5H19ZM21 3H3V21H21V3Z" fill="currentColor" />
                   <path d="M7 7H12V12H7V7Z" fill="currentColor" />
                   <path d="M14 7H17V9H14V7Z" fill="currentColor" />
@@ -258,8 +264,8 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          name: 'Podcasts',
          path: '/podcasts',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
-               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path
                      d="M12 1C8.14 1 5 4.14 5 8V11C5 14.86 8.14 18 12 18C15.86 18 19 14.86 19 11V8C19 4.14 15.86 1 12 1Z"
                      stroke="currentColor"
@@ -295,8 +301,8 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          name: 'Studio',
          path: '/studio',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
-               <svg className="w-4 h-4" viewBox="0 0 100 100" fill="none" stroke="currentColor">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+               <svg className="w-3 h-3" viewBox="0 0 100 100" fill="none" stroke="currentColor">
                   <rect x="20" y="20" width="60" height="60" rx="5" strokeWidth="1" />
                   <line x1="35" y1="30" x2="35" y2="70" strokeWidth="3" strokeLinecap="round" />
                   <line x1="50" y1="30" x2="50" y2="70" strokeWidth="3" strokeLinecap="round" />
@@ -309,11 +315,20 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          ),
       },
       {
+         name: 'Social',
+         path: '/social-media',
+         icon: (
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+              <ShieldCheck className="w-3 h-3" />
+            </span>
+         ),
+      },
+      {
          name: 'Sources',
          path: '/sources',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
-               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
+               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path
                      d="M12 8C16.4183 8 20 6.65685 20 5C20 3.34315 16.4183 2 12 2C7.58172 2 4 3.34315 4 5C4 6.65685 7.58172 8 12 8Z"
                      stroke="currentColor"
@@ -343,9 +358,9 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          name: 'Voyager',
          path: '/voyager',
          icon: (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-sm bg-gray-800/60">
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
                <svg
-                  className="w-4 h-4"
+                  className="w-3 h-3"
                   viewBox="0 0 100 100"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -365,40 +380,42 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
    ];
 
    return (
-      <div className="h-full flex flex-col">
-         <div className="p-4 border-b border-gray-700 bg-[#0A0E14]">
+      <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800">
+         {/* Compact Header */}
+         <div className="p-3 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur">
             <Link to="/" className="flex items-center group">
-               <div className="w-12 h-12 relative mr-3 flex-shrink-0">
+               <div className="w-8 h-8 relative mr-2 flex-shrink-0">
                   <div className="absolute inset-0 flex items-center justify-center z-10">
                      <span
-                        className="text-2xl filter transition-transform group-hover:scale-110"
+                        className="text-xl filter transition-transform group-hover:scale-110"
                         style={{
-                           textShadow: '0 0 10px rgba(16, 185, 129, 0.5)',
-                           fontSize: '1.5rem',
+                           textShadow: '0 0 10px rgba(16, 185, 129, 0.6)',
                         }}
                      >
                         🦉
                      </span>
                   </div>
-                  <div className="absolute inset-0 bg-emerald-500 opacity-10 rounded-full blur-md group-hover:opacity-20 transition-opacity"></div>
-                  <div className="absolute inset-0 rounded-full border border-gray-700 bg-[#121824]"></div>
+                  <div className="absolute inset-0 bg-emerald-500 opacity-10 rounded-full blur-lg group-hover:opacity-20 transition-opacity"></div>
+                  <div className="absolute inset-0 rounded-full border border-gray-700/30 bg-gradient-to-br from-gray-800 to-gray-900"></div>
                </div>
                <div>
-                  <h1 className="text-lg font-semibold text-white">
+                  <h1 className="text-base font-bold text-white leading-tight">
                      <span className="text-emerald-400">Bei</span>fong
                   </h1>
-                  <p className="text-xs text-gray-400">AI Podcast Studio</p>
+                  <p className="text-xs text-gray-400 leading-tight">AI Podcast Studio</p>
                </div>
             </Link>
          </div>
-         <div className="px-4 py-2 border-b border-gray-700">
+         
+         {/* Compact Quick Access */}
+         <div className="px-3 py-2 border-b border-gray-700/30">
             <button
                onClick={() => setNavExpanded(!navExpanded)}
-               className="w-full flex items-center justify-between text-sm text-gray-400 hover:text-white p-1 transition-colors rounded-sm"
+               className="w-full flex items-center justify-between p-1.5 text-xs text-gray-300 hover:text-white bg-gradient-to-r from-gray-800/30 to-gray-700/30 hover:from-gray-700/50 hover:to-gray-600/50 rounded-md transition-all duration-200 border border-gray-700/30 hover:border-gray-600/50"
             >
                <span className="font-medium flex items-center">
                   <svg
-                     className="w-4 h-4 mr-1.5 text-emerald-500"
+                     className="w-3 h-3 mr-1.5 text-emerald-500"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -413,7 +430,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   Quick Access
                </span>
                <svg
-                  className={`w-4 h-4 transform transition-transform ${
+                  className={`w-3 h-3 transform transition-transform duration-200 ${
                      navExpanded ? 'rotate-180' : ''
                   }`}
                   fill="none"
@@ -428,20 +445,22 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   />
                </svg>
             </button>
+            
+            {/* Compact Navigation Links */}
             <div
                className={`overflow-hidden transition-all duration-300 ${
-                  navExpanded ? 'max-h-100 mt-2' : 'max-h-0'
+                  navExpanded ? 'max-h-60 mt-1 opacity-100' : 'max-h-0 opacity-0'
                }`}
             >
-               <div className="space-y-1 py-1">
+               <div className="space-y-0.5 py-0.5">
                   {navLinks.map(link => (
                      <Link
                         key={link.path}
                         to={link.path}
-                        className="flex items-center p-2 text-sm text-gray-400 hover:text-white rounded-sm hover:bg-gray-800 transition-colors group"
+                        className="flex items-center p-1.5 text-xs text-gray-400 hover:text-white rounded-md hover:bg-gray-800/40 transition-all duration-200 group"
                         onClick={onSessionSelect}
                      >
-                        <span className="text-gray-500 group-hover:text-emerald-400 transition-colors mr-3">
+                        <span className="text-gray-500 group-hover:text-emerald-400 transition-colors mr-2">
                            {link.icon}
                         </span>
                         {link.name}
@@ -450,16 +469,18 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                </div>
             </div>
          </div>
-         <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4">
-            <div className="text-xs text-gray-400 mb-3 flex items-center justify-between">
-               <span>Chats</span>
+         
+         {/* Compact Session List */}
+         <div className="flex-1 overflow-y-auto px-3 pt-2 pb-2">
+            <div className="text-xs text-gray-300 mb-2 flex items-center justify-between">
+               <span className="font-semibold">Recent Chats</span>
                <button
                   onClick={() => loadSessions(true)}
-                  className="p-1 text-gray-500 hover:text-emerald-400 transition-colors"
+                  className="p-1.5 text-gray-500 hover:text-emerald-400 hover:bg-gray-800/40 rounded-md transition-all duration-200"
                   title="Refresh sessions"
                >
                   <svg
-                     className="h-3.5 w-3.5"
+                     className="h-3 w-3"
                      fill="none"
                      viewBox="0 0 24 24"
                      stroke="currentColor"
@@ -473,85 +494,83 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   </svg>
                </button>
             </div>
-            <div className="space-y-2.5">
+            
+            <div className="space-y-2">
                {loading ? (
-                  <div className="text-center py-6">
+                  <div className="text-center py-4">
                      <div className="inline-flex items-center space-x-2">
-                        <svg
-                           className="animate-spin h-4 w-4 text-emerald-500"
-                           viewBox="0 0 24 24"
-                           fill="none"
-                        >
-                           <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                           />
-                           <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                           />
-                        </svg>
-                        <span className="text-gray-400 text-sm">Loading...</span>
+                        <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-gray-400 text-xs">Loading sessions...</span>
                      </div>
                   </div>
                ) : error ? (
-                  <div className="p-4 text-center">
-                     <div className="text-red-400 text-sm mb-2">{error}</div>
+                  <div className="p-2 text-center bg-red-900/20 border border-red-700/30 rounded-md">
+                     <div className="text-red-400 text-xs mb-1.5">{error}</div>
                      <button
                         onClick={() => loadSessions(true)}
-                        className="px-3 py-1.5 bg-[#121824] hover:bg-gray-800 text-gray-300 text-xs rounded-sm border border-gray-700 transition-colors"
+                        className="px-2 py-1 bg-red-800/30 hover:bg-red-700/40 text-red-300 text-xs rounded-md border border-red-600/30 transition-colors"
                      >
                         Retry
                      </button>
                   </div>
                ) : sessions.length === 0 ? (
-                  <div className="text-center py-8 px-4">
-                     <svg
-                        className="h-12 w-12 text-gray-600 mx-auto mb-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                     >
-                        <path
-                           strokeLinecap="round"
-                           strokeLinejoin="round"
-                           strokeWidth={1}
-                           d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                        />
-                     </svg>
-                     <p className="text-gray-400 text-sm">No saved podcasts yet</p>
-                     <p className="text-gray-500 text-xs mt-1">Start by creating a new one</p>
+                  <div className="text-center py-6 px-2">
+                     <div className="w-10 h-10 mx-auto mb-2 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-full flex items-center justify-center border border-gray-700/30">
+                        <svg
+                           className="h-5 w-5 text-gray-600"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor"
+                        >
+                           <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1}
+                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                           />
+                        </svg>
+                     </div>
+                     <p className="text-gray-400 text-xs font-medium">No podcasts yet</p>
+                     <p className="text-gray-500 text-xs mt-0.5">Create your first podcast below</p>
                   </div>
                ) : (
                   <>
                      {sessions.map(session => {
                         const statusBadge = getStatusBadge(session.stage);
+                        const isActive = session.session_id === sessionId;
                         return (
                            <div
                               key={session.session_id}
-                              className={`group p-3 rounded-sm cursor-pointer transition transform hover:shadow-md ${
-                                 session.session_id === sessionId
-                                    ? 'bg-[#121824] border border-gray-700'
-                                    : 'bg-[#0f1621] hover:bg-[#121824] border border-transparent hover:border-gray-700'
+                              className={`group relative p-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                                 isActive
+                                    ? 'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 shadow-md shadow-emerald-500/5'
+                                    : 'bg-gradient-to-r from-gray-800/30 to-gray-700/30 hover:from-gray-700/40 hover:to-gray-600/40 border border-gray-700/30 hover:border-gray-600/50'
                               }`}
                               onClick={() => handleSessionSelect(session.session_id)}
                            >
                               <div className="flex justify-between items-start">
-                                 <div className="font-medium text-white text-sm truncate pr-2">
-                                    {session.topic || 'Untitled Podcast'}
+                                 <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-white text-xs truncate pr-6">
+                                       {session.topic || 'Untitled Podcast'}
+                                    </h3>
+                                    <div className="flex items-center justify-between mt-1">
+                                       <span className="text-xs text-gray-400">
+                                          {formatSessionDate(session.updated_at)}
+                                       </span>
+                                       <span
+                                          className={`text-xs px-1.5 py-0.5 rounded-md border font-medium ${statusBadge.class}`}
+                                       >
+                                          {statusBadge.label}
+                                       </span>
+                                    </div>
                                  </div>
                                  <button
                                     onClick={e => openDeleteModal(e, session)}
-                                    className="p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-gray-800 rounded transition-all focus:opacity-100"
+                                    className="absolute top-1.5 right-1.5 p-1 text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-gray-800/50 rounded-md transition-all duration-200 focus:opacity-100"
                                     title="Delete session"
                                  >
                                     <svg
-                                       className="h-4 w-4"
+                                       className="h-3 w-3"
                                        fill="none"
                                        viewBox="0 0 24 24"
                                        stroke="currentColor"
@@ -565,16 +584,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                                     </svg>
                                  </button>
                               </div>
-                              <div className="flex items-center justify-between mt-2">
-                                 <span className="text-xs text-gray-400">
-                                    {formatSessionDate(session.updated_at)}
-                                 </span>
-                                 <span
-                                    className={`text-xs px-2 py-0.5 rounded-sm ${statusBadge.class} border`}
-                                 >
-                                    {statusBadge.label}
-                                 </span>
-                              </div>
                            </div>
                         );
                      })}
@@ -583,40 +592,24 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                )}
             </div>
          </div>
-         <div className="p-4 border-t border-gray-700 bg-[#0A0E14]">
+         
+         {/* Compact New Session Button */}
+         <div className="p-3 border-t border-gray-700/30">
             <button
                onClick={handleNewSession}
                disabled={isCreating}
-               className={`w-full flex items-center justify-center py-2.5 bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-sm transition text-sm font-medium ${
-                  isCreating ? 'opacity-70 cursor-not-allowed' : ''
+               className={`w-full flex items-center justify-center py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg transition-all duration-200 text-xs font-medium shadow-md hover:shadow-emerald-500/25 ${
+                  isCreating ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.01]'
                }`}
             >
                {isCreating ? (
                   <>
-                     <svg
-                        className="animate-spin h-4 w-4 mr-2 text-white"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                     >
-                        <circle
-                           className="opacity-25"
-                           cx="12"
-                           cy="12"
-                           r="10"
-                           stroke="currentColor"
-                           strokeWidth="4"
-                        />
-                        <path
-                           className="opacity-75"
-                           fill="currentColor"
-                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                     </svg>
+                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
                      Creating...
                   </>
                ) : (
                   <>
-                     <svg className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                     <svg className="h-3 w-3 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                         <path
                            fillRule="evenodd"
                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
@@ -628,75 +621,82 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                )}
             </button>
          </div>
+         
+         {/* Delete Confirmation Modal - Slightly more compact */}
          {showDeleteModal && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-               <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-md max-w-md w-full p-6 shadow-2xl animate-fade-in-up">
-                  <div className="flex items-center mb-4 text-red-400">
-                     <svg
-                        className="h-6 w-6 mr-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                     >
-                        <path
-                           strokeLinecap="round"
-                           strokeLinejoin="round"
-                           strokeWidth={2}
-                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                     </svg>
-                     <h3 className="text-lg font-semibold">Delete Chat</h3>
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+               <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 rounded-xl max-w-md w-full p-4 shadow-2xl animate-fade-in-up">
+                  <div className="flex items-center mb-3 text-red-400">
+                     <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                           className="h-5 w-5"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor"
+                        >
+                           <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                           />
+                        </svg>
+                     </div>
+                     <h3 className="text-base font-semibold">Delete Chat</h3>
                   </div>
-                  <p className="text-gray-300 mb-4">
+                  <p className="text-gray-300 mb-4 leading-snug text-sm">
                      Are you sure you want to delete the chat "
-                     {sessionToDelete?.topic || 'Untitled Podcast'}"?
+                     <span className="font-medium text-white">{sessionToDelete?.topic || 'Untitled Podcast'}</span>"?
                      {sessionToDelete?.stage === 'complete'
                         ? ' This will remove the session from your list, but preserve the generated podcast assets.'
                         : ' This will permanently remove all associated data including any generated audio and images.'}
                   </p>
-                  <div className="flex justify-end space-x-3 mt-6">
+                  <div className="flex gap-2">
                      <button
                         onClick={cancelDelete}
-                        className="px-4 py-2 text-gray-300 hover:text-white bg-gray-800/80 hover:bg-gray-700 rounded-md transition-colors border border-gray-700"
+                        className="flex-1 px-3 py-2 text-gray-300 hover:text-white bg-gray-800/50 hover:bg-gray-700/50 rounded-lg transition-all duration-200 border border-gray-700/30 text-sm"
                      >
                         Cancel
                      </button>
                      <button
                         onClick={confirmDelete}
                         disabled={isDeleting}
-                        className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center min-w-24"
+                        className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-all duration-200 flex items-center justify-center disabled:opacity-70 text-sm"
                      >
                         {isDeleting ? (
                            <>
-                              <svg
-                                 className="animate-spin h-4 w-4 mr-2"
-                                 viewBox="0 0 24 24"
-                                 fill="none"
-                              >
-                                 <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                 />
-                                 <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                 />
-                              </svg>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
                               Deleting...
                            </>
                         ) : (
-                           'Delete'
+                           <>
+                              <svg className="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete
+                           </>
                         )}
                      </button>
                   </div>
                </div>
             </div>
          )}
+
+         <style jsx>{`
+            @keyframes fade-in-up {
+               from {
+                  opacity: 0;
+                  transform: translateY(20px);
+               }
+               to {
+                  opacity: 1;
+                  transform: translateY(0);
+               }
+            }
+            .animate-fade-in-up {
+               animation: fade-in-up 0.3s ease-out forwards;
+            }
+         `}</style>
       </div>
    );
 };

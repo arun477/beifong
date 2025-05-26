@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import api from '../services/api';
 
 const ToggleSwitch = ({ isActive, isUpdating, onChange }) => {
@@ -668,20 +669,7 @@ const Podcasts = () => {
                               )}
                               {podcast.tts_engine && podcast.tts_engine && (
                                  <span className="inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-gradient-to-r from-purple-900 to-purple-800 text-purple-300 border border-purple-800">
-                                    <svg
-                                       xmlns="http://www.w3.org/2000/svg"
-                                       className="h-3 w-3 mr-0.5"
-                                       fill="none"
-                                       viewBox="0 0 24 24"
-                                       stroke="currentColor"
-                                       strokeWidth={2}
-                                    >
-                                       <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M3 7 Q9 2 12 7 T21 7 M3 12 Q9 9 12 12 T21 12 M3 17 Q9 13 12 17 T21 17"
-                                       />
-                                    </svg>
+                                   <Sparkles className="w-3 h-3 mr-1" />
                                     {formatTtsEngineName(podcast.tts_engine)}
                                  </span>
                               )}

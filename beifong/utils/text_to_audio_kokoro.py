@@ -104,3 +104,7 @@ def create_podcast(
     full_audio = combine_full_segments(audio_segments)
     write_to_disk(output_path, full_audio, sampling_rate)
     return output_path
+
+
+if __name__ == "__main__":
+    create_podcast("", "output.wav")

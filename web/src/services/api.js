@@ -150,6 +150,7 @@ const endpoints = {
       getLanguageCodes: () => api.get('/api/podcasts/language-codes'),
    },
    podcastAgent: {
+      languages: () => api.get('/api/podcast-agent/languages'),
       createSession: (sessionId = null) =>
          api.post('/api/podcast-agent/session', {
             session_id: sessionId,
@@ -159,9 +160,10 @@ const endpoints = {
             session_id: sessionId,
             message,
          }),
-      checkStatus: sessionId =>
+      checkStatus: (sessionId, taskId = null) =>
          api.post('/api/podcast-agent/status', {
             session_id: sessionId,
+            task_id: taskId,
          }),
       getLatestMessage: sessionId =>
          api.get(`/api/podcast-agent/latest_message?session_id=${sessionId}`),
@@ -174,6 +176,87 @@ const endpoints = {
          api.get(`/api/podcast-agent/session_history?session_id=${sessionId}`),
       getBannerUrl: filename => `${API_BASE_URL}/podcast_img/${filename}`,
       getAudioUrl: filename => `${API_BASE_URL}/audio/${filename}`,
+   },
+
+   socialMedia: {
+      getAll: (params = {}) => api.get('/api/social-media/', { params }),
+      getById: postId => api.get(`/api/social-media/${postId}`),
+      getPlatforms: () => api.get('/api/social-media/platforms/list'),
+      getSentiments: (dateFrom, dateTo) =>
+         api.get('/api/social-media/sentiments/list', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getTopUsers: (limit = 10, platform = null, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/users/top', {
+            params: {
+               limit,
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getCategories: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/categories/list', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getUserSentiment: (limit = 10, platform = null, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/users/sentiment', {
+            params: {
+               limit,
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getCategorySentiment: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/categories/sentiment', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getTrendingTopics: (dateFrom = null, dateTo = null, limit = 10) =>
+         api.get('/api/social-media/topic/trends', {
+            params: {
+               limit,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getSentimentOverTime: (dateFrom = null, dateTo = null, platform = null) =>
+         api.get('/api/social-media/trends/time', {
+            params: {
+               platform,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getInfluentialPosts: (sentiment = null, limit = 5, dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/posts/influential', {
+            params: {
+               sentiment,
+               limit,
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+      getEngagementStats: (dateFrom = null, dateTo = null) =>
+         api.get('/api/social-media/engagement/stats', {
+            params: {
+               date_from: dateFrom,
+               date_to: dateTo,
+            },
+         }),
+
+      setupSession: (sites = null) => {
+         return api.post('/api/social-media/session/setup', null, {});
+      },
    },
 
    API_BASE_URL: API_BASE_URL,

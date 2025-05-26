@@ -12,6 +12,8 @@ import SourceEdit from './pages/SourceEdit';
 import StudioLanding from './pages/StudioLanding';
 import StudioChat from './pages/StudioChat';
 import Voyager from './pages/Voyager';
+import SocialMedia from './pages/SocialMedia';
+import SocialMediaDetail from './pages/SocialMediaDetail';
 
 const AppLayout = ({ children }) => {
   const location = useLocation();
@@ -115,6 +117,22 @@ function App() {
               </AppLayout>
             }
           />
+          <Route
+  path="/social-media"
+  element={
+    <AppLayout>
+      <SocialMedia />
+    </AppLayout>
+  }
+/>
+<Route
+  path="/social-media/:postId"
+  element={
+    <AppLayout>
+      <SocialMediaDetail />
+    </AppLayout>
+  }
+/>
         </Routes>
       </div>
     </Router>

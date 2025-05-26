@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict, Any
 
 
@@ -16,9 +16,7 @@ class Article(ArticleBase):
     id: int
     metadata: Optional[Dict[str, Any]] = {}
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaginatedArticles(BaseModel):

@@ -20,13 +20,14 @@ class ChatResponse(BaseModel):
     response: str
     stage: str
     session_state: str
-    is_processing: Optional[bool] = False
+    is_processing: bool = False
     process_type: Optional[str] = None
-    elapsed_seconds: Optional[int] = None
+    task_id: Optional[str] = None 
 
 
-class ProcessStatusRequest(BaseModel):
+class StatusRequest(BaseModel):
     session_id: str
+    task_id: Optional[str] = None  
 
 
 @router.post("/session")
@@ -41,10 +42,10 @@ async def chat(request: ChatRequest):
     return await podcast_agent_service.chat(request)
 
 
-@router.post("/status")
-async def check_processing_status(request: ProcessStatusRequest):
-    """Check if a session has a running process and automatically reset if stalled"""
-    return await podcast_agent_service.check_processing_status(request)
+@router.post("/status", response_model=ChatResponse)
+async def check_status(request: StatusRequest):
+    """Check if a result is available for the session"""
+    return await podcast_agent_service.check_result_status(request)
 
 
 @router.get("/sessions")
@@ -63,3 +64,8 @@ async def get_session_history(session_id: str):
 async def delete_session(session_id: str):
     """Delete a podcast session and all its data"""
     return await podcast_agent_service.delete_session(session_id)
+
+@router.get("/languages")
+async def get_supported_languages():
+    """Get the list of supported languages"""
+    return await podcast_agent_service.get_supported_languages()

@@ -115,6 +115,19 @@ const Navbar = () => {
                         )}
                      </Link>
                      <Link
+                        to="/social-media"
+                        className={`px-3 py-2 text-sm font-medium relative ${
+                           isActive('/social-media')
+                              ? 'text-gray-200 border-b-2 border-emerald-400'
+                              : 'text-gray-400 hover:text-gray-200 border-b-2 border-transparent hover:border-gray-700'
+                        } transition-colors duration-200`}
+                     >
+                        Social
+                        {isActive('/social-media') && (
+                           <span className="absolute -bottom-0.5 left-0 w-full h-0.5 bg-emerald-400 blur-sm opacity-70"></span>
+                        )}
+                     </Link>
+                     <Link
                         to="/voyager"
                         className={`px-3 py-2 text-sm font-medium relative ${
                            isActive('/voyager')
@@ -202,6 +215,15 @@ const Navbar = () => {
                   }`}
                >
                   Studio
+               </Link>
+               <Link
+                  to="/social-media"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`text-lg ${
+                     isActive('/social-media') ? 'text-emerald-400' : 'text-gray-200'
+                  }`}
+               >
+                  Social
                </Link>
                <Link
                   to="/voyager"

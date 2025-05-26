@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { BrainCircuit, ShieldCheck } from 'lucide-react';
 
 const Home = () => {
    const [hoverArticles, setHoverArticles] = useState(false);
@@ -7,6 +8,7 @@ const Home = () => {
    const [hoverSources, setHoverSources] = useState(false);
    const [hoverStudio, setHoverStudio] = useState(false);
    const [hoverVoyager, setHoverVoyager] = useState(false);
+   const [hoverSocial, setHoverSocial] = useState(false);
    const [showWelcome, setShowWelcome] = useState(false);
 
    useEffect(() => {
@@ -369,12 +371,44 @@ const Home = () => {
                         Launch Voyager
                      </Link>
                   </div>
+
                   <div
-                     className={`${cardBaseClasses} md:col-span-2`}
+                     className={cardBaseClasses}
+                     onMouseEnter={() => setHoverSocial(true)}
+                     onMouseLeave={() => setHoverSocial(false)}
+                  >
+                     <div className="absolute bottom-0 right-0 h-16 w-16 opacity-10">
+                        <BrainCircuit
+                           strokeWidth={0.7}
+                           className="w-3/4 h-3/4 text-emerald-500"
+                        />
+                     </div>
+                     <div className={cardFlexContainerClasses}>
+                        <div
+                           className={`${cardIconContainerClasses} ${
+                              hoverSocial ? 'scale-110' : ''
+                           }`}
+                        >
+                           <ShieldCheck className={cardIconClasses} />
+                        </div>
+                        <div>
+                           <h3 className={cardTitleClasses}>Social</h3>
+                           <p className={cardDescriptionClasses}>
+                              Monitor and analyze your social media accounts.
+                           </p>
+                        </div>
+                     </div>
+                     <Link to="/social-media" className={cardButtonClasses}>
+                        Your Social
+                     </Link>
+                  </div>
+
+                  <div
+                     className={cardBaseClasses}
                      onMouseEnter={() => setHoverSources(true)}
                      onMouseLeave={() => setHoverSources(false)}
                   >
-                     <div className="absolute bottom-0 right-0 h-16 w-16 opacity-10">
+                     <div className="absolute bottom-0 right-0 h-23 w-23 opacity-10">
                         {' '}
                         <svg
                            viewBox="0 0 100 100"
@@ -436,7 +470,7 @@ const Home = () => {
                         <div>
                            <h3 className={cardTitleClasses}>Manage Sources</h3>
                            <p className={cardDescriptionClasses}>
-                              Organize content sources, add new feeds, and settings etc...
+                              Organize content sources, settings etc...
                            </p>{' '}
                         </div>
                      </div>
