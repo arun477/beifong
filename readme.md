@@ -1,4 +1,4 @@
-# 🦉 Beifong: Your Junk-Free, Personalized Podcasts
+# 🦉 Beifong: Your Junk-Free, Personalized Information and Podcasts
 ![image](https://github.com/user-attachments/assets/b2f24f12-6f80-46fa-aa31-ee42e17765b1)
 
 
