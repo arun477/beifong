@@ -243,7 +243,7 @@ For temporary remote access without a public-facing server:
 1. **SSH Port Forwarding**:
    ```bash
    # On the remote machine, forward local port 8000 to your computer
-   ssh -L 8000:localhost:8000 username@your-server-ip
+   ssh -L 7000:localhost:7000 username@your-server-ip
    ```
 
 2. **Ngrok Tunneling**:
