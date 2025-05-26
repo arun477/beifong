@@ -77,7 +77,7 @@ def create_browser_context():
     with sync_playwright() as playwright:
         browser_context = playwright.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
-            headless=True,
+            headless=False,
             viewport={"width": 1280, "height": 800},
         )
         try:
