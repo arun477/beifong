@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import apiService from '../services/api';
 
-// Existing helper functions
 const formatTtsEngineName = engine => {
    if (!engine) return '';
    return engine;
@@ -93,9 +92,7 @@ const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
 
    return (
       <div className="flex -space-x-2 mr-2 relative">
-         {/* Subtle glow behind icons */}
          <div className="absolute inset-0 bg-emerald-500/10 blur-md rounded-full"></div>
-
          {displaySources.map((source, index) => {
             const sourceUrl = typeof source === 'string' ? source : source.url;
             return (
@@ -107,18 +104,13 @@ const StackedSourceIcons = ({ sources, maxIcons = 4 }) => {
                      boxShadow: '0 0 0 1px rgba(16, 185, 129, 0.1)',
                   }}
                >
-                  {/* Hover effect - emerald glow */}
                   <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
-
-                  {/* Icon container */}
                   <div className="relative z-10 w-4 h-4 flex items-center justify-center">
                      <SourceIcon url={sourceUrl} />
                   </div>
                </div>
             );
          })}
-
-         {/* Counter badge for extra sources */}
          {sources.length > maxIcons && (
             <div
                className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-600/30 to-teal-600/30 border border-emerald-500/30 flex items-center justify-center text-xs font-medium text-emerald-400"
@@ -148,8 +140,6 @@ const PodcastDetail = () => {
    const [newTitle, setNewTitle] = useState('');
    const [isFullScriptOpen, setIsFullScriptOpen] = useState(false);
    const [isSourcesOpen, setIsSourcesOpen] = useState(false);
-
-   // New state for carousel
    const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
    const carouselIntervalRef = useRef(null);
 
@@ -171,7 +161,6 @@ const PodcastDetail = () => {
          }
       };
       fetchPodcast();
-      // Generate frequency bars
       const initialWaveform = Array.from({ length: 32 }, () => Math.random() * 80 + 20);
       setWaveform(initialWaveform);
       return () => {
@@ -179,17 +168,14 @@ const PodcastDetail = () => {
          if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
       };
    }, [identifier]);
-
-   // Auto-advance carousel
    useEffect(() => {
       if (podcast && podcast.banner_images && podcast.banner_images.length > 1) {
          carouselIntervalRef.current = setInterval(() => {
             setCurrentBannerIndex(prevIndex =>
                prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
             );
-         }, 5000); // Change image every 5 seconds
+         }, 5000);
       }
-
       return () => {
          if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
       };
@@ -197,15 +183,10 @@ const PodcastDetail = () => {
 
    const nextBanner = () => {
       if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
-
-      // Reset the interval when manually changing
       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-
       setCurrentBannerIndex(prevIndex =>
          prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
       );
-
-      // Restart the interval
       carouselIntervalRef.current = setInterval(() => {
          setCurrentBannerIndex(prevIndex =>
             prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
@@ -215,15 +196,10 @@ const PodcastDetail = () => {
 
    const prevBanner = () => {
       if (!podcast || !podcast.banner_images || podcast.banner_images.length <= 1) return;
-
-      // Reset the interval when manually changing
       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-
       setCurrentBannerIndex(prevIndex =>
          prevIndex === 0 ? podcast.banner_images.length - 1 : prevIndex - 1
       );
-
-      // Restart the interval
       carouselIntervalRef.current = setInterval(() => {
          setCurrentBannerIndex(prevIndex =>
             prevIndex === podcast.banner_images.length - 1 ? 0 : prevIndex + 1
@@ -329,7 +305,6 @@ const PodcastDetail = () => {
       return date.toLocaleDateString(undefined, options);
    };
 
-   // Speaker color mapping
    const speakerColors = {
       ALEX: 'from-slate-600 to-slate-700',
       MORGAN: 'from-gray-600 to-gray-700',
@@ -387,10 +362,8 @@ const PodcastDetail = () => {
 
    return (
       <div className="min-h-screen py-4 px-4 relative overflow-hidden">
-         {/* Banner Image Background */}
          {podcast && podcast.banner_images && podcast.banner_images.length > 0 && (
             <div className="fixed inset-0 w-full h-full z-0">
-               {/* Current banner as background */}
                <div className="absolute inset-0 w-full h-full opacity-90">
                   <img
                      src={`${apiService.API_BASE_URL}/podcast_img/${podcast.banner_images[currentBannerIndex]}`}
@@ -398,13 +371,10 @@ const PodcastDetail = () => {
                      className="w-full h-full object-cover blur-xl transition-all duration-1500 ease-in-out bg-banner-background"
                      style={{ transform: 'scale(1.05)' }}
                   />
-                  {/* Gradient overlay for better readability */}
                   <div className="absolute inset-0 bg-gradient-to-b from-gray-900/90 via-gray-900/80 to-gray-900/95" />
                </div>
             </div>
          )}
-
-         {/* Standard Background effects */}
          <div className="absolute inset-0 opacity-20">
             <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
             <div
@@ -412,9 +382,7 @@ const PodcastDetail = () => {
                style={{ animationDelay: '1s' }}
             ></div>
          </div>
-
          <div className="max-w-lg mx-auto relative z-10">
-            {/* Back Button */}
             <button
                onClick={handleGoBack}
                className="text-gray-300 hover:text-emerald-300 flex items-center mb-3 transition-colors duration-200 group"
@@ -433,13 +401,9 @@ const PodcastDetail = () => {
                </svg>
                Back
             </button>
-
-            {/* Ultra Compact Card */}
             <div className="bg-gradient-to-br from-gray-900/80 via-gray-850/80 to-gray-800/80 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50 transition-all duration-300 hover:shadow-3xl backdrop-blur-lg">
-               {/* Banner Carousel */}
                {hasBannerCarousel && (
                   <div className="h-65 relative overflow-hidden mb-16">
-                     {/* Carousel Container */}
                      <div className="h-full w-full relative">
                         {bannerImages.map((image, index) => (
                            <div
@@ -459,11 +423,7 @@ const PodcastDetail = () => {
                               />
                            </div>
                         ))}
-
-                        {/* Gradient overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/30 z-20" />
-
-                        {/* Navigation Buttons */}
                         {bannerImages.length > 1 && (
                            <>
                               <button
@@ -480,8 +440,6 @@ const PodcastDetail = () => {
                               </button>
                            </>
                         )}
-
-                        {/* Indicators */}
                         {bannerImages.length > 1 && (
                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex space-x-2">
                               {bannerImages.map((_, index) => (
@@ -489,7 +447,6 @@ const PodcastDetail = () => {
                                     key={index}
                                     onClick={() => {
                                        setCurrentBannerIndex(index);
-                                       // Reset interval
                                        if (carouselIntervalRef.current)
                                           clearInterval(carouselIntervalRef.current);
                                        carouselIntervalRef.current = setInterval(() => {
@@ -513,8 +470,6 @@ const PodcastDetail = () => {
                      </div>
                   </div>
                )}
-
-               {/* Fallback to single banner if no carousel but has banner */}
                {!hasBannerCarousel && hasBanner && (
                   <div className="h-80 relative overflow-hidden mb-16">
                      <img
@@ -525,8 +480,6 @@ const PodcastDetail = () => {
                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/70 to-gray-900/30" />
                   </div>
                )}
-
-               {/* Header content overlay */}
                <div
                   className={`${
                      hasBanner || hasBannerCarousel ? 'absolute top-64 left-0 right-0 z-30' : ''
@@ -580,8 +533,6 @@ const PodcastDetail = () => {
                      </div>
                   </div>
                </div>
-
-               {/* Compact Metadata Tags */}
                <div className="px-4 py-2 mt-16">
                   <div className="flex flex-wrap justify-center gap-1.5">
                      {podcastData.language_code && (
@@ -611,14 +562,9 @@ const PodcastDetail = () => {
                      )}
                   </div>
                </div>
-
-               {/* Rest of the component remains the same... */}
-
-               {/* Compact Audio Section */}
                {hasAudio && (
                   <div className="px-4 py-3">
                      <div className="relative">
-                        {/* Simplified frequency visualization */}
                         <div className="absolute inset-0 overflow-hidden rounded-lg">
                            <div className="flex items-end justify-center h-full gap-px p-2">
                               {waveform.map((height, index) => (
@@ -637,8 +583,6 @@ const PodcastDetail = () => {
                               ))}
                            </div>
                         </div>
-
-                        {/* Audio Controls */}
                         <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
                            {audioError ? (
                               <div className="flex items-center gap-2 text-red-400">
@@ -663,8 +607,6 @@ const PodcastDetail = () => {
                               </audio>
                            )}
                         </div>
-
-                        {/* Pulsing Ring Animation when playing */}
                         {isPlaying && (
                            <div className="absolute inset-0 rounded-lg pointer-events-none">
                               <div className="absolute inset-0 border border-emerald-500/20 rounded-lg animate-ping" />
@@ -672,8 +614,6 @@ const PodcastDetail = () => {
                            </div>
                         )}
                      </div>
-
-                     {/* Compact Audio Info */}
                      <div className="mt-2 text-center">
                         <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
                            <Sparkles
@@ -691,8 +631,6 @@ const PodcastDetail = () => {
                      </div>
                   </div>
                )}
-
-               {/* Compact Actions Section */}
                <div className="px-4 py-3 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                   <div className="flex justify-center gap-3">
                      {hasScript && (
@@ -700,37 +638,24 @@ const PodcastDetail = () => {
                            onClick={() => setIsFullScriptOpen(true)}
                            className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
                         >
-                           {/* Subtle background glow on hover */}
                            <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
-
-                           {/* Icon with emerald accent */}
                            <div className="p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
                               <FileText className="w-3 h-3 text-emerald-400" />
                            </div>
-
-                           {/* Text */}
                            <span className="relative z-10">Script</span>
                         </button>
                      )}
-
                      {hasSources && (
                         <button
                            onClick={() => setIsSourcesOpen(true)}
                            className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white text-xs font-medium rounded-full transition-all duration-200 hover:scale-105 border border-gray-600/30 relative overflow-hidden"
                         >
-                           {/* Subtle background glow on hover */}
                            <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/10 transition-all duration-200"></div>
-
-                           {/* Icon stack */}
                            <StackedSourceIcons sources={sources} />
-
-                           {/* Text */}
                            <span className="relative z-10">Sources</span>
                         </button>
                      )}
                   </div>
-
-                  {/* Keyboard shortcuts - More compact */}
                   {hasAudio && (
                      <div className="mt-2 text-center">
                         <div className="flex justify-center text-xs text-gray-500 gap-2">
@@ -752,8 +677,6 @@ const PodcastDetail = () => {
                      </div>
                   )}
                </div>
-
-               {/* Floating Audio Waves Animation when playing */}
                {isPlaying && hasAudio && (
                   <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-2xl">
                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64">
@@ -773,24 +696,18 @@ const PodcastDetail = () => {
                   </div>
                )}
             </div>
-
-            {/* Script Sidebar */}
             {isFullScriptOpen && hasScript && (
                <div className="fixed inset-0 z-50">
-                  {/* Backdrop */}
                   <div
                      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                      onClick={() => setIsFullScriptOpen(false)}
                   ></div>
-
-                  {/* Sidebar Panel */}
                   <div className="absolute inset-0 flex justify-end">
                      <div
                         className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
                            isFullScriptOpen ? 'translate-x-0' : 'translate-x-full'
                         }`}
                      >
-                        {/* Header */}
                         <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                            <div className="relative flex items-center justify-between">
@@ -815,15 +732,12 @@ const PodcastDetail = () => {
                               </button>
                            </div>
                         </div>
-
-                        {/* Content */}
                         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
                            {content.sections.map((section, sectionIndex) => (
                               <div
                                  key={sectionIndex}
                                  className="border-gray-700/20 pb-4 last:border-0"
                               >
-                                 {/* Section header */}
                                  <div className="px-4 py-2 bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm">
                                     <div className="flex items-center">
                                        <h3 className="text-sm font-medium text-emerald-400">
@@ -832,8 +746,6 @@ const PodcastDetail = () => {
                                        </h3>
                                     </div>
                                  </div>
-
-                                 {/* Section content */}
                                  {section.dialog && (
                                     <div className="px-4 pt-2">
                                        {section.dialog.map((line, lineIndex) => (
@@ -859,23 +771,18 @@ const PodcastDetail = () => {
                   </div>
                </div>
             )}
-
             {isSourcesOpen && hasSources && (
                <div className="fixed inset-0 z-50">
-                  {/* Backdrop */}
                   <div
                      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                      onClick={() => setIsSourcesOpen(false)}
                   ></div>
-
-                  {/* Sidebar Panel */}
                   <div className="absolute inset-0 flex justify-end">
                      <div
                         className={`w-full sm:w-96 bg-gradient-to-br from-gray-900/95 via-gray-850/95 to-gray-800/95 shadow-2xl border-l border-gray-700/50 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-out ${
                            isSourcesOpen ? 'translate-x-0' : 'translate-x-full'
                         }`}
                      >
-                        {/* Header */}
                         <div className="px-4 py-3 bg-gradient-to-r from-gray-800/90 to-gray-700/90 border-b border-gray-700/30 backdrop-blur-sm flex-shrink-0">
                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                            <div className="relative flex items-center justify-between">
@@ -893,8 +800,6 @@ const PodcastDetail = () => {
                               </button>
                            </div>
                         </div>
-
-                        {/* Content */}
                         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800/30">
                            {sources.map((source, index) => {
                               const sourceUrl = typeof source === 'string' ? source : source.url;
@@ -904,7 +809,6 @@ const PodcastDetail = () => {
                               } catch (e) {
                                  hostname = 'Unknown Source';
                               }
-
                               return (
                                  <a
                                     key={index}
@@ -942,7 +846,6 @@ const PodcastDetail = () => {
                   </div>
                </div>
             )}
-            {/* Edit Modal */}
             {showEditModal && (
                <div className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center z-50 p-4">
                   <div className="bg-gray-900/95 backdrop-blur-xl border border-gray-700/50 rounded-2xl shadow-2xl max-w-md w-full p-8">
