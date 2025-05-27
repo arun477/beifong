@@ -83,10 +83,8 @@ const ActivePodcastPreview = React.memo(
       sessionId,
       onClose,
       bannerImages,
-      generatedScript, // Note: camelCase to match parent component
-      sources, // Add sources prop
-      hasAutoOpenedRecording,
-      stage
+      generatedScript,
+      sources,
    }) => {
       const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
       const [activeTab, setActiveTab] = useState('banner');
@@ -96,18 +94,6 @@ const ActivePodcastPreview = React.memo(
       const recordingRef = useRef(null);
       const scriptRef = useRef(null);
       const audioRef = useRef(null);
-
-
-      useEffect(() => {
-         if (webSearchRecording && 
-             hasAutoOpenedRecording && 
-             !hasAutoOpenedRecording.current && stage === 'search') {
-            
-            console.log('Auto-opening recording player in preview component');
-            setShowRecordingPlayer(true);
-            hasAutoOpenedRecording.current = true;
-         }
-      }, [webSearchRecording, hasAutoOpenedRecording, stage]);
 
       // Prepare banner images array with proper API URL construction
       const allBannerImages =
@@ -137,26 +123,6 @@ const ActivePodcastPreview = React.memo(
 
       const handleRecordingButtonClick = () => {
          setShowRecordingPlayer(true);
-         // Mark as opened even if manual (prevent future auto-opens)
-         if (hasAutoOpenedRecording) {
-            hasAutoOpenedRecording.current = true;
-         }
-      };
-
-      const formatScriptPreview = text => {
-         if (!text) return '';
-         const preview = text.split('\n').slice(0, 10).join('\n');
-         return preview;
-      };
-
-      // Get script preview from structured data
-      const getStructuredScriptPreview = () => {
-         if (!hasStructuredScript || !scriptData.sections.length) return null;
-         const firstSection = scriptData.sections[0];
-         if (firstSection.dialog && firstSection.dialog.length > 0) {
-            return firstSection.dialog.slice(0, 3);
-         }
-         return null;
       };
 
       // Get unique speakers
@@ -249,7 +215,7 @@ const ActivePodcastPreview = React.memo(
                   isActive={activeTab === 'recording'}
                   onClick={() => scrollToSection('recording')}
                   icon={<Video />}
-                  label="Search"
+                  label="Browser"
                />
             )}
             <NavigationButton
@@ -470,10 +436,10 @@ const ActivePodcastPreview = React.memo(
                      {recordingUrl && (
                         <div>
                            <SectionHeader
-                              title="Web Search Recording"
+                              title="Browser Use Recording"
                               icon={<Video />}
                               id="recording"
-                              subtitle="AI research process captured"
+                              subtitle="Browser usage process captured"
                            />
                            <button
                               onClick={handleRecordingButtonClick}
@@ -484,11 +450,11 @@ const ActivePodcastPreview = React.memo(
                                     <Play className="w-5 h-5 text-emerald-400" />
                                  </div>
                                  <div className="text-left">
-                                    <p className="text-xs font-medium text-white">
-                                       View Search Recording
-                                    </p>
+                                    {/* <p className="text-xs font-medium text-white">
+                                       View Browser Use Recording
+                                    </p> */}
                                     <p className="text-xs text-gray-400">
-                                       Watch how AI gathered information
+                                    View Browser Use Recording
                                     </p>
                                  </div>
                               </div>
@@ -653,9 +619,9 @@ const ActivePodcastPreview = React.memo(
                            </div>
                            <div>
                               <h3 className="text-xs font-semibold text-white">
-                                 Web Search Recording
+                              Browser Use Recording
                               </h3>
-                              <p className="text-xs text-gray-400">AI research process</p>
+                              <p style={{fontSize: '9px'}} className="text-xs text-gray-400">View Browser Use Recording</p>
                            </div>
                         </div>
                         <button
@@ -677,8 +643,7 @@ const ActivePodcastPreview = React.memo(
                      </div>
                      <div className="p-6 border-t border-gray-700/30 flex-shrink-0">
                         <p className="text-xs text-gray-400 mb-4">
-                           This recording shows the AI searching the web for information to include
-                           in your podcast.
+                           This is one part of the search process agent used.
                         </p>
                         <div className="flex justify-end">
                            <button
