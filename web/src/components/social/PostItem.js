@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
    MessageCircle,
    Heart,
    Share2,
-   CheckCircle,
-   BarChart2,
    Smile,
    Frown,
    AlertCircle,
    Minus,
    ExternalLink,
-   Sparkles,
    Facebook,
 } from 'lucide-react';
 
-// Helper functions
 const formatDate = dateStr => {
    if (!dateStr) return 'N/A';
    try {
@@ -25,25 +21,17 @@ const formatDate = dateStr => {
    }
 };
 
-// Format numbers to K notation with more aggressive formatting for very large numbers
 const formatNumber = number => {
    if (!number || isNaN(number)) return '0';
-
-   // More aggressive formatting for very large numbers (millions)
    if (number >= 1000000) {
       return (number / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
    }
-
-   // Aggressive formatting for large numbers (thousands)
    if (number >= 10000) {
       return Math.floor(number / 1000) + 'k';
    }
-
-   // Standard formatting for moderate numbers (thousands with decimal)
    if (number >= 1000) {
       return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
    }
-
    return number.toString();
 };
 
@@ -79,7 +67,6 @@ const getPlatformIcon = platform => {
    }
 };
 
-// Sentiment related helpers
 const getSentimentIcon = sentiment => {
    switch (sentiment?.toLowerCase()) {
       case 'positive':
@@ -91,34 +78,6 @@ const getSentimentIcon = sentiment => {
       case 'neutral':
       default:
          return <Minus className="w-3.5 h-3.5" />;
-   }
-};
-
-const getSentimentColor = sentiment => {
-   switch (sentiment?.toLowerCase()) {
-      case 'positive':
-         return 'bg-emerald-400/10 text-emerald-400';
-      case 'negative':
-         return 'bg-red-400/10 text-red-400';
-      case 'critical':
-         return 'bg-orange-400/10 text-orange-400';
-      case 'neutral':
-      default:
-         return 'bg-gray-600/50 text-gray-300';
-   }
-};
-
-const getSentimentGradient = sentiment => {
-   switch (sentiment?.toLowerCase()) {
-      case 'positive':
-         return 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30';
-      case 'negative':
-         return 'from-red-500/20 to-red-600/20 border-red-500/30';
-      case 'critical':
-         return 'from-orange-500/20 to-orange-600/20 border-orange-500/30';
-      case 'neutral':
-      default:
-         return 'from-gray-600/20 to-gray-700/20 border-gray-600/30';
    }
 };
 
@@ -154,31 +113,17 @@ const getPlatformColor = platform => {
 
 const PostItem = ({ post, onPostClick }) => {
    if (!post) return null;
-
-   // Get sentiment and impact score with fallbacks
    const sentiment = post.sentiment || 'neutral';
-   const impactScore = 0; // Not in our current schema, so defaulting to 0
-
-   // Extract engagement metrics from engagement object
    const engagement = post.engagement || {};
    const replyCount = engagement.replies || post.engagement_reply_count || 0;
    const retweetCount = engagement.retweets || post.engagement_retweet_count || 0;
    const likeCount = engagement.likes || post.engagement_like_count || 0;
-   const bookmarkCount = engagement.bookmarks || post.engagement_bookmark_count || 0;
    const viewCount = engagement.views || post.engagement_view_count || 0;
-
-   // Use replies for comments count
    const commentsCount = replyCount || 0;
    const likesCount = likeCount || 0;
    const sharesCount = retweetCount || 0;
-
-   // Check for large numbers to adapt layout
-   const hasLargeNumbers = commentsCount >= 100 || likesCount >= 100 || sharesCount >= 100;
-
-   // Check for very high engagement (requiring special treatment)
    const hasVeryHighEngagement = commentsCount > 200 || sharesCount > 200 || likesCount > 1000;
 
-   // Handle click on post item
    const handleClick = () => {
       if (onPostClick) {
          onPostClick(post);
@@ -195,7 +140,6 @@ const PostItem = ({ post, onPostClick }) => {
                sentiment
             )}`}
          >
-            {/* Sentiment indicator strip at the top with gradient */}
             <div
                className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
                   sentiment === 'positive'
@@ -207,8 +151,6 @@ const PostItem = ({ post, onPostClick }) => {
                      : 'from-gray-600 to-gray-700'
                }`}
             ></div>
-
-            {/* Header */}
             <div
                className={`flex flex-col px-3.5 py-2.5 border-b ${
                   sentiment === 'positive'
@@ -220,10 +162,8 @@ const PostItem = ({ post, onPostClick }) => {
                      : 'border-gray-700/30 bg-gradient-to-r from-gray-800/80 to-gray-900/80'
                } backdrop-blur`}
             >
-               {/* Row 1: Author info and platform icon with sentiment icon on right */}
                <div className="flex items-center gap-2.5 justify-between">
                   <div className="flex items-center gap-2.5">
-                     {/* Platform Icon */}
                      <div className="min-w-8 w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden transition-all duration-300 group-hover:border-gray-600">
                         <div className="flex items-center justify-center w-full h-full">
                            <div
@@ -235,8 +175,6 @@ const PostItem = ({ post, onPostClick }) => {
                            </div>
                         </div>
                      </div>
-
-                     {/* Author info */}
                      <div className="min-w-0">
                         <div className="flex items-center gap-1">
                            <span className="text-white font-medium text-sm truncate max-w-[700%] group-hover:text-emerald-50 transition-colors duration-300">
@@ -250,8 +188,6 @@ const PostItem = ({ post, onPostClick }) => {
                      </div>
                   </div>
                </div>
-
-               {/* Row 2: Author details */}
                <div className="flex items-center flex-wrap text-gray-400 text-xs mt-1">
                   <span className="truncate max-w-[100px] inline-block">
                      @{post.user_handle ? post.user_handle.replace('@', '') : 'unknown'}
@@ -269,10 +205,7 @@ const PostItem = ({ post, onPostClick }) => {
                      {formatDate(post.post_timestamp)}
                   </span>
                </div>
-
-               {/* Row 3: Sentiment Indicator with improved styling */}
                <div className="flex items-center mt-2">
-                  {/* Sentiment indicator */}
                   <div
                      className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${
                         sentiment === 'positive'
@@ -290,20 +223,14 @@ const PostItem = ({ post, onPostClick }) => {
                   </div>
                </div>
             </div>
-
-            {/* Content */}
             <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
                <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
                   {post.post_text || 'No content available'}
                </p>
             </div>
-
-            {/* Footer - Enhanced with better styling */}
             <div className="border-t border-gray-700/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
-               {/* For very high engagement numbers, use a stacked 2-row layout */}
                {hasVeryHighEngagement ? (
                   <div className="py-2 px-3.5">
-                     {/* Engagement metrics */}
                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-3">
                            {commentsCount > 0 && (
@@ -314,7 +241,6 @@ const PostItem = ({ post, onPostClick }) => {
                                  </span>
                               </div>
                            )}
-
                            {sharesCount > 0 && (
                               <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
                                  <Share2 className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
@@ -323,7 +249,6 @@ const PostItem = ({ post, onPostClick }) => {
                                  </span>
                               </div>
                            )}
-
                            {likesCount > 0 && (
                               <div className="flex items-center px-2 py-1 rounded-full bg-gradient-to-r from-gray-700/40 to-gray-800/40 border border-gray-700/30 transition-colors duration-300">
                                  <Heart className="w-3 h-3 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
@@ -336,9 +261,7 @@ const PostItem = ({ post, onPostClick }) => {
                      </div>
                   </div>
                ) : (
-                  /* Standard layout for normal numbers */
                   <div className="py-2 px-3.5 flex items-center justify-between">
-                     {/* Left side - engagement metrics */}
                      <div className="flex items-center gap-3">
                         {commentsCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
@@ -348,7 +271,6 @@ const PostItem = ({ post, onPostClick }) => {
                               </span>
                            </div>
                         )}
-
                         {sharesCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
                               <Share2 className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
@@ -357,7 +279,6 @@ const PostItem = ({ post, onPostClick }) => {
                               </span>
                            </div>
                         )}
-
                         {likesCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
                               <Heart className="w-3.5 h-3.5 text-gray-400 mr-1.5 group-hover:text-emerald-400 transition-colors duration-300" />
@@ -366,7 +287,6 @@ const PostItem = ({ post, onPostClick }) => {
                               </span>
                            </div>
                         )}
-
                         {viewCount > 0 && (
                            <div className="flex items-center transition-colors duration-300">
                               <svg
@@ -396,8 +316,6 @@ const PostItem = ({ post, onPostClick }) => {
                      </div>
                   </div>
                )}
-
-               {/* View indicator strip at bottom */}
                <div
                   className={`border-t py-1.5 px-3.5 ${
                      sentiment === 'positive'

@@ -1,14 +1,14 @@
 import React from 'react';
 
-const Filters = ({ 
-   isOpen, 
-   filters, 
-   platforms, 
+const Filters = ({
+   isOpen,
+   filters,
+   platforms,
    sentiments,
    categories,
-   handleFilterChange, 
-   resetFilters, 
-   setIsFilterOpen 
+   handleFilterChange,
+   resetFilters,
+   setIsFilterOpen,
 }) => {
    return (
       <>
@@ -134,9 +134,11 @@ const Filters = ({
                </form>
             </div>
          )}
-
-         {/* Active Filters Display */}
-         {(filters.platform || filters.sentiment || filters.category || filters.dateFrom || filters.dateTo) && (
+         {(filters.platform ||
+            filters.sentiment ||
+            filters.category ||
+            filters.dateFrom ||
+            filters.dateTo) && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
                <span className="text-xs text-gray-400 font-medium">Active filters:</span>
                {filters.platform && (

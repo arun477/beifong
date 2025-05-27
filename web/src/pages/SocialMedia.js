@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import FeedTab from '../components/social/FeedTab';
 import StatsTab from '../components/social/StatsTab';
-import SessionSetupTab from '../components/social/SessionSetupTab'; 
+import SessionSetupTab from '../components/social/SessionSetupTab';
 import PostDetailPanel from '../components/social/PostDetailPanel';
 import { ShieldCheck, Key } from 'lucide-react';
 
@@ -30,20 +30,15 @@ const SocialMedia = () => {
       total: 0,
    });
    const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-   // New state for the post detail panel
    const [selectedPost, setSelectedPost] = useState(null);
    const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
 
-   // Load initial data
    useEffect(() => {
       fetchPosts();
       fetchPlatforms();
       fetchSentiments();
       fetchCategories();
    }, []);
-
-   // Refetch posts when filters or pagination changes
    useEffect(() => {
       fetchPosts();
    }, [pagination.page, filters]);
@@ -61,7 +56,6 @@ const SocialMedia = () => {
             date_to: filters.dateTo || undefined,
             search: filters.search || undefined,
          });
-
          setPosts(response.data.items || []);
          setPagination({
             page: response.data.page || 1,
@@ -76,7 +70,6 @@ const SocialMedia = () => {
          setLoading(false);
       }
    };
-
    const fetchPlatforms = async () => {
       try {
          const response = await api.socialMedia.getPlatforms();
@@ -85,13 +78,10 @@ const SocialMedia = () => {
          console.error('Error fetching platforms:', error);
       }
    };
-
    const fetchSentiments = async () => {
       try {
          const response = await api.socialMedia.getSentiments();
          setSentiments(response.data || []);
-
-         // Build stats object for StatsTab
          const sentimentData = response.data || [];
          const statsData = {
             sentiments: sentimentData.reduce((acc, item) => {
@@ -104,7 +94,6 @@ const SocialMedia = () => {
          console.error('Error fetching sentiments:', error);
       }
    };
-
    const fetchCategories = async () => {
       try {
          const response = await api.socialMedia.getCategories();
@@ -113,7 +102,6 @@ const SocialMedia = () => {
          console.error('Error fetching categories:', error);
       }
    };
-
    const resetFilters = () => {
       setFilters({
          platform: '',
@@ -125,7 +113,6 @@ const SocialMedia = () => {
       });
       setPagination(prev => ({ ...prev, page: 1 }));
    };
-
    const handleFilterChange = (name, value) => {
       setFilters(prev => ({
          ...prev,
@@ -133,49 +120,37 @@ const SocialMedia = () => {
       }));
       setPagination(prev => ({ ...prev, page: 1 }));
    };
-
    const handlePrevPage = () => {
       if (pagination.page > 1) {
          setPagination(prev => ({ ...prev, page: prev.page - 1 }));
       }
    };
-
    const handleNextPage = () => {
       if (pagination.page < pagination.totalPages) {
          setPagination(prev => ({ ...prev, page: prev.page + 1 }));
       }
    };
-
    const handleTabChange = tab => {
       setActiveTab(tab);
    };
-
-   // Handler for post clicks
    const handlePostClick = post => {
       setSelectedPost(post);
       setIsDetailPanelOpen(true);
-
-      // Add browser history entry without navigation
       const url = new URL(window.location);
       url.searchParams.set('postId', post.post_id);
       window.history.pushState({}, '', url);
    };
 
-   // Handler for closing the detail panel
    const handleCloseDetailPanel = () => {
       setIsDetailPanelOpen(false);
-
-      // Remove postId from URL
       const url = new URL(window.location);
       url.searchParams.delete('postId');
       window.history.pushState({}, '', url);
    };
 
-   // Check URL for postId on component mount
    useEffect(() => {
       const url = new URL(window.location);
       const postId = url.searchParams.get('postId');
-
       if (postId) {
          const loadPostFromUrl = async () => {
             try {
@@ -184,24 +159,18 @@ const SocialMedia = () => {
                setIsDetailPanelOpen(true);
             } catch (error) {
                console.error('Error loading post from URL:', error);
-               // Remove invalid postId from URL
                url.searchParams.delete('postId');
                window.history.pushState({}, '', url);
             }
          };
-
          loadPostFromUrl();
       }
    }, []);
-
-   // Handle browser back/forward buttons
    useEffect(() => {
       const handlePopState = event => {
          const url = new URL(window.location);
          const postId = url.searchParams.get('postId');
-
          if (postId) {
-            // Load the post if not already selected
             if (!selectedPost || selectedPost.post_id !== postId) {
                const loadPostFromUrl = async () => {
                   try {
@@ -212,17 +181,14 @@ const SocialMedia = () => {
                      console.error('Error loading post from URL:', error);
                   }
                };
-
                loadPostFromUrl();
             } else {
                setIsDetailPanelOpen(true);
             }
          } else {
-            // Close the panel if no postId in URL
             setIsDetailPanelOpen(false);
          }
       };
-
       window.addEventListener('popstate', handlePopState);
       return () => window.removeEventListener('popstate', handlePopState);
    }, [selectedPost]);
@@ -239,7 +205,7 @@ const SocialMedia = () => {
                </div>
                <h1 className="text-2xl font-medium text-gray-100 ml-14">Your Social</h1>
             </div>
-            {activeTab !== 'stats' && activeTab !== 'setup' && ( // Updated condition
+            {activeTab !== 'stats' && activeTab !== 'setup' && (
                <div className="flex items-center space-x-2">
                   <div className="relative flex-grow">
                      <input
@@ -290,7 +256,6 @@ const SocialMedia = () => {
                </div>
             )}
          </div>
-
          <div className="mb-6">
             <div className="border-b border-gray-700">
                <nav className="flex -mb-px space-x-6">
@@ -340,7 +305,6 @@ const SocialMedia = () => {
                      </svg>
                      Insights
                   </button>
-                  {/* Add new Setup tab */}
                   <button
                      onClick={() => handleTabChange('setup')}
                      className={`py-2.5 px-1 inline-flex items-center whitespace-nowrap font-medium text-sm border-b-2 ${
@@ -355,7 +319,6 @@ const SocialMedia = () => {
                </nav>
             </div>
          </div>
-
          {activeTab === 'feed' && (
             <FeedTab
                posts={posts}
@@ -376,7 +339,6 @@ const SocialMedia = () => {
                onPostClick={handlePostClick}
             />
          )}
-
          {activeTab === 'stats' && (
             <StatsTab
                platforms={platforms}
@@ -386,13 +348,7 @@ const SocialMedia = () => {
                onPostClick={handlePostClick}
             />
          )}
-
-         {/* Add new Setup tab content */}
-         {activeTab === 'setup' && (
-            <SessionSetupTab />
-         )}
-
-         {/* Post Detail Slide-out Panel */}
+         {activeTab === 'setup' && <SessionSetupTab />}
          <PostDetailPanel
             post={selectedPost}
             isOpen={isDetailPanelOpen}

@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Settings, CheckCircle, AlertCircle, Clock, Shield, Globe, Zap, ArrowRight, Key } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Shield, Globe, Zap, ArrowRight, Key } from 'lucide-react';
 
 const SessionSetupTab = () => {
    const [isLoading, setIsLoading] = useState(false);
    const [message, setMessage] = useState('');
    const [messageType, setMessageType] = useState('');
    const [cooldownTime, setCooldownTime] = useState(0);
-
-   // Default sites - always these two
    const defaultSites = ['https://x.com', 'https://facebook.com'];
 
-   // Cooldown timer effect
    useEffect(() => {
       let interval;
       if (cooldownTime > 0) {
@@ -24,15 +21,14 @@ const SessionSetupTab = () => {
 
    const handleSetupSession = async () => {
       if (cooldownTime > 0) return;
-
       setIsLoading(true);
       setMessage('');
-
       try {
          const response = await api.socialMedia.setupSession(defaultSites);
-         
          if (response.data.status === 'ok') {
-            setMessage('Login session setup started! Browser will open for you to log into X.com and Facebook. Your login sessions will be saved for future monitoring.');
+            setMessage(
+               'Login session setup started! Browser will open for you to log into X.com and Facebook. Your login sessions will be saved for future monitoring.'
+            );
             setMessageType('success');
             setCooldownTime(30);
          } else {
@@ -41,13 +37,14 @@ const SessionSetupTab = () => {
          }
       } catch (error) {
          console.error('Session setup error:', error);
-         setMessage(error.response?.data?.detail || 'Failed to start login session setup. Please try again.');
+         setMessage(
+            error.response?.data?.detail || 'Failed to start login session setup. Please try again.'
+         );
          setMessageType('error');
       } finally {
          setIsLoading(false);
       }
    };
-
    const getMessageIcon = () => {
       switch (messageType) {
          case 'success':
@@ -58,7 +55,6 @@ const SessionSetupTab = () => {
             return null;
       }
    };
-
    const getMessageBgColor = () => {
       switch (messageType) {
          case 'success':
@@ -73,12 +69,9 @@ const SessionSetupTab = () => {
    return (
       <div className="max-w-3xl mx-auto">
          <div className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700/50 rounded-xl shadow-2xl">
-            {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-400/5 to-blue-400/5 rounded-full blur-xl transform translate-x-16 -translate-y-16"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-400/3 to-purple-400/3 rounded-full blur-lg transform -translate-x-12 translate-y-12"></div>
-            
             <div className="relative p-8">
-               {/* Enhanced Header */}
                <div className="flex items-start space-x-4 mb-6">
                   <div className="relative">
                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-xl blur-md opacity-15"></div>
@@ -87,12 +80,14 @@ const SessionSetupTab = () => {
                      </div>
                   </div>
                   <div className="flex-1">
-                     <h2 className="text-xl font-semibold text-gray-100 mb-1">Login Session Setup</h2>
-                     <p className="text-gray-400 text-sm leading-relaxed">One-time login to create authenticated sessions for monitoring</p>
+                     <h2 className="text-xl font-semibold text-gray-100 mb-1">
+                        Login Session Setup
+                     </h2>
+                     <p className="text-gray-400 text-sm leading-relaxed">
+                        One-time login to create authenticated sessions for monitoring
+                     </p>
                   </div>
                </div>
-
-               {/* Platform indicators */}
                <div className="flex items-center space-x-4 mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
                   <div className="flex items-center space-x-2">
                      <Shield className="w-4 h-4 text-emerald-400" />
@@ -109,8 +104,6 @@ const SessionSetupTab = () => {
                      </div>
                   </div>
                </div>
-
-               {/* Enhanced Action Button */}
                <div className="space-y-4">
                   <button
                      onClick={handleSetupSession}
@@ -121,11 +114,9 @@ const SessionSetupTab = () => {
                            : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg hover:shadow-emerald-500/15 hover:scale-105 active:scale-95'
                      }`}
                   >
-                     {/* Button background glow effect */}
                      {!(isLoading || cooldownTime > 0) && (
                         <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl blur-xl opacity-15 group-hover:opacity-25 transition-opacity duration-300"></div>
                      )}
-                     
                      <div className="relative flex items-center justify-center space-x-3">
                         {isLoading ? (
                            <>
@@ -146,29 +137,32 @@ const SessionSetupTab = () => {
                         )}
                      </div>
                   </button>
-
-                  {/* Enhanced Status Message */}
                   {message && (
-                     <div className={`relative p-4 rounded-xl border backdrop-blur-sm ${getMessageBgColor()}`}>
+                     <div
+                        className={`relative p-4 rounded-xl border backdrop-blur-sm ${getMessageBgColor()}`}
+                     >
                         <div className="flex items-start space-x-3">
                            {getMessageIcon()}
                            <p className="text-sm leading-relaxed flex-1">{message}</p>
                         </div>
                      </div>
                   )}
-
-                  {/* Enhanced Instructions */}
                   <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/30">
                      <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                            <Zap className="w-4 h-4 text-amber-400" />
                            <span className="text-xs font-medium text-gray-300">When to use:</span>
-                           <span className="text-xs text-gray-400">Only if monitoring fails due to expired login sessions</span>
+                           <span className="text-xs text-gray-400">
+                              Only if monitoring fails due to expired login sessions
+                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
                            <ArrowRight className="w-4 h-4 text-emerald-400" />
                            <span className="text-xs font-medium text-gray-300">Process:</span>
-                           <span className="text-xs text-gray-400">Browser opens → Login to X.com & Facebook → Sessions saved automatically</span>
+                           <span className="text-xs text-gray-400">
+                              Browser opens → Login to X.com & Facebook → Sessions saved
+                              automatically
+                           </span>
                         </div>
                      </div>
                   </div>

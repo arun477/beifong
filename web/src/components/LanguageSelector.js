@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Check, Globe2, X } from 'lucide-react';
+import { useMemo } from 'react';
 
 const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDisabled }) => {
-   // Use provided languages or default to English
-   const availableLanguages = languages || [{ code: 'en', name: 'English' }];
+   const availableLanguages = useMemo(() => {
+      return languages || [{ code: 'en', name: 'English' }];
+   }, [languages]);
 
    const [isOpen, setIsOpen] = useState(false);
    const [searchQuery, setSearchQuery] = useState('');
    const [filteredLanguages, setFilteredLanguages] = useState(availableLanguages);
    const searchInputRef = useRef(null);
 
-   // Filter languages based on search query
    useEffect(() => {
       if (!searchQuery) {
          setFilteredLanguages(availableLanguages);
@@ -23,28 +24,22 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
          setFilteredLanguages(filtered);
       }
    }, [searchQuery, availableLanguages]);
-
-   // Focus search input when modal opens
    useEffect(() => {
       if (isOpen && searchInputRef.current) {
          setTimeout(() => searchInputRef.current.focus(), 100);
       }
    }, [isOpen]);
 
-   // Handle language selection - call with just the code like the old component
    const handleLanguageSelect = language => {
       onSelectLanguage(language.code);
       setIsOpen(false);
       setSearchQuery('');
    };
-
    const handleClose = () => {
       setIsOpen(false);
       setSearchQuery('');
    };
-
    const selectedLang = availableLanguages.find(lang => lang.code === selectedLanguage);
-
    const getFlagEmoji = code => {
       return <Globe2 className="w-3 h-3" />;
    };
@@ -58,8 +53,6 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                   Podcast Language
                </label>
             </div>
-
-            {/* Selected language display button */}
             <button
                onClick={() => !isDisabled && setIsOpen(true)}
                disabled={isDisabled}
@@ -87,12 +80,9 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                <ChevronDown className="w-3 h-3 text-gray-400 transition-transform duration-200" />
             </button>
          </div>
-
-         {/* Language Selection Modal */}
          {isOpen && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border border-gray-700/50 w-full max-w-sm max-h-[60vh] flex flex-col shadow-xl">
-                  {/* Modal Header */}
                   <div className="px-3 py-2 border-b border-gray-700/30 flex items-center justify-between">
                      <div>
                         <h3 className="text-sm font-semibold text-white flex items-center gap-1.5">
@@ -108,8 +98,6 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                         <X className="w-3 h-3" />
                      </button>
                   </div>
-
-                  {/* Search input - only show if more than 5 languages */}
                   {availableLanguages.length > 5 && (
                      <div className="p-2 border-b border-gray-700/30">
                         <div className="relative">
@@ -125,8 +113,6 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                         </div>
                      </div>
                   )}
-
-                  {/* Languages list */}
                   <div className="flex-1 overflow-y-auto p-2">
                      {filteredLanguages.length > 0 ? (
                         <div className="space-y-1">
@@ -163,8 +149,6 @@ const LanguageSelector = ({ languages, selectedLanguage, onSelectLanguage, isDis
                         </div>
                      )}
                   </div>
-
-                  {/* Footer with language count */}
                   {availableLanguages.length > 5 && (
                      <div className="px-3 py-2 bg-gray-800/30 border-t border-gray-700/30 rounded-b-lg">
                         <p className="text-[10px] text-gray-500 text-center">

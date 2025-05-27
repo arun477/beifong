@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-// Helper functions (same as in PostItem.js)
 const formatDate = dateStr => {
    if (!dateStr) return 'N/A';
    try {
@@ -25,7 +24,6 @@ const formatDate = dateStr => {
       return 'Invalid Date';
    }
 };
-
 const formatNumber = number => {
    if (!number || isNaN(number)) return '0';
    if (number >= 1000000) return (number / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
@@ -33,7 +31,6 @@ const formatNumber = number => {
    if (number >= 1000) return (number / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
    return number.toString();
 };
-
 const getPlatformIcon = platform => {
    switch (platform?.toLowerCase()) {
       case 'x.com':
@@ -59,8 +56,6 @@ const getPlatformIcon = platform => {
          );
    }
 };
-
-// Sentiment related helpers
 const getSentimentIcon = (sentiment, size = 16) => {
    switch (sentiment?.toLowerCase()) {
       case 'positive':
@@ -74,7 +69,6 @@ const getSentimentIcon = (sentiment, size = 16) => {
          return <Minus size={size} className="text-gray-400" />;
    }
 };
-
 const getSentimentColor = sentiment => {
    switch (sentiment?.toLowerCase()) {
       case 'positive':
@@ -88,7 +82,6 @@ const getSentimentColor = sentiment => {
          return 'text-gray-400 border-gray-600/30 bg-gray-600/10';
    }
 };
-
 const getPlatformColor = platform => {
    switch (platform?.toLowerCase()) {
       case 'x.com':
@@ -104,7 +97,6 @@ const getPlatformColor = platform => {
          return 'text-gray-400';
    }
 };
-
 const PostDetailPanel = ({ post, isOpen, onClose }) => {
    const [loading, setLoading] = React.useState(false);
    const [fullPost, setFullPost] = React.useState(null);
@@ -117,7 +109,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
 
    const loadFullPostDetails = async postId => {
       if (!postId) return;
-
       try {
          setLoading(true);
          const response = await api.socialMedia.getById(postId);
@@ -129,12 +120,8 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
       }
    };
 
-   // Use the full post data if available, otherwise use the post data passed in props
    const displayPost = fullPost || post;
-
    if (!displayPost) return null;
-
-   // Extract post data with fallbacks
    const sentiment = displayPost.sentiment || 'neutral';
    const engagement = displayPost.engagement || {};
    const commentsCount = engagement.replies || 0;
@@ -142,26 +129,21 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
    const sharesCount = engagement.retweets || 0;
    const bookmarkCount = engagement.bookmarks || 0;
    const viewCount = engagement.views || 0;
-
-   // Determine media content
    const hasMedia = displayPost.media && displayPost.media.length > 0;
 
    return (
       <>
-         {/* Overlay for small screens - moved outside main panel */}
          {isOpen && (
             <div
                className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
                onClick={onClose}
             ></div>
          )}
-
          <div
             className={`fixed inset-y-0 right-0 w-full md:w-2/3 lg:w-1/2 xl:w-2/5 bg-gradient-to-b from-gray-900 to-gray-800 shadow-xl z-50 transition-transform duration-300 transform ${
                isOpen ? 'translate-x-0' : 'translate-x-full'
             } flex flex-col`}
          >
-            {/* Header */}
             <div className="border-b border-gray-700 p-4 flex items-center justify-between sticky top-0 bg-gray-900 z-10 shadow-md">
                <div className="flex items-center gap-3">
                   <button
@@ -172,8 +154,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                   </button>
                   <h2 className="text-lg font-medium text-white">Post Details</h2>
                </div>
-
-               {/* Sentiment badge */}
                {sentiment && (
                   <div
                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${getSentimentColor(
@@ -185,14 +165,12 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                   </div>
                )}
             </div>
-
             {loading ? (
                <div className="flex-grow flex items-center justify-center">
                   <div className="animate-spin w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full"></div>
                </div>
             ) : (
                <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                  {/* Author section */}
                   <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-900 to-gray-800">
                      <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-gray-700 border border-gray-600/50 flex items-center justify-center overflow-hidden">
@@ -208,7 +186,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                               </div>
                            )}
                         </div>
-
                         <div>
                            <div className="font-medium text-white">
                               {displayPost.user_display_name ||
@@ -227,7 +204,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                            </div>
                         </div>
                      </div>
-
                      <div className="flex items-center mt-3 text-gray-400 text-sm gap-3">
                         <div className="flex items-center gap-1.5">
                            <Calendar size={14} />
@@ -252,14 +228,10 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                         )}
                      </div>
                   </div>
-
-                  {/* Post content */}
                   <div className="p-4">
                      <p className="text-gray-100 whitespace-pre-line text-base leading-relaxed">
                         {displayPost.post_text}
                      </p>
-
-                     {/* Media content if available */}
                      {hasMedia && (
                         <div className="mt-4">
                            <div className="flex items-center justify-between mb-2">
@@ -312,8 +284,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                            </div>
                         </div>
                      )}
-
-                     {/* Categories and tags */}
                      <div className="mt-6 space-y-4">
                         {displayPost.categories && displayPost.categories.length > 0 && (
                            <div>
@@ -345,7 +315,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                               </div>
                            </div>
                         )}
-
                         {displayPost.tags && displayPost.tags.length > 0 && (
                            <div>
                               <h3 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
@@ -377,8 +346,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                            </div>
                         )}
                      </div>
-
-                     {/* Analysis & reasoning section if available */}
                      {displayPost.analysis_reasoning && (
                         <div className="mt-6 p-4 bg-gradient-to-r from-gray-800/80 to-gray-900/80 border border-gray-700 rounded-lg">
                            <h3 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-1.5">
@@ -415,8 +382,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                   </div>
                </div>
             )}
-
-            {/* Footer with engagement stats */}
             <div className="border-t border-gray-700 p-4 bg-gray-900">
                <div className="flex flex-col space-y-3">
                   <div className="flex items-center justify-between">
@@ -455,7 +420,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                               </span>
                            </div>
                         )}
-
                         {viewCount > 0 && (
                            <div className="flex items-center gap-1.5">
                               <svg
@@ -483,8 +447,6 @@ const PostDetailPanel = ({ post, isOpen, onClose }) => {
                            </div>
                         )}
                      </div>
-
-                     {/* Original post link button */}
                      {displayPost.post_url && (
                         <a
                            href={displayPost.post_url}

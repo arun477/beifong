@@ -760,7 +760,6 @@ const Podcasts = () => {
                      </button>
                      <span className="relative inline-flex items-center px-4 py-1 text-sm font-medium bg-gradient-to-b from-gray-700 to-gray-800 text-emerald-400 border border-gray-600">
                         Page {page} of {totalPages}
-                        {/* Active page indicator with subtle glow */}
                         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 opacity-70"></span>
                      </span>
                      <button

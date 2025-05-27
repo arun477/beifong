@@ -17,7 +17,7 @@ const Sources = () => {
    const [hasPrev, setHasPrev] = useState(false);
    const [selectedCategory, setSelectedCategory] = useState('');
    const [searchQuery, setSearchQuery] = useState('');
-   const [showOnlyActive, setShowOnlyActive] = useState(false); // Changed from includeInactive to showOnlyActive
+   const [showOnlyActive, setShowOnlyActive] = useState(false);
    const [isFilterOpen, setIsFilterOpen] = useState(false);
    const [updatingSourceId, setUpdatingSourceId] = useState(null);
 

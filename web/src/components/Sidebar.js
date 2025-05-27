@@ -52,19 +52,16 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          setLoading(false);
       }
    };
-
    const handleNextPage = () => {
       if (pagination.page < pagination.totalPages) {
          setPagination(prev => ({ ...prev, page: prev.page + 1 }));
       }
    };
-
    const handlePrevPage = () => {
       if (pagination.page > 1) {
          setPagination(prev => ({ ...prev, page: prev.page - 1 }));
       }
    };
-
    const formatSessionDate = timestamp => {
       try {
          if (!timestamp) {
@@ -84,14 +81,12 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          return 'Recent';
       }
    };
-
    const handleSessionSelect = id => {
       window.location.href = `/studio/chat/${id}`;
       if (onSessionSelect) {
          onSessionSelect();
       }
    };
-
    const handleNewSession = async () => {
       if (isCreating) return;
       setIsCreating(true);
@@ -103,18 +98,15 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          setIsCreating(false);
       }
    };
-
    const openDeleteModal = (e, session) => {
       e.stopPropagation();
       setSessionToDelete(session);
       setShowDeleteModal(true);
    };
-
    const cancelDelete = () => {
       setShowDeleteModal(false);
       setSessionToDelete(null);
    };
-
    const confirmDelete = async () => {
       if (!sessionToDelete || isDeleting) return;
       setIsDeleting(true);
@@ -132,7 +124,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          setSessionToDelete(null);
       }
    };
-
    const getStatusBadge = stage => {
       const statusConfig = {
          welcome: {
@@ -179,7 +170,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
       };
       return config;
    };
-
    const renderPagination = () => {
       if (sessions.length === 0 || pagination.totalPages <= 1) return null;
       return (
@@ -226,7 +216,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          </div>
       );
    };
-
    const navLinks = [
       {
          name: 'Home',
@@ -319,7 +308,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
          path: '/social-media',
          icon: (
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-gray-800/60">
-              <ShieldCheck className="w-3 h-3" />
+               <ShieldCheck className="w-3 h-3" />
             </span>
          ),
       },
@@ -381,7 +370,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
 
    return (
       <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800">
-         {/* Compact Header */}
          <div className="p-3 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur">
             <Link to="/" className="flex items-center group">
                <div className="w-8 h-8 relative mr-2 flex-shrink-0">
@@ -406,8 +394,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                </div>
             </Link>
          </div>
-         
-         {/* Compact Quick Access */}
          <div className="px-3 py-2 border-b border-gray-700/30">
             <button
                onClick={() => setNavExpanded(!navExpanded)}
@@ -445,8 +431,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   />
                </svg>
             </button>
-            
-            {/* Compact Navigation Links */}
             <div
                className={`overflow-hidden transition-all duration-300 ${
                   navExpanded ? 'max-h-60 mt-1 opacity-100' : 'max-h-0 opacity-0'
@@ -469,8 +453,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                </div>
             </div>
          </div>
-         
-         {/* Compact Session List */}
          <div className="flex-1 overflow-y-auto px-3 pt-2 pb-2">
             <div className="text-xs text-gray-300 mb-2 flex items-center justify-between">
                <span className="font-semibold">Recent Chats</span>
@@ -479,12 +461,7 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   className="p-1.5 text-gray-500 hover:text-emerald-400 hover:bg-gray-800/40 rounded-md transition-all duration-200"
                   title="Refresh sessions"
                >
-                  <svg
-                     className="h-3 w-3"
-                     fill="none"
-                     viewBox="0 0 24 24"
-                     stroke="currentColor"
-                  >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -494,7 +471,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   </svg>
                </button>
             </div>
-            
             <div className="space-y-2">
                {loading ? (
                   <div className="text-center py-4">
@@ -592,8 +568,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                )}
             </div>
          </div>
-         
-         {/* Compact New Session Button */}
          <div className="p-3 border-t border-gray-700/30">
             <button
                onClick={handleNewSession}
@@ -621,8 +595,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                )}
             </button>
          </div>
-         
-         {/* Delete Confirmation Modal - Slightly more compact */}
          {showDeleteModal && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 rounded-xl max-w-md w-full p-4 shadow-2xl animate-fade-in-up">
@@ -646,7 +618,10 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                   </div>
                   <p className="text-gray-300 mb-4 leading-snug text-sm">
                      Are you sure you want to delete the chat "
-                     <span className="font-medium text-white">{sessionToDelete?.topic || 'Untitled Podcast'}</span>"?
+                     <span className="font-medium text-white">
+                        {sessionToDelete?.topic || 'Untitled Podcast'}
+                     </span>
+                     "?
                      {sessionToDelete?.stage === 'complete'
                         ? ' This will remove the session from your list, but preserve the generated podcast assets.'
                         : ' This will permanently remove all associated data including any generated audio and images.'}
@@ -670,8 +645,18 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                            </>
                         ) : (
                            <>
-                              <svg className="h-3 w-3 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <svg
+                                 className="h-3 w-3 mr-1.5"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke="currentColor"
+                              >
+                                 <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                 />
                               </svg>
                               Delete
                            </>
@@ -681,7 +666,6 @@ const Sidebar = ({ onNewSession, onSessionSelect }) => {
                </div>
             </div>
          )}
-
          <style jsx>{`
             @keyframes fade-in-up {
                from {

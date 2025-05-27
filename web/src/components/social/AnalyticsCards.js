@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-   Users, TrendingUp, Smile, Frown, AlertCircle, Minus, Hash, Activity,
+   Users, TrendingUp, Smile, Frown, AlertCircle, Minus, Hash
 } from 'lucide-react';
 
 const SENTIMENT_CONFIG = {
@@ -304,7 +304,7 @@ const TrendingTopicsCard = ({ trendingTopics = [], loading = false }) => {
    );
 };
 
-const CompactAnalyticsCards = ({ userSentiment, trendingTopics, loading }) => {
+const AnalyticsCards = ({ userSentiment, trendingTopics, loading }) => {
    return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
          <UserSentimentCard userSentiment={userSentiment} loading={loading} />
@@ -313,4 +313,4 @@ const CompactAnalyticsCards = ({ userSentiment, trendingTopics, loading }) => {
    );
 };
 
-export default CompactAnalyticsCards;
+export default AnalyticsCards;

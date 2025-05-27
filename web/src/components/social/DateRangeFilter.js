@@ -2,143 +2,106 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown, RefreshCw } from 'lucide-react';
 
 const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
-   // Preset options
    const presets = [
       { label: 'Last 7 days', days: 7 },
       { label: 'Last 30 days', days: 30 },
       { label: 'Last 90 days', days: 90 },
       { label: 'Year to date', value: 'ytd' },
-      { label: 'Custom', value: 'custom' }
+      { label: 'Custom', value: 'custom' },
    ];
-   
    const [selectedPreset, setSelectedPreset] = useState(presets[0]);
    const [isOpen, setIsOpen] = useState(false);
    const [customRange, setCustomRange] = useState({
       startDate: initialDateRange?.startDate || formatDateForInput(getDateBefore(7)),
-      endDate: initialDateRange?.endDate || formatDateForInput(new Date())
+      endDate: initialDateRange?.endDate || formatDateForInput(new Date()),
    });
    const [isCustom, setIsCustom] = useState(false);
-
-   // Helper function to get date X days before today
    function getDateBefore(days) {
       const date = new Date();
       date.setDate(date.getDate() - days);
       return date;
    }
-   
-   // Format date as YYYY-MM-DD for input element
    function formatDateForInput(date) {
       return date.toISOString().split('T')[0];
    }
-   
-   // Format date as readable string
    function formatDateForDisplay(dateString) {
       const options = { month: 'short', day: 'numeric', year: 'numeric' };
       return new Date(dateString).toLocaleDateString(undefined, options);
    }
-   
-   // Calculate date range based on preset
    function calculateDateRange(preset) {
       const endDate = new Date();
       let startDate;
-      
+
       if (preset.days) {
          startDate = getDateBefore(preset.days);
       } else if (preset.value === 'ytd') {
-         startDate = new Date(endDate.getFullYear(), 0, 1); // Jan 1 of current year
+         startDate = new Date(endDate.getFullYear(), 0, 1);
       } else if (preset.value === 'custom') {
          startDate = new Date(customRange.startDate);
          return { startDate, endDate: new Date(customRange.endDate) };
       }
-      
-      return { 
-         startDate, 
-         endDate 
+
+      return {
+         startDate,
+         endDate,
       };
    }
-   
-   // Sync internal state with parent props on mount or when props change
+
    useEffect(() => {
       if (initialDateRange) {
          setCustomRange({
             startDate: initialDateRange.startDate,
-            endDate: initialDateRange.endDate
+            endDate: initialDateRange.endDate,
          });
-         
-         // Try to determine which preset matches the date range
          const start = new Date(initialDateRange.startDate);
          const end = new Date(initialDateRange.endDate);
          const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-         
          let matchingPreset = presets.find(p => p.days === daysDiff);
-         
          if (matchingPreset) {
             setSelectedPreset(matchingPreset);
             setIsCustom(false);
          } else {
-            // Check if it's year to date
             const yearStart = new Date(end.getFullYear(), 0, 1);
             if (start.getTime() === yearStart.getTime()) {
                setSelectedPreset(presets.find(p => p.value === 'ytd'));
                setIsCustom(false);
             } else {
-               // It's a custom range
                setSelectedPreset(presets.find(p => p.value === 'custom'));
                setIsCustom(true);
             }
          }
       }
    }, [initialDateRange]);
-   
-   // Handle preset selection
-   const handlePresetSelect = (preset) => {
+
+   const handlePresetSelect = preset => {
       setSelectedPreset(preset);
       setIsOpen(false);
-      
       const { startDate, endDate } = calculateDateRange(preset);
-      
       const formattedRange = {
          startDate: formatDateForInput(startDate),
-         endDate: formatDateForInput(endDate)
+         endDate: formatDateForInput(endDate),
       };
-      
-      // Update custom range values to match the selected preset
       setCustomRange(formattedRange);
-      
-      // Set custom flag
       setIsCustom(preset.value === 'custom');
-      
-      // Notify parent component
       onDateRangeChange(formattedRange);
    };
-   
-   // Handle custom date change
-   const handleCustomDateChange = (e) => {
+   const handleCustomDateChange = e => {
       const { name, value } = e.target;
-      
       const newCustomRange = {
          ...customRange,
-         [name]: value
+         [name]: value,
       };
-      
       setCustomRange(newCustomRange);
-      
-      // If we're in custom mode, update the range immediately
       if (isCustom) {
          onDateRangeChange(newCustomRange);
       }
    };
-   
-   // Apply custom date range
    const applyCustomRange = () => {
       setIsCustom(true);
       setSelectedPreset(presets.find(p => p.value === 'custom'));
       setIsOpen(false);
-      
       onDateRangeChange(customRange);
    };
-
-   // Handle refresh - maintain current filter state
    const handleRefresh = () => {
       if (isCustom) {
          onDateRangeChange(customRange);
@@ -146,7 +109,7 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
          const { startDate, endDate } = calculateDateRange(selectedPreset);
          const formattedRange = {
             startDate: formatDateForInput(startDate),
-            endDate: formatDateForInput(endDate)
+            endDate: formatDateForInput(endDate),
          };
          setCustomRange(formattedRange);
          onDateRangeChange(formattedRange);
@@ -160,7 +123,6 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
                <Calendar className="h-5 w-5 text-emerald-500 mr-2" />
                <span className="text-sm font-medium text-gray-300">Date Range</span>
             </div>
-            
             <div className="relative ml-4 flex-1">
                <button
                   onClick={() => setIsOpen(!isOpen)}
@@ -170,19 +132,18 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
                      {!isCustom ? selectedPreset.label : 'Custom Range'}
                      {isCustom && (
                         <span className="ml-2 text-xs text-gray-400">
-                           ({formatDateForDisplay(customRange.startDate)} - {formatDateForDisplay(customRange.endDate)})
+                           ({formatDateForDisplay(customRange.startDate)} -{' '}
+                           {formatDateForDisplay(customRange.endDate)})
                         </span>
                      )}
                   </span>
                   <ChevronDown className="h-4 w-4 ml-2" />
                </button>
-               
-               {/* Dropdown */}
                {isOpen && (
                   <div className="absolute top-full left-0 mt-1 z-10 bg-gray-800 border border-gray-700 rounded-sm shadow-lg w-full sm:w-80">
                      <div className="p-2">
                         <div className="space-y-1 mb-3">
-                           {presets.map((preset) => (
+                           {presets.map(preset => (
                               <button
                                  key={preset.label}
                                  onClick={() => handlePresetSelect(preset)}
@@ -196,14 +157,17 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
                               </button>
                            ))}
                         </div>
-                        
                         <div className="border-t border-gray-700 pt-3">
-                           <div className="text-xs font-medium text-gray-400 mb-2">Custom Range</div>
+                           <div className="text-xs font-medium text-gray-400 mb-2">
+                              Custom Range
+                           </div>
                            <div className="grid grid-cols-2 gap-2">
                               <div>
-                                 <label className="text-xs text-gray-500 block mb-1">Start Date</label>
-                                 <input 
-                                    type="date" 
+                                 <label className="text-xs text-gray-500 block mb-1">
+                                    Start Date
+                                 </label>
+                                 <input
+                                    type="date"
                                     name="startDate"
                                     value={customRange.startDate}
                                     onChange={handleCustomDateChange}
@@ -211,9 +175,11 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
                                  />
                               </div>
                               <div>
-                                 <label className="text-xs text-gray-500 block mb-1">End Date</label>
-                                 <input 
-                                    type="date" 
+                                 <label className="text-xs text-gray-500 block mb-1">
+                                    End Date
+                                 </label>
+                                 <input
+                                    type="date"
                                     name="endDate"
                                     value={customRange.endDate}
                                     onChange={handleCustomDateChange}
@@ -232,8 +198,8 @@ const DateRangeFilter = ({ onDateRangeChange, initialDateRange }) => {
                   </div>
                )}
             </div>
-            
-            <button 
+
+            <button
                className="ml-2 p-2 bg-gray-900 hover:bg-gray-800 rounded-sm border border-gray-700 text-gray-400 hover:text-emerald-400 transition-colors"
                title="Refresh data"
                onClick={handleRefresh}

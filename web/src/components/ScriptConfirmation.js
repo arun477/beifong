@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Loader2, FileText, Sparkles, Eye, X, Users, Calendar, Globe } from 'lucide-react';
+import { Check, Loader2, FileText, Sparkles, Eye, X, Users, Globe } from 'lucide-react';
 
 const SourceIcon = ({ url }) => {
    const [iconUrl, setIconUrl] = useState(null);
@@ -47,17 +47,14 @@ const SourceIcon = ({ url }) => {
             }
          }
       };
-
       preloadFavicon();
       return () => {
          isMounted = false;
       };
    }, [url]);
-
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-
    return (
       <img
          src={iconUrl}
@@ -76,23 +73,16 @@ const ScriptConfirmation = ({
    generated_script,
 }) => {
    const [selectedSection, setSelectedSection] = useState(null);
-
-   // Use structured script data if available, fallback to scriptText
    const scriptData = generated_script || { sections: [] };
    const hasStructuredScript = generated_script && generated_script.sections;
-
-   // Speaker color mapping for consistent styling - using subtle grays
    const speakerColors = {
       ALEX: 'from-slate-600 to-slate-700',
       MORGAN: 'from-gray-600 to-gray-700',
       default: 'from-zinc-600 to-zinc-700',
    };
-
    const getSpeakerColor = speaker => {
       return speakerColors[speaker] || speakerColors.default;
    };
-
-   // Format script text for fallback display
    const formatScriptMarkdown = text =>
       text
          .replace(/^# (.*$)/gm, '<h1 class="text-base font-bold mt-3 mb-2 text-white">$1</h1>')
@@ -103,8 +93,6 @@ const ScriptConfirmation = ({
          .replace(/^### (.*$)/gm, '<h3 class="text-xs font-medium mt-2 mb-1 text-gray-200">$3</h3>')
          .replace(/\[([^\]]+)\]:/g, '<strong class="text-emerald-400">$1:</strong>')
          .replace(/\n/g, '<br>');
-
-   // Get preview of script (first few lines)
    const getScriptPreview = () => {
       if (hasStructuredScript && scriptData.sections.length > 0) {
          const firstSection = scriptData.sections[0];
@@ -123,7 +111,6 @@ const ScriptConfirmation = ({
             ));
          }
       }
-      // Fallback to markdown format
       return (
          <div
             dangerouslySetInnerHTML={{
@@ -132,12 +119,9 @@ const ScriptConfirmation = ({
          />
       );
    };
-
    const formatSectionType = type => {
       return type.charAt(0).toUpperCase() + type.slice(1);
    };
-
-   // Count total dialog lines
    const getTotalLines = () => {
       if (!hasStructuredScript) return null;
       return scriptData.sections.reduce(
@@ -145,8 +129,6 @@ const ScriptConfirmation = ({
          0
       );
    };
-
-   // Get unique speakers
    const getSpeakers = () => {
       if (!hasStructuredScript) return [];
       const speakers = new Set();
@@ -162,7 +144,6 @@ const ScriptConfirmation = ({
       <>
          <div className="w-full max-w-2xl mx-auto">
             <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-2xl">
-               {/* Enhanced Header */}
                <div className="relative px-3 py-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                   <div className="relative">
@@ -203,8 +184,6 @@ const ScriptConfirmation = ({
                      </div>
                   </div>
                </div>
-
-               {/* Script Preview */}
                <div className="px-3 py-3">
                   <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
                      {hasStructuredScript ? (
@@ -242,8 +221,6 @@ const ScriptConfirmation = ({
                         </div>
                      )}
                   </div>
-
-                  {/* Script Sections Overview */}
                   {hasStructuredScript && scriptData.sections.length > 0 && (
                      <div className="mt-2">
                         <div className="flex flex-wrap gap-1">
@@ -260,8 +237,6 @@ const ScriptConfirmation = ({
                      </div>
                   )}
                </div>
-
-               {/* Enhanced Actions Section */}
                <div className="px-3 py-2 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                   <div className="flex justify-center">
                      <button
@@ -285,8 +260,6 @@ const ScriptConfirmation = ({
                         )}
                      </button>
                   </div>
-
-                  {/* Additional info */}
                   <div className="mt-1.5 text-center">
                      <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                         <FileText className="w-3 h-3" />
@@ -298,11 +271,9 @@ const ScriptConfirmation = ({
                </div>
             </div>
          </div>
-
          {isModalOpen && (
             <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border border-gray-700/50 w-full max-w-full sm:max-w-5xl h-full sm:h-[80vh] flex flex-col shadow-xl">
-                  {/* Modal Header */}
                   <div className="px-3 sm:px-4 py-3 border-b border-gray-700/30 flex items-center justify-between flex-shrink-0">
                      <div className="min-w-0 flex-1">
                         <h3 className="text-base sm:text-lg font-semibold text-white truncate">
@@ -322,14 +293,10 @@ const ScriptConfirmation = ({
                         <X className="w-4 h-4" />
                      </button>
                   </div>
-
-                  {/* Script Content */}
                   <div className="flex-1 overflow-hidden">
                      {hasStructuredScript ? (
                         <div className="flex flex-col sm:flex-row h-full">
-                           {/* Section Navigation - Mobile: Horizontal scrolling, Desktop: Sidebar */}
                            <div className="sm:w-56 border-b sm:border-b-0 sm:border-r border-gray-700/30 bg-gray-800/30 flex-shrink-0">
-                              {/* Mobile: Horizontal scroll */}
                               <div className="sm:hidden p-2">
                                  <h4 className="text-xs font-medium text-gray-300 mb-2">
                                     Sections
@@ -357,8 +324,6 @@ const ScriptConfirmation = ({
                                     ))}
                                  </div>
                               </div>
-
-                              {/* Desktop: Vertical sidebar */}
                               <div className="hidden sm:block h-full overflow-y-auto">
                                  <div className="p-3">
                                     <h4 className="text-sm font-medium text-gray-300 mb-2">
@@ -394,8 +359,6 @@ const ScriptConfirmation = ({
                                  </div>
                               </div>
                            </div>
-
-                           {/* Script Content */}
                            <div className="flex-1 overflow-y-auto">
                               <div className="p-2 sm:p-4">
                                  {scriptData.sections.map((section, sectionIndex) => (
@@ -442,8 +405,6 @@ const ScriptConfirmation = ({
                                        )}
                                     </div>
                                  ))}
-
-                                 {/* Sources Section */}
                                  {scriptData.sources && scriptData.sources.length > 0 && (
                                     <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-700/30">
                                        <h3 className="text-sm sm:text-base font-semibold text-white mb-2 sm:mb-3 flex items-center gap-2">
@@ -487,8 +448,6 @@ const ScriptConfirmation = ({
                         </div>
                      )}
                   </div>
-
-                  {/* Modal Footer */}
                   <div className="px-3 sm:px-4 py-3 border-t border-gray-700/30 flex justify-end flex-shrink-0">
                      <button
                         onClick={() => {

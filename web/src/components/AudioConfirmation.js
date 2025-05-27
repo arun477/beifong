@@ -14,7 +14,6 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
       document.body.removeChild(a);
    };
 
-   // Listen for audio play/pause events
    useEffect(() => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -34,35 +33,34 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
       };
    }, []);
 
-   // Generate random heights for frequency bars
-   const generateFrequencyBars = (count) => {
+   const generateFrequencyBars = count => {
       return Array.from({ length: count }, (_, i) => ({
          id: i,
          height: Math.random() * 100 + 20,
          delay: i * 100,
       }));
    };
-
    const frequencyBars = generateFrequencyBars(48);
 
    return (
       <div className="w-full max-w-2xl mx-auto">
          <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-2xl">
-            {/* Compact Header */}
             <div className="relative px-3 py-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                <div className="relative flex items-center gap-2">
-                  <div className={`p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-md transition-all duration-300 ${
-                     isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
-                  }`}>
-                     <Volume2 className={`w-3 h-3 text-emerald-400 transition-all duration-300 ${
-                        isPlaying ? 'scale-110' : ''
-                     }`} />
+                  <div
+                     className={`p-1 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-md transition-all duration-300 ${
+                        isPlaying ? 'scale-110 shadow-lg shadow-emerald-500/25' : ''
+                     }`}
+                  >
+                     <Volume2
+                        className={`w-3 h-3 text-emerald-400 transition-all duration-300 ${
+                           isPlaying ? 'scale-110' : ''
+                        }`}
+                     />
                   </div>
                   <div>
-                     <h3 className="text-sm font-semibold text-white">
-                        Audio Preview
-                     </h3>
+                     <h3 className="text-sm font-semibold text-white">Audio Preview</h3>
                      <p className="text-xs text-gray-400 flex items-center gap-1.5">
                         "{topic}"
                         {isPlaying && (
@@ -75,20 +73,15 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                   </div>
                </div>
             </div>
-
-            {/* Audio Player Section with Frequency Visualization */}
             <div className="px-3 py-3">
                <div className="relative">
-                  {/* Frequency Visualization Background */}
                   <div className="absolute inset-0 overflow-hidden rounded-lg">
                      <div className="flex items-end justify-center h-full gap-1 p-3">
-                        {frequencyBars.map((bar) => (
+                        {frequencyBars.map(bar => (
                            <div
                               key={bar.id}
                               className={`bg-gradient-to-t from-emerald-600/30 to-teal-400/30 rounded-full transition-all duration-300 ${
-                                 isPlaying 
-                                    ? 'animate-pulse' 
-                                    : 'opacity-40'
+                                 isPlaying ? 'animate-pulse' : 'opacity-40'
                               }`}
                               style={{
                                  width: '3px',
@@ -100,20 +93,16 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                         ))}
                      </div>
                   </div>
-
-                  {/* Pulsing Ring Animation */}
                   {isPlaying && (
                      <div className="absolute inset-0 rounded-lg">
                         <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-lg animate-ping" />
                         <div className="absolute inset-2 border border-emerald-400/10 rounded-lg animate-pulse" />
                      </div>
                   )}
-
-                  {/* Audio Controls Container */}
                   <div className="relative bg-gradient-to-r from-gray-800/90 to-gray-700/90 rounded-lg p-3 border border-gray-600/30 backdrop-blur-sm">
-                     <audio 
+                     <audio
                         ref={audioRef}
-                        controls 
+                        controls
                         className="w-full h-10 outline-none focus:outline-none"
                         style={{
                            backgroundColor: 'transparent',
@@ -123,39 +112,31 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                         Your browser does not support the audio element.
                      </audio>
                   </div>
-
-                  {/* Audio Visual Enhancement Overlay */}
                   <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-500/5 to-teal-500/5 pointer-events-none" />
                </div>
-
-               {/* Frequency Bars Below Player */}
                <div className="mt-2 flex items-center justify-center gap-1 h-8 overflow-hidden">
                   {Array.from({ length: 32 }, (_, i) => (
                      <div
                         key={i}
                         className={`bg-gradient-to-t from-emerald-500/40 to-teal-400/40 rounded-full transition-all duration-200 ${
-                           isPlaying 
-                              ? 'animate-bounce' 
-                              : 'animate-pulse opacity-30'
+                           isPlaying ? 'animate-bounce' : 'animate-pulse opacity-30'
                         }`}
                         style={{
                            width: '3px',
-                           height: isPlaying 
-                              ? `${Math.random() * 80 + 20}%` 
-                              : '15%',
+                           height: isPlaying ? `${Math.random() * 80 + 20}%` : '15%',
                            animationDelay: `${i * 50}ms`,
                            animationDuration: `${800 + Math.random() * 600}ms`,
                         }}
                      />
                   ))}
                </div>
-
-               {/* Audio Info */}
                <div className="mt-2 text-center">
                   <p className="text-xs text-gray-400 flex items-center justify-center gap-1.5">
-                     <Sparkles className={`w-3 h-3 transition-all duration-300 ${
-                        isPlaying ? 'text-emerald-400' : ''
-                     }`} />
+                     <Sparkles
+                        className={`w-3 h-3 transition-all duration-300 ${
+                           isPlaying ? 'text-emerald-400' : ''
+                        }`}
+                     />
                      Audio ready
                      {isPlaying && (
                         <span className="ml-1 px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] rounded-full">
@@ -165,8 +146,6 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                   </p>
                </div>
             </div>
-
-            {/* Compact Actions Section */}
             <div className="px-3 py-2 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                <div className="flex gap-3 justify-center">
                   <button
@@ -178,7 +157,6 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                      <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
                      Download
                   </button>
-
                   <button
                      onClick={onApprove}
                      disabled={isProcessing}
@@ -200,25 +178,27 @@ const AudioConfirmation = ({ audioUrl, topic, onApprove, isProcessing }) => {
                      )}
                   </button>
                </div>
-
-               {/* Additional info */}
                <div className="mt-1.5 text-center">
                   <p className="text-xs text-gray-400">
-                     {isPlaying 
-                        ? '🎵 Audio visualization active'
-                        : 'Use the controls to preview'
-                     }
+                     {isPlaying ? '🎵 Audio visualization active' : 'Use the controls to preview'}
                   </p>
                </div>
             </div>
-
-            {/* Floating Audio Waves Animation */}
             {isPlaying && (
                <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden rounded-lg">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72">
-                     <div className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                     <div className="absolute inset-6 border border-teal-400/10 rounded-full animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-                     <div className="absolute inset-12 border border-emerald-300/10 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                     <div
+                        className="absolute inset-0 border border-emerald-500/10 rounded-full animate-ping"
+                        style={{ animationDuration: '3s' }}
+                     />
+                     <div
+                        className="absolute inset-6 border border-teal-400/10 rounded-full animate-ping"
+                        style={{ animationDuration: '2s', animationDelay: '0.5s' }}
+                     />
+                     <div
+                        className="absolute inset-12 border border-emerald-300/10 rounded-full animate-ping"
+                        style={{ animationDuration: '4s', animationDelay: '1s' }}
+                     />
                   </div>
                </div>
             )}

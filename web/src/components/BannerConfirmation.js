@@ -28,24 +28,19 @@ const BannerConfirmation = ({
    const [isAnimating, setIsAnimating] = useState(false);
    const [isPaused, setIsPaused] = useState(false);
    const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
-
    const API_BASE_URL = api.API_BASE_URL;
-
    const constructImageUrl = imageName => {
       return imageName ? `${API_BASE_URL}/podcast_img/${imageName}` : '';
    };
-
    const imagesToShow =
       bannerImages && bannerImages.length > 0
          ? bannerImages.map(constructImageUrl)
          : bannerUrl
          ? [bannerUrl]
          : [];
-
    const hasMultipleImages = imagesToShow.length > 1;
    const currentImage = imagesToShow[currentImageIndex] || '';
 
-   // Auto-advance images when there are multiple
    useEffect(() => {
       if (!hasMultipleImages || isPaused || isProcessing || !autoPlayEnabled) return;
 
@@ -63,7 +58,6 @@ const BannerConfirmation = ({
    const handleImageError = () => {
       setImageError(true);
    };
-
    const goToImage = index => {
       if (index === currentImageIndex || isAnimating) return;
       setIsAnimating(true);
@@ -72,17 +66,14 @@ const BannerConfirmation = ({
          setIsAnimating(false);
       }, 300);
    };
-
    const goToPrevious = () => {
       const newIndex = currentImageIndex === 0 ? imagesToShow.length - 1 : currentImageIndex - 1;
       goToImage(newIndex);
    };
-
    const goToNext = () => {
       const newIndex = (currentImageIndex + 1) % imagesToShow.length;
       goToImage(newIndex);
    };
-
    const toggleAutoPlay = () => {
       setAutoPlayEnabled(!autoPlayEnabled);
    };
@@ -90,7 +81,6 @@ const BannerConfirmation = ({
    return (
       <div className="w-full max-w-2xl mx-auto">
          <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700/50 transition-all duration-300 hover:shadow-2xl">
-            {/* Compact Header */}
             <div className="relative px-3 py-2 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                <div className="relative flex justify-between items-center">
@@ -121,8 +111,6 @@ const BannerConfirmation = ({
                   )}
                </div>
             </div>
-
-            {/* Banner Image Container - Unchanged */}
             <div className="relative px-6 py-6">
                {isProcessing && (
                   <div className="absolute inset-6 bg-gray-900/90 backdrop-blur-sm flex items-center justify-center z-10 rounded-xl border border-gray-700/30">
@@ -132,7 +120,6 @@ const BannerConfirmation = ({
                      </div>
                   </div>
                )}
-
                <div
                   className="relative group cursor-pointer"
                   onMouseEnter={() => setIsPaused(true)}
@@ -148,7 +135,6 @@ const BannerConfirmation = ({
                      </div>
                   ) : (
                      <div className="relative overflow-hidden rounded-xl shadow-lg">
-                        {/* Main Image with better aspect ratio */}
                         <div className="aspect-video w-full relative overflow-hidden">
                            <img
                               src={currentImage}
@@ -160,24 +146,16 @@ const BannerConfirmation = ({
                               } group-hover:scale-105`}
                               onError={handleImageError}
                            />
-
-                           {/* Premium shimmer effect overlay when animating */}
                            {isAnimating && (
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_1s_ease-in-out] rounded-xl" />
                            )}
-
-                           {/* Hover overlay with premium gradient */}
                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-
-                           {/* Expand icon in center */}
                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                               <div className="bg-black/50 backdrop-blur-sm p-4 rounded-full border border-white/20">
                                  <Maximize2 className="w-6 h-6 text-white" />
                               </div>
                            </div>
                         </div>
-
-                        {/* Navigation Arrows for Multiple Images */}
                         {hasMultipleImages && (
                            <>
                               <button
@@ -205,8 +183,6 @@ const BannerConfirmation = ({
                      </div>
                   )}
                </div>
-
-               {/* Image Indicators with enhanced styling */}
                {hasMultipleImages && (
                   <div className="flex justify-center gap-2 mt-4">
                      {imagesToShow.map((_, index) => (
@@ -224,8 +200,6 @@ const BannerConfirmation = ({
                   </div>
                )}
             </div>
-
-            {/* Compact Actions Section - Only Approve Button */}
             <div className="px-3 py-2 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                <div className="flex justify-center">
                   <button
@@ -249,8 +223,6 @@ const BannerConfirmation = ({
                      )}
                   </button>
                </div>
-
-               {/* Additional info */}
                <div className="mt-1.5 text-center">
                   <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                      <Eye className="w-3 h-3" />
@@ -261,12 +233,9 @@ const BannerConfirmation = ({
                </div>
             </div>
          </div>
-
-         {/* Enhanced Full Size Preview Modal */}
          {isPreviewOpen && (
             <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                <div className="max-w-7xl max-h-screen overflow-auto relative">
-                  {/* Close Button */}
                   <button
                      onClick={() => setIsPreviewOpen(false)}
                      className="absolute top-6 right-6 bg-black/60 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/80 transition-all duration-200 hover:scale-110 border border-white/10 z-10"
@@ -274,8 +243,6 @@ const BannerConfirmation = ({
                   >
                      <X className="w-6 h-6" />
                   </button>
-
-                  {/* Navigation in Full View */}
                   {hasMultipleImages && (
                      <>
                         <button
@@ -292,8 +259,6 @@ const BannerConfirmation = ({
                         >
                            <ChevronRight className="w-6 h-6" />
                         </button>
-
-                        {/* Enhanced Image Counter */}
                         <div className="absolute top-6 left-6 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm border border-white/10 z-10">
                            <span className="font-medium">{currentImageIndex + 1}</span>
                            <span className="text-gray-300 mx-1">of</span>
@@ -301,7 +266,6 @@ const BannerConfirmation = ({
                         </div>
                      </>
                   )}
-
                   <img
                      src={currentImage}
                      alt={`Full size podcast banner ${
@@ -309,8 +273,6 @@ const BannerConfirmation = ({
                      }for ${topic}`}
                      className="max-w-full h-auto shadow-2xl rounded-lg transition-all duration-300"
                   />
-
-                  {/* Enhanced Thumbnail Strip */}
                   {hasMultipleImages && imagesToShow.length > 1 && (
                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-white/10">
                         {imagesToShow.map((image, index) => (

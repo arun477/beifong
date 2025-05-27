@@ -29,7 +29,7 @@ const Voyager = () => {
       setLoading(true);
       setError(null);
       try {
-         const response = await api.tasks.getAll(true); // Include disabled tasks
+         const response = await api.tasks.getAll(true);
          setTasks(response.data);
       } catch (err) {
          console.error('Error fetching tasks:', err);

@@ -14,7 +14,6 @@ const FinalPresentation = ({
    podcastId,
 }) => {
    const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-
    const handleAudioPlay = () => setIsAudioPlaying(true);
    const handleAudioPause = () => setIsAudioPlaying(false);
    const handleAudioEnded = () => setIsAudioPlaying(false);

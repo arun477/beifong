@@ -96,7 +96,6 @@ const SourceSelection = ({
    return (
       <div className="w-full max-w-2xl mx-auto mt-2">
          <div className="bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800 rounded-md overflow-hidden shadow-lg border border-gray-700/50 transition-all duration-300 hover:shadow-xl">
-            {/* Header */}
             <div className="relative px-2 py-1.5 bg-gradient-to-r from-gray-800/80 to-gray-900/80 backdrop-blur border-b border-gray-700/30">
                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/5 to-teal-600/5" />
                <div className="relative">
@@ -120,8 +119,6 @@ const SourceSelection = ({
                   </div>
                </div>
             </div>
-
-            {/* Sources List */}
             <div className="p-2">
                <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
                   {sources.map((source, index) => (
@@ -134,7 +131,6 @@ const SourceSelection = ({
                         }`}
                         onClick={() => !isProcessing && onToggleSelection(index)}
                      >
-                        {/* Selection indicator */}
                         <div className="flex items-start gap-1.5">
                            <div className="flex-shrink-0 pt-0.5">
                               {selectedIndices.includes(index) ? (
@@ -143,10 +139,7 @@ const SourceSelection = ({
                                  <Square className="w-2.5 h-2.5 text-gray-500 group-hover:text-gray-400" />
                               )}
                            </div>
-
-                           {/* Content */}
                            <div className="flex-1 min-w-0">
-                              {/* Title */}
                               <div className="flex items-start justify-between gap-2">
                                  <h4
                                     className={`text-xs font-medium leading-tight ${
@@ -161,10 +154,7 @@ const SourceSelection = ({
                                     {source.title}
                                  </h4>
                               </div>
-
-                              {/* Metadata row */}
                               <div className="flex items-center gap-0.5 mt-0.5 flex-wrap">
-                                 {/* Source name */}
                                  <div className="relative group/source">
                                     <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
                                        <Sparkles className="w-2.5 h-2.5 text-blue-400" />
@@ -175,13 +165,10 @@ const SourceSelection = ({
                                           Source
                                        </span>
                                     </div>
-                                    {/* Hover tooltip */}
                                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg border border-gray-700 opacity-0 group-hover/source:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                                        {source.source_name || source.source_id || 'Unknown'}
                                     </div>
                                  </div>
-
-                                 {/* Tool indicator */}
                                  {source.tool_used && (
                                     <div className="relative group/tool">
                                        <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
@@ -193,14 +180,11 @@ const SourceSelection = ({
                                              Tool
                                           </span>
                                        </div>
-                                       {/* Hover tooltip */}
                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg border border-gray-700 opacity-0 group-hover/tool:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                                           {source.tool_used}
                                        </div>
                                     </div>
                                  )}
-
-                                 {/* Published date */}
                                  {formatDate(source.published_date) && (
                                     <div className="bg-gray-800/50 border border-gray-700/50 px-1 py-0.5 rounded-sm flex items-center gap-0.5">
                                        <Calendar className="w-2.5 h-2.5 text-blue-400" />
@@ -212,8 +196,6 @@ const SourceSelection = ({
                                        </span>
                                     </div>
                                  )}
-
-                                 {/* External link */}
                                  {source.url && (
                                     <a
                                        href={source.url}
@@ -233,8 +215,6 @@ const SourceSelection = ({
                                     </a>
                                  )}
                               </div>
-
-                              {/* Description */}
                               {source.description && (
                                  <p className="text-xs text-gray-500 mt-0.5 leading-tight line-clamp-1">
                                     {source.description}
@@ -245,8 +225,6 @@ const SourceSelection = ({
                      </div>
                   ))}
                </div>
-
-               {/* Language Selector */}
                <div className="mt-2">
                   <LanguageSelector
                      languages={languages}
@@ -256,8 +234,6 @@ const SourceSelection = ({
                   />
                </div>
             </div>
-
-            {/* Actions Section */}
             <div className="px-2 py-1.5 bg-gradient-to-r from-gray-900/50 to-gray-800/50 backdrop-blur border-t border-gray-700/30">
                <div className="flex items-center justify-between">
                   <button
@@ -282,7 +258,6 @@ const SourceSelection = ({
                         </>
                      )}
                   </button>
-
                   <button
                      onClick={onConfirm}
                      disabled={isProcessing || selectedIndices.length === 0}
@@ -305,8 +280,6 @@ const SourceSelection = ({
                      )}
                   </button>
                </div>
-
-               {/* Info */}
                <div className="mt-1 text-center">
                   <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                      <Sparkles className="w-2.5 h-2.5" />

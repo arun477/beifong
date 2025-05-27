@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, useId } from 'react';
 import {
-   BarChart,
-   Bar,
    XAxis,
    YAxis,
    CartesianGrid,
@@ -11,8 +9,6 @@ import {
    PieChart,
    Pie,
    Cell,
-   LineChart,
-   Line,
    AreaChart,
    Area,
 } from 'recharts';
@@ -20,25 +16,21 @@ import {
    MessageCircle,
    Heart,
    Share2,
-   CheckCircle,
    BarChart2,
    Smile,
    Frown,
    AlertCircle,
    Minus,
    ExternalLink,
-   Sparkles,
    TrendingUp,
-   Users,
    Calendar,
-   Filter,
    RefreshCw,
    PieChart as PieChartIcon,
    Activity,
    Facebook,
 } from 'lucide-react';
 import api from '../../services/api';
-import ImprovedCards from './ImprovedCards';
+import AnalyticsCards from './AnalyticsCards';
 import DateRangeFilter from './DateRangeFilter';
 
 const ANALYTICS_CONFIG = {
@@ -50,14 +42,6 @@ const ANALYTICS_CONFIG = {
    ANIMATION_DURATION: { CHART: 1000, HOVER: 200, SKELETON: 1500 },
    API_DEBOUNCE_MS: 500,
 };
-
-const SENTIMENT_TYPES = {
-   POSITIVE: 'positive',
-   NEGATIVE: 'negative',
-   CRITICAL: 'critical',
-   NEUTRAL: 'neutral',
-};
-
 const PLATFORM_COLORS = {
    'x.com': 'blue-400',
    x: 'blue-400',
@@ -66,7 +50,6 @@ const PLATFORM_COLORS = {
    instagram: 'pink-500',
    default: 'gray-400',
 };
-
 const COLORS = {
    positive: '#10b981',
    negative: '#ef4444',
@@ -100,16 +83,6 @@ const formatDate = (dateString, format = 'short') => {
    } catch {
       return 'Invalid date';
    }
-};
-
-const debounce = (func, wait) => {
-   let timeout;
-   const debounced = (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(this, args), wait);
-   };
-   debounced.cancel = () => clearTimeout(timeout);
-   return debounced;
 };
 
 const getPlatformIcon = platform => {
@@ -552,7 +525,6 @@ const SentimentLegend = ({ data, colorMap }) => (
 
 const SentimentPieChart = React.memo(({ data, colorMap }) => {
    const chartId = useId();
-
    return (
       <div role="img" aria-labelledby={`${chartId}-title`} aria-describedby={`${chartId}-desc`}>
          <div id={`${chartId}-title`} className="sr-only">
@@ -766,7 +738,6 @@ const InfluentialPostCard = React.memo(({ post, onPostClick, index }) => {
    const hasVeryHighEngagement = commentsCount > 200 || sharesCount > 200 || likesCount > 1000;
 
    const handleClick = useCallback(() => onPostClick?.(post), [post, onPostClick]);
-
    const handleKeyDown = useCallback(
       e => {
          switch (e.key) {
@@ -819,7 +790,6 @@ const InfluentialPostCard = React.memo(({ post, onPostClick, index }) => {
                      : 'from-gray-600 to-gray-700'
                }`}
             ></div>
-
             <div
                className={`flex flex-col px-3.5 py-2.5 border-b ${
                   sentiment === 'positive'
@@ -891,13 +861,11 @@ const InfluentialPostCard = React.memo(({ post, onPostClick, index }) => {
                   </div>
                </div>
             </div>
-
             <div className="px-4 py-3.5 flex-grow min-h-[80px] bg-gradient-to-br from-transparent to-gray-800/10">
                <p className="text-gray-200 text-sm leading-relaxed line-clamp-3 group-hover:text-white transition-colors duration-300">
                   {post.post_text || 'No content available'}
                </p>
             </div>
-
             <div className="border-t border-gray-700/30 bg-gradient-to-r from-gray-800/50 to-gray-700/50 backdrop-blur-sm">
                {hasVeryHighEngagement ? (
                   <div className="py-2 px-3.5">
@@ -986,7 +954,6 @@ const InfluentialPostCard = React.memo(({ post, onPostClick, index }) => {
                      </div>
                   </div>
                )}
-
                <div
                   className={`border-t py-1.5 px-3.5 ${
                      sentiment === 'positive'
@@ -1033,7 +1000,6 @@ const StatsTab = ({ platforms, onPostClick }) => {
    const [dateRange, setDateRange] = useState(getInitialDateRange());
    const { data, loading, errors, refetch } = useAnalyticsData(dateRange, platforms);
    const announce = useScreenReaderAnnouncement();
-
    const sentimentColorMap = useMemo(
       () => ({
          positive: COLORS.positive,
@@ -1053,20 +1019,17 @@ const StatsTab = ({ platforms, onPostClick }) => {
          )}`
       );
    }, ANALYTICS_CONFIG.API_DEBOUNCE_MS);
-
    const handleDateRangeChange = useCallback(
       newDateRange => {
          debouncedDateChange(newDateRange);
       },
       [debouncedDateChange]
    );
-
    if (loading) return <LoadingSpinner />;
 
    return (
       <div className="space-y-5">
          <DateRangeFilter onDateRangeChange={handleDateRangeChange} initialDateRange={dateRange} />
-
          <ErrorBoundary errors={errors} onRetry={refetch}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                <AnalyticsCard
@@ -1080,7 +1043,6 @@ const StatsTab = ({ platforms, onPostClick }) => {
                      <ChartSkeleton height="h-56" />
                   )}
                </AnalyticsCard>
-
                <AnalyticsCard
                   title="Categories by Sentiment"
                   icon={<BarChart2 size={16} className="text-emerald-400" />}
@@ -1093,7 +1055,6 @@ const StatsTab = ({ platforms, onPostClick }) => {
                   )}
                </AnalyticsCard>
             </div>
-
             <AnalyticsCard
                title="Sentiment Trends Over Time"
                icon={<Calendar size={16} className="text-emerald-400" />}
@@ -1104,13 +1065,11 @@ const StatsTab = ({ platforms, onPostClick }) => {
                   <ChartSkeleton />
                )}
             </AnalyticsCard>
-
-            <ImprovedCards
+            <AnalyticsCards
                userSentiment={data.userSentiment}
                trendingTopics={data.trendingTopics}
                loading={loading}
             />
-
             <AnalyticsCard
                title="Most Influential Posts"
                icon={<TrendingUp size={16} className="text-emerald-400" />}
@@ -1128,7 +1087,6 @@ const StatsTab = ({ platforms, onPostClick }) => {
                      : Array.from({ length: 4 }, (_, i) => <PostCardSkeleton key={i} />)}
                </div>
             </AnalyticsCard>
-
             <div
                className="h-0.5 w-full bg-gradient-to-r from-emerald-600/0 via-emerald-500/30 to-emerald-600/0 rounded-full animate-pulse"
                style={{ animationDuration: '3s' }}
