@@ -138,12 +138,12 @@ const FinalPresentation = ({
                               >
                                  <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm4.555 2.168A1 1 0 006 9v2a1 1 0 001.555.832l3-1.5a1 1 0 000-1.664l-3-1.5z" />
                               </svg>
-                              Web Search Recording
+                             Browser Use Recording
                            </h2>
                         </div>
                         <div className="p-3">
                            <p className="text-xs text-gray-400 mb-2">
-                              AI's web search process for podcast research
+                            Agents browser use recording
                            </p>
                            <div className="aspect-video rounded-sm overflow-hidden border border-gray-700 bg-black">
                               <video
