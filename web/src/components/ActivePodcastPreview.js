@@ -14,11 +14,8 @@ import {
    Globe,
    ExternalLink,
 } from 'lucide-react';
-
-// Import api for base URL
 import api from '../services/api';
 
-// SourceIcon component for favicons
 const SourceIcon = ({ url }) => {
    const [iconUrl, setIconUrl] = useState(null);
    const [isIconReady, setIsIconReady] = useState(false);
@@ -53,17 +50,14 @@ const SourceIcon = ({ url }) => {
             }
          }
       };
-
       preloadFavicon();
       return () => {
          isMounted = false;
       };
    }, [url]);
-
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-
    return (
       <img
          src={iconUrl}
@@ -94,16 +88,12 @@ const ActivePodcastPreview = React.memo(
       const recordingRef = useRef(null);
       const scriptRef = useRef(null);
       const audioRef = useRef(null);
-
-      // Prepare banner images array with proper API URL construction
       const allBannerImages =
          bannerImages && bannerImages.length > 0
             ? bannerImages.map(img => `${api.API_BASE_URL}/podcast_img/${img}`)
             : bannerUrl
             ? [bannerUrl]
             : [];
-
-      // Use structured script data if available
       const scriptData = generatedScript || null;
       const hasStructuredScript = scriptData && scriptData.sections;
 
@@ -120,12 +110,9 @@ const ActivePodcastPreview = React.memo(
             refs[sectionId].current.scrollIntoView({ behavior: 'smooth' });
          }
       };
-
       const handleRecordingButtonClick = () => {
          setShowRecordingPlayer(true);
       };
-
-      // Get unique speakers
       const getSpeakers = () => {
          if (!hasStructuredScript) return [];
          const speakers = new Set();
@@ -136,8 +123,6 @@ const ActivePodcastPreview = React.memo(
          });
          return Array.from(speakers);
       };
-
-      // Get total lines count
       const getTotalLines = () => {
          if (!hasStructuredScript) return null;
          return scriptData.sections.reduce(
@@ -145,21 +130,17 @@ const ActivePodcastPreview = React.memo(
             0
          );
       };
-
       const handleBannerPrevious = () => {
          setCurrentBannerIndex(prev => (prev === 0 ? allBannerImages.length - 1 : prev - 1));
       };
-
       const handleBannerNext = () => {
          setCurrentBannerIndex(prev => (prev + 1) % allBannerImages.length);
       };
-
       let recordingUrl = null;
       if (webSearchRecording && sessionId) {
          const filename = webSearchRecording.split('/').pop();
          recordingUrl = `${api.API_BASE_URL}/stream-recording/${sessionId}/${filename}`;
       }
-
       const SectionHeader = ({ title, icon, id, subtitle }) => (
          <div
             ref={
@@ -186,14 +167,12 @@ const ActivePodcastPreview = React.memo(
             </div>
          </div>
       );
-
       const EmptyContent = ({ message = 'No content yet', icon: Icon }) => (
          <div className="w-full h-24 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/50 flex flex-col items-center justify-center">
             {Icon && <Icon className="w-6 h-6 text-gray-500 mb-1" />}
             <p className="text-xs text-gray-500">{message}</p>
          </div>
       );
-
       const TabNav = () => (
          <div className="flex items-center justify-around px-4 py-3 border-b border-gray-700/30 bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur sticky top-0 z-10">
             <NavigationButton
@@ -232,7 +211,6 @@ const ActivePodcastPreview = React.memo(
             />
          </div>
       );
-
       const NavigationButton = ({ isActive, onClick, icon, label }) => (
          <button
             onClick={onClick}
@@ -248,13 +226,11 @@ const ActivePodcastPreview = React.memo(
             <span className="text-xs mt-1 font-medium">{label}</span>
          </button>
       );
-
       const SpeakerColors = {
          ALEX: 'from-slate-600 to-slate-700',
          MORGAN: 'from-gray-600 to-gray-700',
          default: 'from-zinc-600 to-zinc-700',
       };
-
       const getSpeakerColor = speaker => {
          return SpeakerColors[speaker] || SpeakerColors.default;
       };
@@ -263,7 +239,6 @@ const ActivePodcastPreview = React.memo(
          <div className="h-full flex flex-col relative bg-gradient-to-br from-gray-900 via-gray-850 to-gray-800">
             {!showRecordingPlayer && (
                <>
-                  {/* Header */}
                   <div className="px-4 py-3 border-b border-gray-700/30">
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -292,7 +267,6 @@ const ActivePodcastPreview = React.memo(
                   <TabNav />
 
                   <div className="overflow-y-auto flex-1 custom-scrollbar px-4 py-4 space-y-6">
-                     {/* Banner Section */}
                      <div>
                         <SectionHeader
                            title="Podcast Banner"
@@ -348,7 +322,6 @@ const ActivePodcastPreview = React.memo(
                         )}
                      </div>
 
-                     {/* Sources Section */}
                      {sources && sources.length > 0 && (
                         <div>
                            <SectionHeader
@@ -358,7 +331,6 @@ const ActivePodcastPreview = React.memo(
                               subtitle={`${sources.length} sources used for podcast creation`}
                            />
                            <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 overflow-hidden">
-                              {/* Sources summary header */}
                               <div className="p-3 border-b border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center justify-between">
                                     <div className="text-xs text-gray-300">Research materials</div>
@@ -368,7 +340,6 @@ const ActivePodcastPreview = React.memo(
                                  </div>
                               </div>
 
-                              {/* Scrollable sources content */}
                               <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
                                  <div className="space-y-3">
                                     {sources.map((source, index) => (
@@ -419,7 +390,6 @@ const ActivePodcastPreview = React.memo(
                                  </div>
                               </div>
 
-                              {/* Footer indicator */}
                               <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center gap-2 text-emerald-400">
                                     <Globe className="w-3 h-3" />
@@ -432,7 +402,6 @@ const ActivePodcastPreview = React.memo(
                         </div>
                      )}
 
-                     {/* Recording Section */}
                      {recordingUrl && (
                         <div>
                            <SectionHeader
@@ -450,11 +419,8 @@ const ActivePodcastPreview = React.memo(
                                     <Play className="w-5 h-5 text-emerald-400" />
                                  </div>
                                  <div className="text-left">
-                                    {/* <p className="text-xs font-medium text-white">
-                                       View Browser Use Recording
-                                    </p> */}
                                     <p className="text-xs text-gray-400">
-                                    View Browser Use Recording
+                                       View Browser Use Recording
                                     </p>
                                  </div>
                               </div>
@@ -463,7 +429,6 @@ const ActivePodcastPreview = React.memo(
                         </div>
                      )}
 
-                     {/* Script Section */}
                      <div>
                         <SectionHeader
                            title="Podcast Script"
@@ -479,7 +444,6 @@ const ActivePodcastPreview = React.memo(
                         />
                         {hasStructuredScript ? (
                            <div className="bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-xl border border-gray-700/30 overflow-hidden">
-                              {/* Script summary header */}
                               <div className="p-3 border-b border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-xs text-gray-300">
@@ -492,12 +456,10 @@ const ActivePodcastPreview = React.memo(
                                  </div>
                               </div>
 
-                              {/* Scrollable script content - Full content */}
                               <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
                                  <div className="space-y-3">
                                     {scriptData.sections.map((section, sectionIndex) => (
                                        <div key={sectionIndex}>
-                                          {/* Section header */}
                                           <div className="mb-2">
                                              <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
                                                 {section.type}
@@ -506,7 +468,6 @@ const ActivePodcastPreview = React.memo(
                                              <div className="h-px bg-gradient-to-r from-emerald-500/30 to-transparent mt-1" />
                                           </div>
 
-                                          {/* Section dialogue */}
                                           {section.dialog && (
                                              <div className="space-y-2">
                                                 {section.dialog.map((line, lineIndex) => (
@@ -530,7 +491,6 @@ const ActivePodcastPreview = React.memo(
                                  </div>
                               </div>
 
-                              {/* Footer indicator */}
                               <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center gap-2 text-emerald-400">
                                     <Sparkles className="w-3 h-3" />
@@ -561,7 +521,6 @@ const ActivePodcastPreview = React.memo(
                         )}
                      </div>
 
-                     {/* Audio Section */}
                      <div>
                         <SectionHeader
                            title="Podcast Audio"
@@ -581,7 +540,6 @@ const ActivePodcastPreview = React.memo(
                      </div>
                   </div>
 
-                  {/* Bottom Audio Player */}
                   {audioUrl && (
                      <div className="border-t border-gray-700/30 p-3 bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm">
                         <div className="flex items-center justify-between">
@@ -608,7 +566,6 @@ const ActivePodcastPreview = React.memo(
                </>
             )}
 
-            {/* Recording Player Modal */}
             {showRecordingPlayer && recordingUrl && (
                <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-40 flex flex-col animate-fadeIn">
                   <div className="w-full h-full flex flex-col">
@@ -619,9 +576,11 @@ const ActivePodcastPreview = React.memo(
                            </div>
                            <div>
                               <h3 className="text-xs font-semibold text-white">
-                              Browser Use Recording
+                                 Browser Use Recording
                               </h3>
-                              <p style={{fontSize: '9px'}} className="text-xs text-gray-400">View Browser Use Recording</p>
+                              <p style={{ fontSize: '9px' }} className="text-xs text-gray-400">
+                                 View Browser Use Recording
+                              </p>
                            </div>
                         </div>
                         <button
