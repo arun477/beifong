@@ -1041,6 +1041,7 @@ const PodcastSession = () => {
                   scriptContent={podcastInfo.scriptText}
                   onClose={handleClosePreview}
                   hasAutoOpenedRecording={hasAutoOpenedRecording}
+                  stage={sessionState?.stage}
                />
             </div>
          )}

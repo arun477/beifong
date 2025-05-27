@@ -86,6 +86,7 @@ const ActivePodcastPreview = React.memo(
       generatedScript, // Note: camelCase to match parent component
       sources, // Add sources prop
       hasAutoOpenedRecording,
+      stage
    }) => {
       const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
       const [activeTab, setActiveTab] = useState('banner');
@@ -100,13 +101,13 @@ const ActivePodcastPreview = React.memo(
       useEffect(() => {
          if (webSearchRecording && 
              hasAutoOpenedRecording && 
-             !hasAutoOpenedRecording.current) {
+             !hasAutoOpenedRecording.current && stage === 'search') {
             
             console.log('Auto-opening recording player in preview component');
             setShowRecordingPlayer(true);
             hasAutoOpenedRecording.current = true;
          }
-      }, [webSearchRecording, hasAutoOpenedRecording]);
+      }, [webSearchRecording, hasAutoOpenedRecording, stage]);
 
       // Prepare banner images array with proper API URL construction
       const allBannerImages =
