@@ -3,10 +3,9 @@ import sys
 import tempfile
 import requests
 import zipfile
-import shutil
 from tqdm import tqdm
 
-DEMO_URL = "https://github.com/arun477/beifong/releases/download/v0.1-demo/demo_content.zip"
+DEMO_URL = "https://github.com/arun477/beifong/releases/download/v1.2.0/demo_content.zip"
 TARGET_DIRS = ["databases", "podcasts"]
 
 
@@ -27,7 +26,7 @@ def download_file(url, dest_path):
     response = requests.get(url, stream=True)
     response.raise_for_status()
     
-    # Get file size from headers if available
+    
     total_size = int(response.headers.get('content-length', 0))
     block_size = 8192
     
@@ -44,10 +43,8 @@ def extract_zip(zip_path, extract_to):
     print("✂ extracting demo content...")
     
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        # Get total number of files in the zip
         total_files = len(zip_ref.infolist())
         
-        # Extract with progress bar
         with tqdm(total=total_files, desc="Extraction Progress") as pbar:
             for file in zip_ref.infolist():
                 zip_ref.extract(file, extract_to)
