@@ -22,7 +22,8 @@ class ChatResponse(BaseModel):
     session_state: str
     is_processing: bool = False
     process_type: Optional[str] = None
-    task_id: Optional[str] = None 
+    task_id: Optional[str] = None
+    browser_recording_path: Optional[str] = None
 
 
 class StatusRequest(BaseModel):

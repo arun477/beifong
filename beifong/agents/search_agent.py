@@ -11,8 +11,7 @@ from tools.jikan_search import jikan_search
 from tools.embedding_search import embedding_search
 from tools.social_media_search import social_media_search, social_media_trending_search
 from tools.search_articles import search_articles
-
-
+from tools.web_search import run_browser_search
 
 
 load_dotenv()
@@ -54,12 +53,12 @@ SEARCH_AGENT_INSTRUCTIONS = dedent("""
     IMPORTANT: User queries might be fuzzy or misspelled. Understand the user's intent and act accordingly.
     IMPORTANT: The output source_name field can be one of ["wikipedia", "general", or any source tag used"].
     IMPORTANT: You have access to different search tools use them when appropriate which one is best for the given search query. Don't use particular tool if not required.
-    IMPORTANT: Make sure you are able to detect what tool to use and use it available tool tags = ["google_news_discovery", "duckduckgo", "wikipedia_search", "jikan_search", "social_media_search", "social_media_trending_search", "unknown"].
+    IMPORTANT: Make sure you are able to detect what tool to use and use it available tool tags = ["google_news_discovery", "duckduckgo", "wikipedia_search", "jikan_search", "social_media_search", "social_media_trending_search", "browser_search", "unknown"].
     IMPORTANT: If query is news related please prefere google news over other news tools.
     IMPORTANT: If returned sources are not of high quality or not relevant to the asked topic, don't include them in the returned sources.
     IMPORTANT: Never include dates to the search query unless user explicitly asks for it.
     IMPORTANT: You are allowed to use appropriate tools to get the best results even the single tool return enough results diverse check is better.
-    
+    IMPORTANT: You have access to browser agent for searching as well use it when other source can't suitable for the given tasks but input should detailed instruction to the run_browser_search agent to get the best results and also use it conservatively because it's expensive process.
     """)
 
 
@@ -92,7 +91,8 @@ def search_agent_run(agent: Agent, query: str) -> str:
             embedding_search,
             social_media_search,
             social_media_trending_search,
-            search_articles
+            search_articles,
+            run_browser_search,
         ],
         session_id=session_id,
     )

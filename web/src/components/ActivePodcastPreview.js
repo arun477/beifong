@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Video, FileText, Volume2, ChevronLeft, ChevronRight, Play, X, Users, Calendar, Sparkles, Globe, ExternalLink } from 'lucide-react';
+import {
+   Image,
+   Video,
+   FileText,
+   Volume2,
+   ChevronLeft,
+   ChevronRight,
+   Play,
+   X,
+   Users,
+   Calendar,
+   Sparkles,
+   Globe,
+   ExternalLink,
+} from 'lucide-react';
 
 // Import api for base URL
 import api from '../services/api';
@@ -45,11 +59,11 @@ const SourceIcon = ({ url }) => {
          isMounted = false;
       };
    }, [url]);
-   
+
    if (!isIconReady || !iconUrl) {
       return defaultIconSvg;
    }
-   
+
    return (
       <img
          src={iconUrl}
@@ -70,7 +84,8 @@ const ActivePodcastPreview = React.memo(
       onClose,
       bannerImages,
       generatedScript, // Note: camelCase to match parent component
-      sources // Add sources prop
+      sources, // Add sources prop
+      hasAutoOpenedRecording,
    }) => {
       const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
       const [activeTab, setActiveTab] = useState('banner');
@@ -81,10 +96,25 @@ const ActivePodcastPreview = React.memo(
       const scriptRef = useRef(null);
       const audioRef = useRef(null);
 
+
+      useEffect(() => {
+         if (webSearchRecording && 
+             hasAutoOpenedRecording && 
+             !hasAutoOpenedRecording.current) {
+            
+            console.log('Auto-opening recording player in preview component');
+            setShowRecordingPlayer(true);
+            hasAutoOpenedRecording.current = true;
+         }
+      }, [webSearchRecording, hasAutoOpenedRecording]);
+
       // Prepare banner images array with proper API URL construction
-      const allBannerImages = bannerImages && bannerImages.length > 0 
-         ? bannerImages.map(img => `${api.API_BASE_URL}/podcast_img/${img}`)
-         : bannerUrl ? [bannerUrl] : [];
+      const allBannerImages =
+         bannerImages && bannerImages.length > 0
+            ? bannerImages.map(img => `${api.API_BASE_URL}/podcast_img/${img}`)
+            : bannerUrl
+            ? [bannerUrl]
+            : [];
 
       // Use structured script data if available
       const scriptData = generatedScript || null;
@@ -101,6 +131,14 @@ const ActivePodcastPreview = React.memo(
          };
          if (refs[sectionId]?.current) {
             refs[sectionId].current.scrollIntoView({ behavior: 'smooth' });
+         }
+      };
+
+      const handleRecordingButtonClick = () => {
+         setShowRecordingPlayer(true);
+         // Mark as opened even if manual (prevent future auto-opens)
+         if (hasAutoOpenedRecording) {
+            hasAutoOpenedRecording.current = true;
          }
       };
 
@@ -135,11 +173,14 @@ const ActivePodcastPreview = React.memo(
       // Get total lines count
       const getTotalLines = () => {
          if (!hasStructuredScript) return null;
-         return scriptData.sections.reduce((total, section) => total + (section.dialog ? section.dialog.length : 0), 0);
+         return scriptData.sections.reduce(
+            (total, section) => total + (section.dialog ? section.dialog.length : 0),
+            0
+         );
       };
 
       const handleBannerPrevious = () => {
-         setCurrentBannerIndex(prev => prev === 0 ? allBannerImages.length - 1 : prev - 1);
+         setCurrentBannerIndex(prev => (prev === 0 ? allBannerImages.length - 1 : prev - 1));
       };
 
       const handleBannerNext = () => {
@@ -169,7 +210,7 @@ const ActivePodcastPreview = React.memo(
          >
             <div className="flex items-center gap-2 mb-2">
                <div className="p-1.5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-lg">
-                  {React.cloneElement(icon, { className: "w-4 h-4 text-emerald-400" })}
+                  {React.cloneElement(icon, { className: 'w-4 h-4 text-emerald-400' })}
                </div>
                <div>
                   <h3 className="text-sm font-semibold text-white">{title}</h3>
@@ -235,7 +276,7 @@ const ActivePodcastPreview = React.memo(
             }`}
          >
             {React.cloneElement(icon, {
-               className: `w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-gray-400'}`
+               className: `w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-gray-400'}`,
             })}
             <span className="text-xs mt-1 font-medium">{label}</span>
          </button>
@@ -244,10 +285,10 @@ const ActivePodcastPreview = React.memo(
       const SpeakerColors = {
          ALEX: 'from-slate-600 to-slate-700',
          MORGAN: 'from-gray-600 to-gray-700',
-         default: 'from-zinc-600 to-zinc-700'
+         default: 'from-zinc-600 to-zinc-700',
       };
 
-      const getSpeakerColor = (speaker) => {
+      const getSpeakerColor = speaker => {
          return SpeakerColors[speaker] || SpeakerColors.default;
       };
 
@@ -274,7 +315,9 @@ const ActivePodcastPreview = React.memo(
                         )}
                      </div>
                      <div className="mt-2">
-                        <h2 className="text-sm font-semibold text-white truncate">{podcastTitle}</h2>
+                        <h2 className="text-sm font-semibold text-white truncate">
+                           {podcastTitle}
+                        </h2>
                         <p className="text-xs text-gray-400 mt-0.5">Live Preview</p>
                      </div>
                   </div>
@@ -288,7 +331,11 @@ const ActivePodcastPreview = React.memo(
                            title="Podcast Banner"
                            icon={<Image />}
                            id="banner"
-                           subtitle={allBannerImages.length > 1 ? `${allBannerImages.length} banners available` : undefined}
+                           subtitle={
+                              allBannerImages.length > 1
+                                 ? `${allBannerImages.length} banners available`
+                                 : undefined
+                           }
                         />
                         {allBannerImages.length > 0 ? (
                            <div className="relative group">
@@ -347,27 +394,30 @@ const ActivePodcastPreview = React.memo(
                               {/* Sources summary header */}
                               <div className="p-3 border-b border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center justify-between">
-                                    <div className="text-xs text-gray-300">
-                                       Research materials
-                                    </div>
+                                    <div className="text-xs text-gray-300">Research materials</div>
                                     <div className="text-xs text-gray-400">
                                        {sources.length} sources
                                     </div>
                                  </div>
                               </div>
-                              
+
                               {/* Scrollable sources content */}
                               <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
                                  <div className="space-y-3">
                                     {sources.map((source, index) => (
-                                       <div key={index} className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+                                       <div
+                                          key={index}
+                                          className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30"
+                                       >
                                           <div className="flex items-start gap-2">
                                              <div className="flex-shrink-0 pt-0.5">
                                                 {source.url && <SourceIcon url={source.url} />}
                                              </div>
                                              <div className="flex-1 min-w-0">
                                                 <h4 className="text-xs font-medium text-white truncate">
-                                                   <span className="text-emerald-400 mr-1">{index + 1}.</span>
+                                                   <span className="text-emerald-400 mr-1">
+                                                      {index + 1}.
+                                                   </span>
                                                    {source.title}
                                                 </h4>
                                                 {source.url && (
@@ -389,7 +439,9 @@ const ActivePodcastPreview = React.memo(
                                                    <div className="flex items-center gap-1 mt-1">
                                                       <Calendar className="w-3 h-3 text-gray-500" />
                                                       <span className="text-xs text-gray-500">
-                                                         {new Date(source.published_date).toLocaleDateString()}
+                                                         {new Date(
+                                                            source.published_date
+                                                         ).toLocaleDateString()}
                                                       </span>
                                                    </div>
                                                 )}
@@ -399,12 +451,14 @@ const ActivePodcastPreview = React.memo(
                                     ))}
                                  </div>
                               </div>
-                              
+
                               {/* Footer indicator */}
                               <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center gap-2 text-emerald-400">
                                     <Globe className="w-3 h-3" />
-                                    <span className="text-xs">All research sources used in podcast creation</span>
+                                    <span className="text-xs">
+                                       All research sources used in podcast creation
+                                    </span>
                                  </div>
                               </div>
                            </div>
@@ -421,7 +475,7 @@ const ActivePodcastPreview = React.memo(
                               subtitle="AI research process captured"
                            />
                            <button
-                              onClick={() => setShowRecordingPlayer(true)}
+                              onClick={handleRecordingButtonClick}
                               className="w-full group bg-gradient-to-r from-gray-800/50 to-gray-700/50 hover:from-gray-700/50 hover:to-gray-600/50 rounded-xl border border-gray-700/30 p-4 flex items-center justify-between transition-all duration-200 hover:border-gray-600/50"
                            >
                               <div className="flex items-center gap-3">
@@ -429,8 +483,12 @@ const ActivePodcastPreview = React.memo(
                                     <Play className="w-5 h-5 text-emerald-400" />
                                  </div>
                                  <div className="text-left">
-                                    <p className="text-sm font-medium text-white">View Search Recording</p>
-                                    <p className="text-xs text-gray-400">Watch how AI gathered information</p>
+                                    <p className="text-xs font-medium text-white">
+                                       View Search Recording
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                       Watch how AI gathered information
+                                    </p>
                                  </div>
                               </div>
                               <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-emerald-400 transition-colors" />
@@ -444,9 +502,12 @@ const ActivePodcastPreview = React.memo(
                            title="Podcast Script"
                            icon={<FileText />}
                            id="script"
-                           subtitle={hasStructuredScript ? 
-                              `${scriptData.sections.length} sections • ${getSpeakers().length} speakers • ${getTotalLines()} lines` :
-                              'Generated podcast script'
+                           subtitle={
+                              hasStructuredScript
+                                 ? `${scriptData.sections.length} sections • ${
+                                      getSpeakers().length
+                                   } speakers • ${getTotalLines()} lines`
+                                 : 'Generated podcast script'
                            }
                         />
                         {hasStructuredScript ? (
@@ -463,7 +524,7 @@ const ActivePodcastPreview = React.memo(
                                     </div>
                                  </div>
                               </div>
-                              
+
                               {/* Scrollable script content - Full content */}
                               <div className="p-3 max-h-64 overflow-y-auto custom-scrollbar">
                                  <div className="space-y-3">
@@ -477,13 +538,17 @@ const ActivePodcastPreview = React.memo(
                                              </h4>
                                              <div className="h-px bg-gradient-to-r from-emerald-500/30 to-transparent mt-1" />
                                           </div>
-                                          
+
                                           {/* Section dialogue */}
                                           {section.dialog && (
                                              <div className="space-y-2">
                                                 {section.dialog.map((line, lineIndex) => (
                                                    <div key={lineIndex} className="space-y-1">
-                                                      <div className={`inline-block px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(line.speaker)} text-white rounded-full`}>
+                                                      <div
+                                                         className={`inline-block px-2 py-0.5 text-xs font-medium bg-gradient-to-r ${getSpeakerColor(
+                                                            line.speaker
+                                                         )} text-white rounded-full`}
+                                                      >
                                                          {line.speaker}
                                                       </div>
                                                       <p className="text-xs text-gray-300 leading-relaxed pl-1">
@@ -497,12 +562,14 @@ const ActivePodcastPreview = React.memo(
                                     ))}
                                  </div>
                               </div>
-                              
+
                               {/* Footer indicator */}
                               <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center gap-2 text-emerald-400">
                                     <Sparkles className="w-3 h-3" />
-                                    <span className="text-xs">Complete structured script with all sections</span>
+                                    <span className="text-xs">
+                                       Complete structured script with all sections
+                                    </span>
                                  </div>
                               </div>
                            </div>
@@ -516,7 +583,9 @@ const ActivePodcastPreview = React.memo(
                               <div className="px-3 py-2 border-t border-gray-700/30 bg-gray-800/30">
                                  <div className="flex items-center gap-2 text-emerald-400">
                                     <FileText className="w-3 h-3" />
-                                    <span className="text-xs">Complete script content • Scroll to view all</span>
+                                    <span className="text-xs">
+                                       Complete script content • Scroll to view all
+                                    </span>
                                  </div>
                               </div>
                            </div>
@@ -582,8 +651,10 @@ const ActivePodcastPreview = React.memo(
                               <Video className="w-5 h-5 text-emerald-400" />
                            </div>
                            <div>
-                              <h3 className="text-lg font-semibold text-white">Web Search Recording</h3>
-                              <p className="text-sm text-gray-400">AI research process</p>
+                              <h3 className="text-xs font-semibold text-white">
+                                 Web Search Recording
+                              </h3>
+                              <p className="text-xs text-gray-400">AI research process</p>
                            </div>
                         </div>
                         <button
@@ -593,7 +664,7 @@ const ActivePodcastPreview = React.memo(
                            <X className="w-6 h-6" />
                         </button>
                      </div>
-                     <div className="relative w-full bg-black flex-grow">
+                     <div className="relative w-full bg-black flex-grow max-h-[300px]">
                         <video
                            className="w-full h-full object-contain"
                            src={recordingUrl}
@@ -604,8 +675,9 @@ const ActivePodcastPreview = React.memo(
                         </video>
                      </div>
                      <div className="p-6 border-t border-gray-700/30 flex-shrink-0">
-                        <p className="text-sm text-gray-400 mb-4">
-                           This recording shows the AI searching the web for information to include in your podcast.
+                        <p className="text-xs text-gray-400 mb-4">
+                           This recording shows the AI searching the web for information to include
+                           in your podcast.
                         </p>
                         <div className="flex justify-end">
                            <button
@@ -622,8 +694,12 @@ const ActivePodcastPreview = React.memo(
 
             <style jsx>{`
                @keyframes fadeIn {
-                  from { opacity: 0; }
-                  to { opacity: 1; }
+                  from {
+                     opacity: 0;
+                  }
+                  to {
+                     opacity: 1;
+                  }
                }
                .animate-fadeIn {
                   animation: fadeIn 0.2s ease-out forwards;

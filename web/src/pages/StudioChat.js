@@ -30,13 +30,26 @@ const PodcastSession = () => {
    const [isFinalScriptModalOpen, setIsFinalScriptModalOpen] = useState(false);
    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
    const [showRecordingPlayer, setShowRecordingPlayer] = useState(false);
+   const [webSearchRecording, setWebSearchRecording] = useState(null);
    const [selectedLanguageCode, setSelectedLanguageCode] = useState('en');
    const [availableLanguages, setAvailableLanguages] = useState([{ code: 'en', name: 'English' }]);
    const chatContainerRef = useRef(null);
    const pollTimerRef = useRef(null);
    const messagesEndRef = useRef(null);
    const inputRef = useRef(null);
+   console.log('webSearchRecording', webSearchRecording);
+   const hasAutoOpenedRecording = useRef(false);
 
+   useEffect(() => {
+      // Auto-open recording player once when webSearchRecording becomes available
+      if (webSearchRecording && !hasAutoOpenedRecording.current) {
+         console.log('Auto-opening recording player for the first time');
+         setShowRecordingPlayer(true);
+         if(sessionState.stage === 'search'){
+            hasAutoOpenedRecording.current = true;
+         }
+      }
+   }, [webSearchRecording]);
 
    useEffect(() => {
       if (sessionId) {
@@ -120,12 +133,23 @@ const PodcastSession = () => {
 
          const historyData = await api.podcastAgent.getSessionHistory(confirmedSessionId);
 
+         try {
+            hasAutoOpenedRecording.current = false;
+         } catch (err) {
+            console.error('Error resetting auto-open state:', err);
+         }
+
          // Verify history is for the correct session
          if (historyData.data.session_id !== confirmedSessionId) {
             console.error(
                `History session mismatch: Expected ${confirmedSessionId}, got ${historyData.data.session_id}`
             );
             throw new Error('Session validation failed');
+         }
+
+
+         if (historyData.data.browser_recording_path) {
+            setWebSearchRecording(historyData.data.browser_recording_path);
          }
 
          const uniqueMessages =
@@ -212,6 +236,11 @@ const PodcastSession = () => {
          setShowCompletionModal(false);
          setIsMobileSidebarOpen(false);
          setShowRecordingPlayer(false);
+         try {
+            hasAutoOpenedRecording.current = false;
+         } catch (err) {
+            console.error('Error resetting auto-open state:', err);
+         }
          const response = await api.podcastAgent.createSession(null);
          if (response?.data?.session_id) {
             window.location.href = `/studio/chat/${response.data.session_id}`;
@@ -339,7 +368,7 @@ const PodcastSession = () => {
          try {
             // Check status using task ID if available
             const statusResponse = await api.podcastAgent.checkStatus(currentSessionId, taskId);
-
+            console.log('Status response:', statusResponse.data);
             // CRITICAL: Verify the response is for our current session
             if (
                statusResponse.data.session_id &&
@@ -349,6 +378,10 @@ const PodcastSession = () => {
                   `Session ID mismatch! Expected ${currentSessionId}, got ${statusResponse.data.session_id}`
                );
                return; // Skip this cycle
+            }
+
+            if (statusResponse.data.browser_recording_path) {
+               setWebSearchRecording(statusResponse.data.browser_recording_path);
             }
 
             // If the task is complete (is_processing is false)
@@ -375,6 +408,8 @@ const PodcastSession = () => {
                if (statusResponse.data.session_state) {
                   updateSessionState(statusResponse.data.session_state);
                }
+
+               
             }
             // If it's still processing but there's a status update
             else if (
@@ -735,10 +770,10 @@ const PodcastSession = () => {
                         bannerUrl={bannerUrlFull}
                         audioUrl={audioUrlFull}
                         recordingUrl={
-                           sessionState.web_search_recording && sessionId
+                           webSearchRecording && sessionId
                               ? `${
                                    api.API_BASE_URL
-                                }/stream-recording/${sessionId}/${sessionState.web_search_recording
+                                }/stream-recording/${sessionId}/${webSearchRecording
                                    .split('/')
                                    .pop()}`
                               : ''
@@ -1002,9 +1037,10 @@ const PodcastSession = () => {
                   bannerUrl={bannerUrlFull}
                   audioUrl={audioUrlFull}
                   sessionId={sessionId || ''}
-                  webSearchRecording={sessionState.web_search_recording || null}
+                  webSearchRecording={webSearchRecording || null}
                   scriptContent={podcastInfo.scriptText}
                   onClose={handleClosePreview}
+                  hasAutoOpenedRecording={hasAutoOpenedRecording}
                />
             </div>
          )}

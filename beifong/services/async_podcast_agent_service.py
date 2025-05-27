@@ -4,15 +4,10 @@ import uuid
 from fastapi import status
 from fastapi.responses import JSONResponse
 import aiosqlite
+import glob
 from redis.asyncio import ConnectionPool, Redis
 from db.config import get_agent_session_db_path
-from db.agent_config_v2 import (
-    PODCAST_DIR,
-    PODCAST_AUIDO_DIR,
-    PODCAST_IMG_DIR,
-    PODCAST_RECORDINGS_DIR,
-    AVAILABLE_LANGS
-)
+from db.agent_config_v2 import PODCAST_DIR, PODCAST_AUIDO_DIR, PODCAST_IMG_DIR, PODCAST_RECORDINGS_DIR, AVAILABLE_LANGS
 from services.celery_tasks import agent_chat
 from dotenv import load_dotenv
 from services.internal_session_service import SessionService
@@ -102,6 +97,20 @@ class PodcastAgentService:
                 },
             )
 
+    def _browser_recording(self, session_id):
+        try:
+            recordings_dir = os.path.join("podcasts/recordings", session_id)
+            webm_files = glob.glob(os.path.join(recordings_dir, "*.webm"))
+            if webm_files:
+                browser_recording_path = webm_files[0]
+                if (os.path.exists(browser_recording_path) and 
+                    os.path.getsize(browser_recording_path) > 8192 and 
+                    os.access(browser_recording_path, os.R_OK)):
+                    return browser_recording_path
+            return None
+        except Exception as _:
+            return None
+
     async def check_result_status(self, request):
         try:
             if not request.session_id:
@@ -109,6 +118,8 @@ class PodcastAgentService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={"error": "Session ID is required"},
                 )
+
+            browser_recording_path = self._browser_recording(request.session_id)
 
             task_id = getattr(request, "task_id", None)
             if task_id:
@@ -122,6 +133,7 @@ class PodcastAgentService:
                         "is_processing": True,
                         "process_type": "chat",
                         "task_id": task_id,
+                        "browser_recording_path": browser_recording_path,
                     }
                 elif task.state == "SUCCESS":
                     result = task.result
@@ -133,6 +145,7 @@ class PodcastAgentService:
                                 "stage": "error",
                                 "session_state": "{}",
                                 "is_processing": False,
+                                "browser_recording_path": browser_recording_path,
                             }
                         return result
                 else:
@@ -143,6 +156,7 @@ class PodcastAgentService:
                         "stage": "error",
                         "session_state": "{}",
                         "is_processing": False,
+                        "browser_recording_path": browser_recording_path,
                     }
             return await self.get_session_state(request.session_id)
         except Exception as e:
@@ -155,6 +169,7 @@ class PodcastAgentService:
                     "stage": "error",
                     "session_state": "{}",
                     "is_processing": False,
+                    "browser_recording_path": browser_recording_path,
                 },
             )
 
@@ -304,7 +319,6 @@ class PodcastAgentService:
         except Exception as e:
             print(f"Error deleting session: {e}")
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Failed to delete session: {str(e)}"})
-        
 
     async def _get_chat_messages(self, row, session_id):
         formatted_messages = []
@@ -357,6 +371,7 @@ class PodcastAgentService:
             task_id = await self.get_active_task(session_id)
             is_processing = bool(task_id)
             process_type = "chat" if is_processing else None
+            browser_recording_path = self._browser_recording(session_id)
 
             return {
                 "session_id": session_id,
@@ -365,10 +380,11 @@ class PodcastAgentService:
                 "is_processing": is_processing,
                 "process_type": process_type,
                 "task_id": task_id if task_id and is_processing else None,
+                "browser_recording_path": browser_recording_path,
             }
         except Exception as e:
             return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": f"Error retrieving session history: {str(e)}"})
-        
+
     async def get_supported_languages(self):
         return {"languages": AVAILABLE_LANGS}
 
