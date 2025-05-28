@@ -261,7 +261,4 @@ For temporary remote access without a public-facing server:
 
 ### Browser-based Web Search
 
-> **⚠️ FEATURE - V1 BRANCH ONLY**
-> 
-> **This functionality is NOT active in the main version.** 
-> When integrating this functionality into the main version, ensure compatibility with the other custom browser-based search tools which also rely on playwright and test thoroughly with existing web search options.
+> Agent has full access to the browser through browseruse lib.
