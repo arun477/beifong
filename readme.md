@@ -301,7 +301,7 @@ Beifong supports multiple text to speech options:
 
 The TTS system supports integration of additional engines:
 
-** Potential Next Open Source Integration Options:**
+**Potential Next Open Source Integration Options:**
 - **[Dia TTS](https://yummy-fir-7a4.notion.site/dia)** 
 - **[CSM](https://github.com/SesameAILabs/csm)** 
 - **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** 
