@@ -235,7 +235,7 @@ Register your tool in `services/celery_tasks.py`:
 
 ```python
 # Add import
-from tools.async_my_custom_tool import my_custom_tool
+from tools.my_custom_tool import my_custom_tool
 # Add to tools list
 tools = [my_custom_tool]
 ```
