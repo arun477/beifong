@@ -345,9 +345,9 @@ Beifong supports easy expansion to additional platforms:
 - Facebook.com
 
 **Easy Integration Options:**
-- **LinkedIn** - Can be added through custom URL configuration
-- **Reddit** - Easily integrate Reddit feed monitoring
-- **Other Platforms** - Most social media platforms can be integrated using the same framework
+- **LinkedIn**
+- **Reddit** 
+- **Other Platforms** - Most social media platforms can be integrated using the same framework, but you must write a custom scraper or use an API for it.
 
 **Future Updates:**
 - Next version will include more built-in connectors for popular social media platforms
@@ -408,7 +408,7 @@ Generated podcasts, audio files, and visual assets are stored in the **podcasts*
 
 ### Managing Storage Growth
 
-For larger deployments, consider these storage optimization strategies:
+If asset storage grows, consider these storage optimization strategies:
 
 **Cloud Storage Integration:**
 - Use s3fs to mount an S3 bucket as a local folder for media assets
@@ -429,7 +429,7 @@ For larger deployments, consider these storage optimization strategies:
 
 ### Local Network Access
 
-Make Beifong available to other devices on your network:
+Beifong is available in local mode
 
 ```bash
 # Start the backend with network access
@@ -441,7 +441,7 @@ This makes the application accessible via your machine's IP address on your loca
 
 ### Remote Access Solutions
 
-For accessing Beifong from outside your local network:
+For accessing Beifong from outside your local network (workaround):
 
 #### SSH Port Forwarding
 ```bash
