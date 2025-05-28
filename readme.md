@@ -105,10 +105,10 @@ REDIS_DB=0
 
 ### Starting the Application
 
-Launch all required services in separate terminals:
+Launch all required services in separate terminals (but make sure you start python main.py first before starting others, because the first time run will do db initialization):
 
 ```bash
-# Terminal 1: Start the main backend
+# Terminal 1: Start the main backend (first time run may take 2 to 3 minutes due to the setup process)
 cd beifong
 python main.py
 
