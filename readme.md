@@ -356,7 +356,7 @@ Beifong supports easy expansion to additional platforms:
 
 **Future Updates:**
 - Next version will include more built-in connectors for popular social media platforms
-- Enhanced support for multiple account management per platform
+- Support for multiple account management per platform
 
 ### Scheduling Best Practices
 
