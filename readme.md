@@ -301,10 +301,10 @@ Beifong supports multiple text to speech options:
 
 The TTS system supports integration of additional engines:
 
-**Open Source Options:**
-- **[Dia TTS](https://yummy-fir-7a4.notion.site/dia)** - Open source TTS engine
-- **[CSM](https://github.com/SesameAILabs/csm)** - Speech model
-- **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** - Open source TTS
+** Potential Next Open Source Integration Options:**
+- **[Dia TTS](https://yummy-fir-7a4.notion.site/dia)** 
+- **[CSM](https://github.com/SesameAILabs/csm)** 
+- **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** 
 
 Add custom TTS engines through the tts_selector engine interface in the **utils** directory.
 
