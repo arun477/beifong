@@ -52,7 +52,7 @@ Before installing Beifong, ensure you have:
 - Python 3.11+
 - Redis Server
 - OpenAI API key
-- (Optional) ElevenLabs API key for enhanced voice options
+- (Optional) ElevenLabs API key
 
 ### Initial Setup and Installation
 
@@ -291,11 +291,11 @@ For persistent logged in sessions and advanced browser management:
 Beifong supports multiple text to speech options:
 
 **Commercial Options:**
-- **OpenAI TTS** - Commercial voice synthesis
-- **ElevenLabs** - Voice cloning and synthesis
+- **OpenAI TTS** 
+- **ElevenLabs** 
 
 **Open Source Options:**
-- **Kokoro** - Open source voice generation
+- **Kokoro**
 
 ### Adding New Voice Engines
 
