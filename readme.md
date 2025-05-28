@@ -48,7 +48,12 @@ Beifong manages your trusted articles and social media platform sources. It gene
   - [Security](#security)
 - [Cloud Options](#cloud-options)
   - [Beifong Cloud Features](#beifong-cloud-features)
-  - [Updates](#updates)
+- [Troubleshooting](#troubleshooting)
+  - [Kokoro Library Installation Issues](#kokoro-library-installation-issues)
+  - [Browseruse Installation Issues](#browseruse-installation-issues)
+  - [FAISS Library Installation Issues](#faiss-library-installation-issues)
+  - [Browser-Based Data Collection Issues](#browser-based-data-collection-issues)
+- [Updates](#updates)
 
 ## Getting Started
 
@@ -477,6 +482,30 @@ Coming Soon!
 
 ✅ Authentication layer
 
-### Updates
+## Troubleshooting
+
+### Kokoro Library Installation Issues
+
+If your installation fails due to the Kokoro library, you can skip installing this library and only install it when needed as a TTS engine. Kokoro is optional and only required if you want to use it for text-to-speech generation.
+
+For more information about Kokoro, check the reference: https://github.com/hexgrad/kokoro
+
+### Browseruse Installation Issues
+
+If your installation fails due to browseruse, make sure the Playwright version is properly installed. Browser automation features depend on Playwright being correctly set up.
+
+For more reference and troubleshooting: https://github.com/browser-use/browser-use
+
+### FAISS Library Installation Issues
+
+If the FAISS library installation fails, you can safely ignore this error and skip installing FAISS. This library is only required if you want to use the semantic search feature. If you don't need semantic search functionality, you can safely ignore the FAISS installation failure.
+
+For reference: https://github.com/facebookresearch/faiss
+
+### Browser-Based Data Collection Issues
+
+Some of the data collection features rely on browser automation, which sometimes won't work properly in server environments. While Beifong will still function, some browser-dependent features may not work in server environments without proper browser setup.
+
+## Updates
 
 🚀 **[Repo](https://github.com/arun477/beifong)**
