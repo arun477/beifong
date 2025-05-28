@@ -41,7 +41,7 @@ Beifong manages your trusted articles and social media platform sources. It gene
   - [Security](#security)
 - [Cloud Options](#cloud-options)
   - [Beifong Cloud Features](#beifong-cloud-features)
-  - [Join the Waitlist](#join-the-waitlist)
+  - [Updates](#updates)
 
 ## Getting Started
 
@@ -375,6 +375,7 @@ Beifong doesn't include an authentication layer yet. Authentication will be adde
 ## Cloud Options
 
 ### Beifong Cloud Features
+Coming Soon!
 
 ✅ Cloud version of Beifong
 
@@ -388,6 +389,6 @@ Beifong doesn't include an authentication layer yet. Authentication will be adde
 
 ✅ Authentication layer
 
-### Join the Waitlist
+### Updates
 
-🚀 **[Join the Beifong Cloud Waitlist](https://www.makeform.ai/f/ix4eJqE0)**
+🚀 **[Repo](https://github.com/arun477/beifong)**
