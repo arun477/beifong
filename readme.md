@@ -504,7 +504,7 @@ For reference: https://github.com/facebookresearch/faiss
 
 ### Browser-Based Data Collection Issues
 
-Some of the data collection features rely on browser automation, which sometimes won't work properly in server environments. While Beifong will still function, some browser-dependent features may not work in server environments without proper browser setup.
+Some of the data collection features rely on browser automation, which sometimes won't work properly in server environments. While Beifong will still function, some browser dependent features may not work in server environments without proper browser setup.
 
 ## Updates
 
