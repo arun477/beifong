@@ -39,6 +39,9 @@ Beifong manages your trusted articles and social media platform sources. It gene
   - [Local Network Access](#local-network-access)
   - [Remote Access Solutions](#remote-access-solutions)
   - [Security](#security)
+- [Cloud Options](#cloud-options)
+  - [Beifong Cloud Features](#beifong-cloud-features)
+  - [Join the Waitlist](#join-the-waitlist)
 
 ## Getting Started
 
@@ -368,3 +371,23 @@ Provides a temporary public URL that forwards to your local instance.
 ### Security
 
 Beifong doesn't include an authentication layer yet. Authentication will be added in the next version.
+
+## Cloud Options
+
+### Beifong Cloud Features
+
+✅ Cloud version of Beifong
+
+✅ More social media connectors
+
+✅ Podcast customization with more styles
+
+✅ More voice options
+
+✅ Better data collection and storage management
+
+✅ Authentication layer
+
+### Join the Waitlist
+
+🚀 **[Join the Beifong Cloud Waitlist](https://www.makeform.ai/f/ix4eJqE0)**
