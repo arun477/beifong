@@ -238,7 +238,7 @@ Modify the agent's instructions and behavior in `db/agent_config_v2.py`:
 
 Beifong's search agent has full browser automation capabilities through the [browseruse](https://browser-use.com/) library, enabling web research and automated data collection from any website.
 
-#### Search Commands
+### Search Commands
 
 You can give the agent specific search instructions like:
 - *"Go to my X.com and collect top positive and informative feeds"*
@@ -248,7 +248,7 @@ You can give the agent specific search instructions like:
 
 The agent will navigate websites, interact with page elements, and extract the requested information automatically.
 
-#### Social Media Login Sessions
+### Social Media Login Sessions
 
 For websites requiring authentication (X.com, Facebook, LinkedIn, etc.), you need to establish logged in sessions:
 
@@ -262,7 +262,7 @@ For websites requiring authentication (X.com, Facebook, LinkedIn, etc.), you nee
    - Close the browser when finished
 4. **Session Persistence** - Beifong will use these authenticated sessions for future automated searches
 
-#### Advanced Persistent Session Configuration
+### Advanced Persistent Session Configuration
 
 For persistent logged in sessions and advanced browser management:
 
