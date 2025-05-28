@@ -381,6 +381,8 @@ Coming Soon!
 
 ✅ More social media connectors
 
+✅ Claude, Gemini, OpenAI, Ollama.
+
 ✅ Podcast customization with more styles
 
 ✅ More voice options
