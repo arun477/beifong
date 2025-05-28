@@ -28,6 +28,13 @@ Beifong manages your trusted articles and social media platform sources. It gene
   - [Search Commands](#search-commands)
   - [Social Media Login Sessions](#social-media-login-sessions)
   - [Advanced Persistent Session Configuration](#advanced-persistent-session-configuration)
+- [Social Media Monitoring](#social-media-monitoring)
+  - [Supported Platforms](#supported-platforms)
+  - [Setting Up Scheduled Feed Collection](#setting-up-scheduled-feed-collection)
+  - [Viewing AI Insights](#viewing-ai-insights)
+  - [Configuring Custom Feeds](#configuring-custom-feeds)
+  - [Adding New Social Media Accounts](#adding-new-social-media-accounts)
+  - [Scheduling Best Practices](#scheduling-best-practices)
 - [Audio and Voice Generation](#audio-and-voice-generation)
   - [Supported TTS Engines](#supported-tts-engines)
   - [Adding New Voice Engines](#adding-new-voice-engines)
@@ -283,6 +290,87 @@ For persistent logged in sessions and advanced browser management:
 - If login sessions expire, repeat the Social Tab setup process
 - Clear browser data if experiencing authentication issues
 - Ensure only one process accesses browser sessions at a time
+
+## Social Media Monitoring
+
+### Supported Platforms
+
+Beifong currently supports automated monitoring for:
+
+- **X.com (Twitter)** - Collects and analyzes your social media feeds
+- **Facebook.com** - Monitors your Facebook timeline and interactions
+
+### Setting Up Scheduled Feed Collection
+
+To automatically collect your social media feeds:
+
+1. **Navigate to the Voyager Tab** in the Beifong web interface
+2. **Create a Scheduled Task** for social media monitoring
+3. **Configure Collection Frequency** - Set how often you want feeds collected
+4. **Select Platform** - Choose between X.com or Facebook.com processors
+
+### Viewing AI Insights
+
+Once your social media feeds are collected:
+
+1. **Navigate to the Social Tab** in the web interface
+2. **View Comprehensive Analysis** - Each post is analyzed through AI providing:
+   - Content sentiment analysis
+   - Topic categorization
+   - Engagement insights
+   - Relevance scoring
+3. **Browse Full Insights** - Detailed analytics for all collected social media content
+
+### Configuring Custom Feeds
+
+You can easily customize which feeds to monitor:
+
+**Modifying Feed Sources:**
+- Navigate to `/tools/social/` directory
+- Update the URLs in the social media processors
+- **Monitor Specific Profiles** - Configure to track particular X.com profiles or Facebook pages
+- **Custom Feed Types** - Adapt URLs for different types of content feeds
+
+**URL Configuration Examples:**
+- Track specific X.com user: Modify URLs to target particular profiles
+- Monitor Facebook pages: Configure URLs for specific Facebook feeds
+- Custom hashtag monitoring: Set URLs to track specific hashtags or topics
+
+### Adding New Social Media Accounts
+
+Beifong supports easy expansion to additional platforms:
+
+**Currently Supported:**
+- X.com (Twitter)
+- Facebook.com
+
+**Easy Integration Options:**
+- **LinkedIn** - Can be added through custom URL configuration
+- **Reddit** - Easily integrate Reddit feed monitoring
+- **Other Platforms** - Most social media platforms can be integrated using the same framework
+
+**Future Updates:**
+- Next version will include more built-in connectors for popular social media platforms
+- Enhanced support for multiple account management per platform
+
+### Scheduling Best Practices
+
+**Important Scheduling Considerations:**
+
+⚠️ **Avoid Concurrent Execution** - When scheduling multiple social media feed collection tasks, ensure they don't run simultaneously. All social media processors share the same persistent browser session.
+
+**Recommended Scheduling Approach:**
+- **Stagger Collection Times** - Schedule X.com and Facebook.com collection at different times
+- **Allow Processing Gaps** - Leave sufficient time between different social media tasks
+- **Monitor Execution Times** - Track how long each collection takes to avoid overlaps
+
+**Example Safe Scheduling:**
+- X.com feed collection: Every 2 hours at :00 minutes
+- Facebook.com feed collection: Every 2 hours at :30 minutes
+
+**Future Improvements:**
+- Next version will provide separate persistent browser sessions for each social media account
+- This will eliminate the need for careful scheduling and allow concurrent collection from multiple platforms
 
 ## Audio and Voice Generation
 
