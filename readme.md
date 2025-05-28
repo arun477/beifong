@@ -381,7 +381,7 @@ Coming Soon!
 
 ✅ More social media connectors
 
-✅ Claude, Gemini, OpenAI, Ollama.
+✅ More API options. Claude, Gemini, OpenAI, Ollama
 
 ✅ Podcast customization with more styles
 
