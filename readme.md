@@ -429,8 +429,6 @@ If asset storage grows, consider these storage optimization strategies:
 
 ### Local Network Access
 
-Beifong is available in local mode
-
 ```bash
 # Start the backend with network access
 cd beifong
