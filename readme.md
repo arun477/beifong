@@ -1,4 +1,5 @@
 # 🦉 Beifong: Your Junk-Free, Personalized Information and Podcasts
+
 ![image](https://github.com/user-attachments/assets/b2f24f12-6f80-46fa-aa31-ee42e17765b1)
 
 Beifong manages your trusted articles and social media platform sources. It generates podcasts from the content you trust and curate. It handles the complete pipeline, from data collection and analysis to the production of scripts and visuals.
@@ -7,16 +8,50 @@ Beifong manages your trusted articles and social media platform sources. It gene
 
 ▶️ [Watch the demo on YouTube](https://youtu.be/uscEPkxjiYE?si=bH2EDpL6SP9EyEVT)
 
-## Installation
+## Table of Contents
 
-### Prerequisites
+- [Getting Started](#getting-started)
+  - [System Requirements](#system-requirements)
+  - [Initial Setup and Installation](#initial-setup-and-installation)
+  - [Environment Configuration](#environment-configuration)
+  - [Starting the Application](#starting-the-application)
+- [How to Use Beifong](#how-to-use-beifong)
+  - [Three Usage Methods](#three-usage-methods)
+- [Content Processing System](#content-processing-system)
+  - [Built-in Content Processors](#built-in-content-processors)
+  - [Creating Custom Content Processors](#creating-custom-content-processors)
+- [AI Agent and Tools](#ai-agent-and-tools)
+  - [Agent Architecture Overview](#agent-architecture-overview)
+  - [Adding Custom Tools](#adding-custom-tools)
+  - [Configuring Agent Behavior](#configuring-agent-behavior)
+- [Web Search and Browser Automation](#web-search-and-browser-automation)
+  - [Intelligent Search Commands](#intelligent-search-commands)
+  - [Social Media Login Sessions](#social-media-login-sessions)
+  - [Advanced Session Configuration](#advanced-session-configuration)
+- [Audio and Voice Generation](#audio-and-voice-generation)
+  - [Supported TTS Engines](#supported-tts-engines)
+  - [Adding New Voice Engines](#adding-new-voice-engines)
+- [Data Storage and File Management](#data-storage-and-file-management)
+  - [Database Storage](#database-storage)
+  - [Media Asset Storage](#media-asset-storage)
+  - [Managing Storage Growth](#managing-storage-growth)
+- [Deployment and Access Options](#deployment-and-access-options)
+  - [Local Network Access](#local-network-access)
+  - [Remote Access Solutions](#remote-access-solutions)
+  - [Security](#security)
+
+## Getting Started
+
+### System Requirements
+
+Before installing Beifong, ensure you have:
 
 - Python 3.11+
 - Redis Server
 - OpenAI API key
-- (Optional) ElevenLabs API key
+- (Optional) ElevenLabs API key for enhanced voice options
 
-### Setup
+### Initial Setup and Installation
 
 ```bash
 # Clone the repository
@@ -41,9 +76,9 @@ cd beifong  # Skip if already in the beifong folder
 python bootstrap_demo.py
 ```
 
-### API Keys
+### Environment Configuration
 
-Create a `.env` file in the `/beifong` directory:
+Create a `.env` file in the `/beifong` directory with your API keys:
 
 ```
 OPENAI_API_KEY=your_openai_api_key
@@ -53,26 +88,28 @@ REDIS_PORT=6379
 REDIS_DB=0
 ```
 
-### Running the Application
+### Starting the Application
+
+Launch all required services in separate terminals:
 
 ```bash
-# Start the backend
+# Terminal 1: Start the main backend
 cd beifong
 python main.py
 
-# Start the scheduler (in a separate terminal)
+# Terminal 2: Start the scheduler
 cd beifong
 python -m beifong.scheduler
 
-# Start the chat workers (in a separate terminal)
+# Terminal 3: Start the chat workers
 cd beifong
 python -m beifong.celery_worker
 
-# Make sure your Redis server is running with the configuration defined in .env
+# Verify Redis is running
 redis-cli ping
 ```
 
-### Frontend Setup (only if you want to open in debug mode)
+#### Optional: Frontend Development Mode
 
 ```bash
 # Navigate to web directory
@@ -85,30 +122,36 @@ npm install
 npm start
 ```
 
-## Usage
+## How to Use Beifong
 
-### Three Ways to Use Beifong
+### Three Usage Methods
 
-1. **Interactive UI**
-2. **API Integration**
-3. **Automated Scheduling**
+Beifong offers flexibility in how you interact with the system:
 
-### Processor Pipeline
+1. **Interactive Web UI** - Web interface for content management and podcast generation
+2. **API Integration** - Programmatic access for custom applications and workflows
+3. **Automated Scheduling** - Set up recurring tasks for hands off content processing
 
-Beifong uses a modular processor system:
+## Content Processing System
 
-- **Feed Processor**: Monitors RSS feeds for new content
-- **URL Processor**: Extracts content from web pages
-- **AI Analysis**: Categorizes and summarizes content
-- **Embedding Processor**: Creates vector representations
-- **FAISS Indexing**: Builds efficient search indices
-- **Podcast Generator**: Creates complete podcasts
-- **X.com Processor**: Periodically crawls your X.com feed
-- **Facebook.com Processor**: Periodically crawls your Facebook.com feed
+### Built-in Content Processors
 
-#### Adding Custom Processors
+Beifong includes several specialized processors for different content sources:
 
-1. Create a new processor module:
+- **RSS Feed Processor** - Monitors RSS feeds for new articles and content
+- **URL Content Processor** - Extracts and processes content from web pages
+- **AI Content Analyzer** - Categorizes, summarizes, and analyzes content quality
+- **Vector Embedding Processor** - Creates searchable vector representations of content
+- **FAISS Search Indexer** - Builds search indices for content discovery
+- **Podcast Script Generator** - Creates complete podcast episodes from curated content
+- **X.com Social Processor** - Crawls and processes your X.com social media feed
+- **Facebook Social Processor** - Crawls and processes your Facebook social media feed
+
+### Creating Custom Content Processors
+
+Extend Beifong's capabilities by adding your own content processors:
+
+#### Step 1: Create Your Processor Module
 
 ```python
 # processors/my_custom_processor.py
@@ -123,7 +166,9 @@ if __name__ == "__main__":
     print(f"Processed: {stats['processed']}, Success: {stats['success']}")
 ```
 
-2. Register your processor in `models/tasks_schemas.py`:
+#### Step 2: Register Your Processor
+
+Add your processor to the system in `models/tasks_schemas.py`:
 
 ```python
 class TaskType(str, Enum):
@@ -140,20 +185,24 @@ TASK_TYPES = {
 }
 ```
 
-3. Create a new task using the API or UI with your processor type
+#### Step 3: Deploy Your Processor
 
-## Agent System
+Create a new task using the API or UI with your custom processor type.
 
-Beifong uses an agent architecture built on the [agno](https://github.com/agno-agi/agno) framework:
+## AI Agent and Tools
 
-- **Search Tools**: Semantic, keyword, and browser-based web research
-- **Generation Tools**: Script, banner, and audio creation
-- **Session State**: Persistent conversation context
-- **Tool Orchestration**: Coordinated multi-step workflows
+### Agent Architecture Overview
 
-### Customizing the Agent System
+Beifong's AI system is built on the [agno](https://github.com/agno-agi/agno) framework and includes:
 
-#### Adding a New Tool
+- **Search Tools** - Semantic search, keyword search, and browser-based web research
+- **Content Generation Tools** - Automated script writing, banner creation, and audio production
+- **Persistent Session State** - Maintains conversation context across interactions
+- **Tool Orchestration** - Manages multi step workflows automatically
+
+### Adding Custom Tools
+
+Extend the agent's capabilities with custom tools:
 
 ```python
 # tools/my_custom_tool.py
@@ -176,57 +225,120 @@ from tools.async_my_custom_tool import my_custom_tool
 tools = [my_custom_tool]
 ```
 
-#### Changing Agent Instructions
+### Configuring Agent Behavior
 
-The agent's behavior is controlled by instructions in `db/agent_config_v2.py`:
+Modify the agent's instructions and behavior in `db/agent_config_v2.py`:
 
 ```python
 # Update the instructions to modify the agent's behavior
 # Be careful to preserve the core flow stages while adding your customizations
 ```
 
-## Voice Options
+## Web Search and Browser Automation
 
-Beifong supports multiple TTS engines:
+Beifong's search agent has full browser automation capabilities through the [browseruse](https://browser-use.com/) library, enabling web research and automated data collection from any website.
 
-- **OpenAI TTS** (commercial)
-- **ElevenLabs** (commercial)
-- **Kokoro** (open source)
+#### Search Commands
 
-The extensible TTS system allows integration of additional engines, including:
+You can give the agent specific search instructions like:
+- *"Go to my X.com and collect top positive and informative feeds"*
+- *"Browse Reddit for discussions about AI developments this week"*
+- *"Search LinkedIn for recent posts about data science trends"*
+- *"Visit news sites and gather articles about renewable energy"*
 
-- **[Dia TTS](https://yummy-fir-7a4.notion.site/dia)** (open source): Potential integration
-- **[CSM](https://github.com/SesameAILabs/csm)** (open source): Potential integration
-- **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** (open source): Potential integration
+The agent will navigate websites, interact with page elements, and extract the requested information automatically.
 
-Custom TTS engines can be added through the tts_selector engine interface under the **utils** directory.
+#### Social Media Login Sessions
 
-## Storage and Asset Management
+For websites requiring authentication (X.com, Facebook, LinkedIn, etc.), you need to establish logged in sessions:
 
-### Database
+**Setting Up Social Media Sessions:**
 
-All databases are stored in the **databases** directory.
+1. **Navigate to Social Tab** in the Beifong web interface
+2. **Click "Setup Session"** under the Setup section
+3. **Login Process** - A browser window will open where you:
+   - Log into your social media accounts normally
+   - Complete any verification steps
+   - Close the browser when finished
+4. **Session Persistence** - Beifong will use these authenticated sessions for future automated searches
 
-### Assets
+#### Advanced Persistent Session Configuration
 
-All assets are stored in the **podcasts** directory.
+For persistent logged in sessions and advanced browser management:
 
-### Storage Considerations
+**Persistent Session Path Configuration:**
+- Default browser sessions are stored in `browsers/playwright_persistent_profile_web` folder
+- For persistent session paths, modify `tools/web_search` to use `get_browser_session_path()` from `db/config.py`
 
-The local storage approach works fine for small projects, but as your data grows, you might encounter disk space issues. Some potential solutions:
+**Important Persistent Session Management Notes:**
+- **Avoid Concurrent Usage** - Ensure no other processes use the same browser session simultaneously
+- **Social Monitor Processors** typically use the path from `get_browser_session_path()` function
+- **Disable Conflicting Processes** - Switch off social monitoring in the Voyager section if using persistent session paths
+- **Future Separation** - Session management will be separated into individual sessions in upcoming updates
 
-- Using s3fs to mount an S3 bucket as a local folder for media assets
-- Periodically archiving older podcast audio and images
-- Setting up automated cleanup for recordings and unused assets
-- Configuring custom paths in `.env` to store data on larger drives
+**Persistent Session Troubleshooting:**
+- If login sessions expire, repeat the Social Tab setup process
+- Clear browser data if experiencing authentication issues
+- Ensure only one process accesses browser sessions at a time
 
-These are optional optimizations and only necessary if you're generating lots of content.
+## Audio and Voice Generation
 
-## Deployment
+### Supported TTS Engines
 
-Beifong is designed primarily as a local application for now, but can be accessed remotely with some additional setup:
+Beifong supports multiple text to speech options:
+
+**Commercial Options:**
+- **OpenAI TTS** - Commercial voice synthesis
+- **ElevenLabs** - Voice cloning and synthesis
+
+**Open Source Options:**
+- **Kokoro** - Open source voice generation
+
+### Adding New Voice Engines
+
+The TTS system supports integration of additional engines:
+
+**Open Source Options:**
+- **[Dia TTS](https://yummy-fir-7a4.notion.site/dia)** - Open source TTS engine
+- **[CSM](https://github.com/SesameAILabs/csm)** - Speech model
+- **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** - Open source TTS
+
+Add custom TTS engines through the tts_selector engine interface in the **utils** directory.
+
+## Data Storage and File Management
+
+### Database Storage
+
+All application databases are organized in the **databases** directory for easy management and backup.
+
+### Media Asset Storage
+
+Generated podcasts, audio files, and visual assets are stored in the **podcasts** directory.
+
+### Managing Storage Growth
+
+For larger deployments, consider these storage optimization strategies:
+
+**Cloud Storage Integration:**
+- Use s3fs to mount an S3 bucket as a local folder for media assets
+- Configure custom storage paths in `.env` to use larger drives
+
+**Automated Cleanup:**
+- Set up periodic archiving of older podcast episodes
+- Implement automated cleanup for temporary recordings and unused assets
+- Configure retention policies for different types of content
+
+**Storage Monitoring:**
+- Monitor disk usage as your content library grows
+- Set up alerts for storage capacity thresholds
+
+**Note:** More efficient storage management and cloud connectors will be added in the next version.
+
+## Deployment and Access Options
 
 ### Local Network Access
+
+Make Beifong available to other devices on your network:
 
 ```bash
 # Start the backend with network access
@@ -234,31 +346,25 @@ cd beifong
 python main.py --host 0.0.0.0 --port 7000
 ```
 
-This makes the application available on your local network via your machine's IP address.
+This makes the application accessible via your machine's IP address on your local network.
 
-### Remote Access Options
+### Remote Access Solutions
 
-For temporary remote access without a public-facing server:
+For accessing Beifong from outside your local network:
 
-1. **SSH Port Forwarding**:
-   ```bash
-   # On the remote machine, forward local port 8000 to your computer
-   ssh -L 7000:localhost:7000 username@your-server-ip
-   ```
+#### SSH Port Forwarding
+```bash
+# Forward local port to remote machine
+ssh -L 7000:localhost:7000 username@your-server-ip
+```
 
-2. **Ngrok Tunneling**:
-   ```bash
-   # Install ngrok, then create a tunnel to your local server
-   ngrok http 7000
-   ```
-   This provides a temporary public URL that forwards to your local instance.
+#### Ngrok Tunneling
+```bash
+# Create temporary public tunnel
+ngrok http 7000
+```
+Provides a temporary public URL that forwards to your local instance.
 
-### Security Considerations
+### Security
 
-- Beifong doesn't include built-in authentication - use a reverse proxy with auth for public deployments
-- Consider limiting API access if exposing to the internet
-- Back up your database files regularly if storing important content
-
-### Browser-based Web Search
-
-> Agent has full access to the browser through browseruse lib.
+Beifong doesn't include an authentication layer yet. Authentication will be added in the next version.
