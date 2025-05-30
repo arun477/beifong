@@ -14,6 +14,7 @@ DEFAULT_DB_PATHS = {
     "faiss_mapping_file": "databases/faiss/article_id_map.npy",
     "internal_sessions_db": "databases/internal_sessions.db",
     "social_media_db": "databases/social_media.db",
+    "slack_sessions_db": "databases/slack_sessions.db",
 }
 
 
@@ -60,6 +61,8 @@ def get_social_media_db_path():
 def get_browser_session_path():
     return "browsers/playwright_persistent_profile"
 
+def get_slack_sessions_db_path():
+    return get_db_path("slack_sessions_db")
 
 DB_PATH = "databases"
 PODCAST_DIR = "podcasts"

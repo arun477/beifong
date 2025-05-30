@@ -9,31 +9,27 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from dotenv import load_dotenv
 from typing import Dict, List
-import logging
 from datetime import datetime
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+from db.config import get_slack_sessions_db_path
 
 load_dotenv()
 
 app = App(token=os.environ["SLACK_BOT_TOKEN"])
-
+# local url works but banner images won't work in slack unless it's https with proper domain
+# you can use ngrok to port forward local url to https and replace this local url with ngrok url
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:7000")
-
 executor = ThreadPoolExecutor(max_workers=10)
-
 active_sessions: Dict[str, Dict] = {}
+DB_PATH = get_slack_sessions_db_path()
 
 
 def send_error_message(thread_key: str, error_message: str):
-    """Send error message to Slack"""
-    logger.error(f"Error for {thread_key}: {error_message}")
+    print(f"Error for {thread_key}: {error_message}")
     asyncio.create_task(send_slack_message(thread_key, f"❌ {error_message}"))
 
 
 def init_db():
-    conn = sqlite3.connect("slack_sessions.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS thread_sessions (
@@ -57,7 +53,7 @@ def init_db():
 
 
 def save_session_mapping(thread_key: str, session_id: str, channel_id: str, user_id: str = None):
-    conn = sqlite3.connect("slack_sessions.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "INSERT OR REPLACE INTO thread_sessions (thread_key, session_id, channel_id, user_id, updated_at) VALUES (?, ?, ?, ?, ?)",
@@ -68,7 +64,7 @@ def save_session_mapping(thread_key: str, session_id: str, channel_id: str, user
 
 
 def get_session_info(thread_key: str):
-    conn = sqlite3.connect("slack_sessions.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "SELECT session_id, channel_id, user_id FROM thread_sessions WHERE thread_key = ?",
@@ -79,19 +75,23 @@ def get_session_info(thread_key: str):
     return result if result else None
 
 
-def save_session_state(session_id: str, state_data: dict):
-    conn = sqlite3.connect("slack_sessions.db")
+def save_session_state(session_id: str, state_data):
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    if isinstance(state_data, str):
+        json_data = state_data
+    else:
+        json_data = json.dumps(state_data)
     cursor.execute(
         "INSERT OR REPLACE INTO session_state (session_id, state_data, updated_at) VALUES (?, ?, ?)",
-        (session_id, json.dumps(state_data), datetime.now().isoformat()),
+        (session_id, json_data, datetime.now().isoformat()),
     )
     conn.commit()
     conn.close()
 
 
 def get_session_state(session_id: str):
-    conn = sqlite3.connect("slack_sessions.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT state_data FROM session_state WHERE session_id = ?", (session_id,))
     result = cursor.fetchone()
@@ -117,7 +117,7 @@ class PodcastAgentClient:
                     resp.raise_for_status()
                     return await resp.json()
         except Exception as e:
-            logger.error(f"API create_session error: {e}")
+            print(f"API create_session error: {e}")
             raise
 
     async def chat(self, session_id: str, message: str):
@@ -128,7 +128,7 @@ class PodcastAgentClient:
                     resp.raise_for_status()
                     return await resp.json()
         except Exception as e:
-            logger.error(f"API chat error: {e}")
+            print(f"API chat error: {e}")
             raise
 
     async def check_status(self, session_id: str, task_id=None):
@@ -141,7 +141,7 @@ class PodcastAgentClient:
                     resp.raise_for_status()
                     return await resp.json()
         except Exception as e:
-            logger.error(f"API check_status error: {e}")
+            print(f"API check_status error: {e}")
             raise
 
 
@@ -149,7 +149,6 @@ api_client = PodcastAgentClient(API_BASE_URL)
 
 
 def get_thread_key(message, is_dm=False):
-    """Generate a unique key for the thread/conversation"""
     if is_dm:
         return f"dm_{message['channel']}_{message['user']}"
     else:
@@ -157,22 +156,18 @@ def get_thread_key(message, is_dm=False):
 
 
 async def get_or_create_session(thread_key: str, channel_id: str, user_id: str = None):
-    """Get existing session or create new one"""
     session_info = get_session_info(thread_key)
-
     if not session_info:
         response = await api_client.create_session(thread_key)
         session_id = response["session_id"]
         save_session_mapping(thread_key, session_id, channel_id, user_id)
-        logger.info(f"Created new session: {session_id} for thread: {thread_key}")
+        print(f"Created new session: {session_id} for thread: {thread_key}")
         return session_id
     else:
         return session_info[0]
 
 
 def run_async_in_thread(coro):
-    """Run async coroutine in thread with proper event loop"""
-
     def run():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -186,42 +181,33 @@ def run_async_in_thread(coro):
 
 
 async def poll_for_completion(session_id: str, thread_key: str, task_id=None):
-    """Poll for task completion and send result to Slack"""
-    logger.info(f"Starting polling for session: {session_id}, task: {task_id}")
-
+    print(f"Starting polling for session: {session_id}, task: {task_id}")
     max_polls = 60
     poll_count = 0
-
     active_sessions[session_id] = {
         "thread_key": thread_key,
         "task_id": task_id,
         "start_time": datetime.now(),
     }
-
     try:
         while poll_count < max_polls:
             try:
                 status_response = await api_client.check_status(session_id, task_id)
-
                 if status_response.get("session_state"):
                     save_session_state(session_id, status_response.get("session_state"))
-
                 if not status_response.get("is_processing", True):
                     await send_completion_message(thread_key, status_response)
                     break
-
                 if poll_count % 10 == 0 and poll_count > 0:
                     process_type = status_response.get("process_type", "request")
                     await send_slack_message(
                         thread_key,
                         f"🔄 Still processing {process_type}... ({poll_count * 3}s elapsed)",
                     )
-
                 await asyncio.sleep(3)
                 poll_count += 1
-
             except Exception as e:
-                logger.error(f"Polling error: {e}")
+                print(f"Polling error: {e}")
                 await send_slack_message(
                     thread_key,
                     "❌ Something went wrong while processing your request. Please try again.",
@@ -233,10 +219,8 @@ async def poll_for_completion(session_id: str, thread_key: str, task_id=None):
 
 
 def start_background_polling(session_id: str, thread_key: str, task_id=None):
-    """Start background polling task using thread executor"""
     if session_id in active_sessions:
-        logger.info(f"Replacing existing poll for session: {session_id}")
-
+        print(f"Replacing existing poll for session: {session_id}")
     future = run_async_in_thread(poll_for_completion(session_id, thread_key, task_id))
     active_sessions[session_id] = {
         "thread_key": thread_key,
@@ -247,14 +231,11 @@ def start_background_polling(session_id: str, thread_key: str, task_id=None):
 
 
 async def send_completion_message(thread_key: str, status_response):
-    """Send completion message to Slack with interactive elements"""
     response_text = status_response.get("response", "Task completed!")
-
     session_state = status_response.get("session_state")
     if session_state:
         try:
             state_data = json.loads(session_state) if isinstance(session_state, str) else session_state
-
             if state_data.get("show_sources_for_selection") and state_data.get("search_results"):
                 await send_source_selection_blocks(thread_key, state_data, response_text)
             elif state_data.get("show_script_for_confirmation") and state_data.get("generated_script"):
@@ -267,23 +248,19 @@ async def send_completion_message(thread_key: str, status_response):
                 await send_final_presentation_blocks(thread_key, state_data, response_text)
             else:
                 await send_slack_message(thread_key, response_text)
-
         except Exception as e:
-            logger.error(f"Error parsing session state: {e}")
+            print(f"Error parsing session state: {e}")
             await send_slack_message(thread_key, response_text)
     else:
         await send_slack_message(thread_key, response_text)
 
 
 async def send_source_selection_blocks(thread_key: str, state_data: dict, response_text: str):
-    """Send interactive source selection blocks"""
     sources = state_data.get("search_results", [])
     languages = state_data.get("available_languages", [{"code": "en", "name": "English"}])
-
     session_info = get_session_info(thread_key)
     if session_info:
         save_session_state(session_info[0], state_data)
-
     source_options = []
     for i, source in enumerate(sources[:10]):
         title = source.get("title", f"Source {i + 1}")
@@ -295,7 +272,6 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
                 "value": str(i),
             }
         )
-
     language_options = []
     for lang in languages:
         language_options.append(
@@ -304,7 +280,6 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
                 "value": lang["code"],
             }
         )
-
     blocks = [
         {
             "type": "section",
@@ -321,7 +296,6 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
             },
         },
     ]
-
     if source_options:
         blocks.append(
             {
@@ -336,7 +310,6 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
                 },
             }
         )
-
     if len(sources) > 10:
         blocks.append(
             {
@@ -349,7 +322,6 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
                 ],
             }
         )
-
     blocks.extend(
         [
             {
@@ -378,42 +350,72 @@ async def send_source_selection_blocks(thread_key: str, state_data: dict, respon
             },
         ]
     )
-
     await send_slack_blocks(thread_key, blocks, "📋 Source Selection")
 
 
+def format_script_for_slack_snippet(script_data) -> str:
+    if isinstance(script_data, dict):
+        lines = []
+        title = script_data.get("title", "Podcast Script")
+        lines.append(f"PODCAST: {title}")
+        lines.append("=" * (len(title) + 10))
+        lines.append("")
+        sections = script_data.get("sections", [])
+        for i, section in enumerate(sections):
+            section_type = section.get("type", "Unknown").upper()
+            section_title = section.get("title", "")
+            if section_title:
+                lines.append(f"SECTION [{section_type}] {section_title}")
+            else:
+                lines.append(f"SECTION [{section_type}]")
+            lines.append("-" * 50)
+            lines.append("")
+            if section.get("dialog"):
+                for j, dialog in enumerate(section["dialog"]):
+                    speaker = dialog.get("speaker", "SPEAKER")
+                    text = dialog.get("text", "")
+                    lines.append(f"SPEAKER {speaker}:")
+                    if len(text) > 70:
+                        words = text.split()
+                        current_line = "   "
+                        for word in words:
+                            if len(current_line + word) > 70:
+                                lines.append(current_line)
+                                current_line = "   " + word
+                            else:
+                                current_line += " " + word if current_line != "   " else word
+                        if current_line.strip():
+                            lines.append(current_line)
+                    else:
+                        lines.append(f"   {text}")
+                    lines.append("")
+            if i < len(sections) - 1:
+                lines.append("")
+        return "\n".join(lines)
+    return str(script_data) if script_data else "Script content not available"
+
+
 async def send_script_confirmation_blocks(thread_key: str, state_data: dict, response_text: str):
-    """Send interactive script confirmation blocks"""
     script = state_data.get("generated_script", {})
     title = script.get("title", "Podcast Script") if isinstance(script, dict) else "Podcast Script"
-
-    preview_text = "Script generated successfully!"
+    full_script_text = format_script_for_slack_snippet(script)
+    if len(full_script_text) > 2500:
+        full_script_text = full_script_text[:2400] + "\n\n... (script continues)\n\nFull script will be available after approval."
+    section_count = len(script.get("sections", [])) if isinstance(script, dict) else 0
+    dialog_count = 0
     if isinstance(script, dict) and script.get("sections"):
-        sections = script["sections"]
-        preview_text = f"*{title}*\n\nGenerated {len(sections)} sections with dialogue"
-
-        if sections and sections[0].get("dialog"):
-            first_dialog = sections[0]["dialog"][0] if sections[0]["dialog"] else None
-            if first_dialog:
-                speaker = first_dialog.get("speaker", "Speaker")
-                text_snippet = first_dialog.get("text", "")[:100] + "..." if len(first_dialog.get("text", "")) > 100 else first_dialog.get("text", "")
-                preview_text += f"\n\n*Preview:*\n_{speaker}:_ {text_snippet}"
-
+        for section in script["sections"]:
+            dialog_count += len(section.get("dialog", []))
+    header_text = f"*📝 Script Review*\n{response_text}\n\n*{title}*\nGenerated {section_count} sections with {dialog_count} dialogue exchanges"
     blocks = [
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*📝 Script Review*\n{response_text}"},
+            "text": {"type": "mrkdwn", "text": header_text},
         },
-        {"type": "section", "text": {"type": "mrkdwn", "text": preview_text}},
+        {"type": "section", "text": {"type": "mrkdwn", "text": f"```{full_script_text}```"}},
         {
             "type": "actions",
             "elements": [
-                {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "👁️ View Full Script"},
-                    "action_id": "view_script",
-                    "value": thread_key,
-                },
                 {
                     "type": "button",
                     "text": {"type": "plain_text", "text": "✅ Approve Script"},
@@ -421,34 +423,34 @@ async def send_script_confirmation_blocks(thread_key: str, state_data: dict, res
                     "action_id": "approve_script",
                     "value": thread_key,
                 },
+                {
+                    "type": "button",
+                    "text": {"type": "plain_text", "text": "🔄 Request Changes"},
+                    "action_id": "request_script_changes",
+                    "value": thread_key,
+                },
             ],
         },
     ]
-
     await send_slack_blocks(thread_key, blocks, "📝 Script Review")
 
 
 async def send_banner_confirmation_blocks(thread_key: str, state_data: dict, response_text: str):
-    """Send interactive banner confirmation blocks"""
     banner_url = state_data.get("banner_url")
     banner_images = state_data.get("banner_images", [])
-
     image_url = None
     if banner_images:
         image_url = f"{API_BASE_URL}/podcast_img/{banner_images[0]}"
     elif banner_url:
         image_url = f"{API_BASE_URL}/podcast_img/{banner_url}"
-
     blocks = [
         {
             "type": "section",
             "text": {"type": "mrkdwn", "text": f"*🎨 Banner Review*\n{response_text}"},
         }
     ]
-
     if image_url:
         blocks.append({"type": "image", "image_url": image_url, "alt_text": "Podcast Banner"})
-
         if len(banner_images) > 1:
             blocks.append(
                 {
@@ -461,7 +463,6 @@ async def send_banner_confirmation_blocks(thread_key: str, state_data: dict, res
                     ],
                 }
             )
-
     blocks.append(
         {
             "type": "actions",
@@ -476,15 +477,12 @@ async def send_banner_confirmation_blocks(thread_key: str, state_data: dict, res
             ],
         }
     )
-
     await send_slack_blocks(thread_key, blocks, "🎨 Banner Review")
 
 
 async def send_audio_confirmation_blocks(thread_key: str, state_data: dict, response_text: str):
-    """Send interactive audio confirmation blocks"""
     audio_url = state_data.get("audio_url")
     full_audio_url = f"{API_BASE_URL}/audio/{audio_url}" if audio_url else None
-
     blocks = [
         {
             "type": "section",
@@ -498,7 +496,6 @@ async def send_audio_confirmation_blocks(thread_key: str, state_data: dict, resp
             },
         },
     ]
-
     action_elements = []
     if full_audio_url:
         action_elements.append(
@@ -509,7 +506,6 @@ async def send_audio_confirmation_blocks(thread_key: str, state_data: dict, resp
                 "action_id": "download_audio",
             }
         )
-
     action_elements.append(
         {
             "type": "button",
@@ -519,31 +515,24 @@ async def send_audio_confirmation_blocks(thread_key: str, state_data: dict, resp
             "value": thread_key,
         }
     )
-
     blocks.append({"type": "actions", "elements": action_elements})
-
     await send_slack_blocks(thread_key, blocks, f"🎵 Audio Review")
 
 
 async def send_final_presentation_blocks(thread_key: str, state_data: dict, response_text: str):
-    """Send final podcast presentation blocks"""
     script = state_data.get("generated_script", {})
     podcast_title = script.get("title") if isinstance(script, dict) else None
     if not podcast_title:
         podcast_title = state_data.get("podcast_info", {}).get("topic", "Your Podcast")
-
     audio_url = state_data.get("audio_url")
     banner_url = state_data.get("banner_url")
     banner_images = state_data.get("banner_images", [])
-
     full_audio_url = f"{API_BASE_URL}/audio/{audio_url}" if audio_url else None
-
     full_banner_url = None
     if banner_images:
         full_banner_url = f"{API_BASE_URL}/podcast_img/{banner_images[0]}"
     elif banner_url:
         full_banner_url = f"{API_BASE_URL}/podcast_img/{banner_url}"
-
     blocks = [
         {
             "type": "section",
@@ -560,7 +549,6 @@ async def send_final_presentation_blocks(thread_key: str, state_data: dict, resp
             },
         },
     ]
-
     if full_banner_url:
         blocks.append(
             {
@@ -569,7 +557,6 @@ async def send_final_presentation_blocks(thread_key: str, state_data: dict, resp
                 "alt_text": f"Banner for {podcast_title}",
             }
         )
-
     action_elements = []
     if full_audio_url:
         action_elements.append(
@@ -580,7 +567,6 @@ async def send_final_presentation_blocks(thread_key: str, state_data: dict, resp
                 "action_id": "download_final_audio",
             }
         )
-
     action_elements.append(
         {
             "type": "button",
@@ -590,22 +576,17 @@ async def send_final_presentation_blocks(thread_key: str, state_data: dict, resp
             "value": thread_key,
         }
     )
-
     blocks.append({"type": "actions", "elements": action_elements})
-
     await send_slack_blocks(thread_key, blocks, "🎉 Podcast Complete!")
 
 
 async def send_slack_blocks(thread_key: str, blocks: list, fallback_text: str = "Interactive elements loaded"):
-    """Send blocks to Slack thread"""
     try:
         session_info = get_session_info(thread_key)
         if not session_info:
-            logger.error(f"No session info found for thread: {thread_key}")
+            print(f"No session info found for thread: {thread_key}")
             return
-
         session_id, channel_id, user_id = session_info
-
         if thread_key.startswith("dm_"):
             app.client.chat_postMessage(channel=channel_id, blocks=blocks, text=fallback_text)
         else:
@@ -615,11 +596,9 @@ async def send_slack_blocks(thread_key: str, blocks: list, fallback_text: str = 
                 text=fallback_text,
                 thread_ts=thread_key,
             )
-
-        logger.info(f"Sent interactive blocks to {thread_key}")
-
+        print(f"Sent interactive blocks to {thread_key}")
     except Exception as e:
-        logger.error(f"Error sending Slack blocks: {e}")
+        print(f"Error sending Slack blocks: {e}")
         await send_slack_message(
             thread_key,
             "Interactive elements failed to load. Please continue with text responses.",
@@ -627,15 +606,12 @@ async def send_slack_blocks(thread_key: str, blocks: list, fallback_text: str = 
 
 
 async def send_slack_message(thread_key: str, text: str):
-    """Send message to Slack thread"""
     try:
         session_info = get_session_info(thread_key)
         if not session_info:
-            logger.error(f"No session info found for thread: {thread_key}")
+            print(f"No session info found for thread: {thread_key}")
             return
-
         session_id, channel_id, user_id = session_info
-
         if len(text) > 3800:
             chunks = [text[i : i + 3800] for i in range(0, len(text), 3800)]
             for i, chunk in enumerate(chunks):
@@ -658,42 +634,33 @@ async def send_slack_message(thread_key: str, text: str):
                 app.client.chat_postMessage(channel=channel_id, text=text)
             else:
                 app.client.chat_postMessage(channel=channel_id, text=text, thread_ts=thread_key)
-
-        logger.info(f"Sent message to {thread_key}: {text[:50]}...")
-
+        print(f"Sent message to {thread_key}: {text[:50]}...")
     except Exception as e:
-        logger.error(f"Error sending Slack message: {e}")
+        print(f"Error sending Slack message: {e}")
 
 
 def clean_text(text, bot_id):
-    """Remove bot mentions from text"""
     text = re.sub(f"<@{bot_id}>", "", text).strip()
     return text
 
 
 def format_script_for_slack(script_data) -> List[str]:
-    """Format script data for Slack display, handling length limits"""
-
     if isinstance(script_data, dict):
         chunks = []
         current_chunk = ""
-
         title = script_data.get("title", "Podcast Script")
         current_chunk += f"*{title}*\n\n"
-
         sections = script_data.get("sections", [])
         for i, section in enumerate(sections):
             section_text = f"*Section {i + 1}: {section.get('type', 'Unknown').title()}*"
             if section.get("title"):
                 section_text += f" - {section['title']}"
             section_text += "\n\n"
-
             if section.get("dialog"):
                 for dialog in section["dialog"]:
                     speaker = dialog.get("speaker", "Speaker")
                     text = dialog.get("text", "")
                     dialog_text = f"*{speaker}:* {text}\n\n"
-
                     if len(current_chunk + section_text + dialog_text) > 3500:
                         if current_chunk.strip():
                             chunks.append(current_chunk.strip())
@@ -703,14 +670,10 @@ def format_script_for_slack(script_data) -> List[str]:
                     section_text = ""
             else:
                 current_chunk += section_text
-
             current_chunk += "\n---\n\n"
-
         if current_chunk.strip():
             chunks.append(current_chunk.strip())
-
         return chunks if chunks else ["Script content could not be formatted."]
-
     elif isinstance(script_data, str):
         try:
             parsed_data = json.loads(script_data)
@@ -718,13 +681,11 @@ def format_script_for_slack(script_data) -> List[str]:
                 return format_script_for_slack(parsed_data)
         except (json.JSONDecodeError, TypeError):
             pass
-
         text = script_data
         if len(text) <= 3500:
             return [text]
         else:
             return [text[i : i + 3500] for i in range(0, len(text), 3500)]
-
     else:
         try:
             text = str(script_data)
@@ -733,48 +694,40 @@ def format_script_for_slack(script_data) -> List[str]:
             else:
                 return [text[i : i + 3500] for i in range(0, len(text), 3500)]
         except Exception as e:
-            logger.error(f"Error converting script data to string: {e}")
+            print(f"Error converting script data to string: {e}")
             return ["Error: Could not format script data for display."]
 
 
 @app.action("source_selection")
 def handle_source_selection(ack, body, logger):
-    """Handle source checkbox selections - store for later confirmation"""
     ack()
 
 
 @app.action("language_selection")
 def handle_language_selection(ack, body, logger):
-    """Handle language dropdown selection"""
     ack()
 
 
 @app.action("confirm_sources")
 def handle_confirm_sources(ack, body, client):
-    """Handle source confirmation button click"""
     ack()
 
     def process_confirmation():
         try:
             thread_key = body["actions"][0]["value"]
             user_id = body["user"]["id"]
-
             selected_sources = []
             selected_language = "en"
-
             if "state" in body and "values" in body["state"]:
                 values = body["state"]["values"]
-
                 if "source_selection_block" in values and "source_selection" in values["source_selection_block"]:
                     source_data = values["source_selection_block"]["source_selection"]
                     if "selected_options" in source_data and source_data["selected_options"]:
                         selected_sources = [int(opt["value"]) for opt in source_data["selected_options"]]
-
                 if "language_selection_block" in values and "language_selection" in values["language_selection_block"]:
                     lang_data = values["language_selection_block"]["language_selection"]
                     if "selected_option" in lang_data and lang_data["selected_option"]:
                         selected_language = lang_data["selected_option"]["value"]
-
             session_info = get_session_info(thread_key)
             if not session_info:
                 client.chat_postMessage(
@@ -783,9 +736,7 @@ def handle_confirm_sources(ack, body, client):
                     text="❌ Session not found. Please start a new conversation.",
                 )
                 return
-
             session_id = session_info[0]
-
             state_data = get_session_state(session_id)
             languages = state_data.get("available_languages", [{"code": "en", "name": "English"}])
             language_name = next(
@@ -793,7 +744,6 @@ def handle_confirm_sources(ack, body, client):
                 "English",
             )
             sources = state_data.get("search_results", [])
-
             if selected_sources:
                 source_indices = [str(i + 1) for i in selected_sources]
                 selected_source_titles = [sources[i].get("title", f"Source {i + 1}") for i in selected_sources if i < len(sources)]
@@ -802,7 +752,6 @@ def handle_confirm_sources(ack, body, client):
                 source_indices = [str(i + 1) for i in range(len(sources))]
                 selected_source_titles = [source.get("title", f"Source {i + 1}") for i, source in enumerate(sources)]
                 message = f"I want the podcast in {language_name} using all available sources."
-
             try:
                 confirmation_blocks = create_confirmation_blocks(
                     selected_sources,
@@ -810,29 +759,23 @@ def handle_confirm_sources(ack, body, client):
                     language_name,
                     len(sources),
                 )
-
                 client.chat_update(
                     channel=body["channel"]["id"],
                     ts=body["message"]["ts"],
                     blocks=confirmation_blocks,
                     text="✅ Selection Confirmed",
                 )
-
-                logger.info(f"Updated interactive message to confirmation state for {thread_key}")
-
+                print(f"Updated interactive message to confirmation state for {thread_key}")
             except Exception as e:
-                logger.error(f"Error updating message: {e}")
-
+                print(f"Error updating message: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
                 text=f"🔄 Processing your selection: {message}\n\n_Generating podcast script..._",
             )
-
             asyncio.run(process_source_confirmation(thread_key, message))
-
         except Exception as e:
-            logger.error(f"Error in confirm_sources: {e}")
+            print(f"Error in confirm_sources: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
@@ -843,8 +786,6 @@ def handle_confirm_sources(ack, body, client):
 
 
 def create_confirmation_blocks(selected_sources, selected_source_titles, language_name, total_sources):
-    """Create static blocks showing the confirmed selection"""
-
     if selected_sources:
         source_text = ""
         for i, (idx, title) in enumerate(zip(selected_sources, selected_source_titles)):
@@ -855,11 +796,9 @@ def create_confirmation_blocks(selected_sources, selected_source_titles, languag
                 remaining = len(selected_sources) - 3
                 source_text += f"• _...and {remaining} more sources_\n"
                 break
-
         source_summary = f"*Selected {len(selected_sources)} of {total_sources} sources:*\n{source_text}"
     else:
         source_summary = f"*Selected all {total_sources} sources*"
-
     blocks = [
         {
             "type": "section",
@@ -883,140 +822,70 @@ def create_confirmation_blocks(selected_sources, selected_source_titles, languag
             ],
         },
     ]
-
     return blocks
 
 
 async def process_source_confirmation(thread_key: str, message: str):
-    """Process the source confirmation message"""
     try:
         session_info = get_session_info(thread_key)
         if not session_info:
             return
-
         session_id = session_info[0]
-
         chat_response = await api_client.chat(session_id, message)
-
         if chat_response.get("is_processing"):
             task_id = chat_response.get("task_id")
             start_background_polling(session_id, thread_key, task_id)
         else:
             response_text = chat_response.get("response", "Selection processed!")
             await send_slack_message(thread_key, response_text)
-
     except Exception as e:
-        logger.error(f"Error processing source confirmation: {e}")
+        print(f"Error processing source confirmation: {e}")
         await send_slack_message(thread_key, "❌ Error processing your selection. Please try again.")
 
 
-@app.action("view_script")
-def handle_view_script(ack, body, client):
-    """Handle view script button click"""
+@app.action("request_script_changes")
+def handle_request_script_changes(ack, body, client):
     ack()
 
-    def process_view():
+    def process_request():
         try:
             thread_key = body["actions"][0]["value"]
-            session_info = get_session_info(thread_key)
-
-            if not session_info:
-                client.chat_postMessage(
-                    channel=body["channel"]["id"],
-                    thread_ts=thread_key if not thread_key.startswith("dm_") else None,
-                    text="❌ Session not found.",
-                )
-                return
-
-            session_id = session_info[0]
-            state_data = get_session_state(session_id)
-            script_data = state_data.get("generated_script")
-
-            if not script_data:
-                client.chat_postMessage(
-                    channel=body["channel"]["id"],
-                    thread_ts=thread_key if not thread_key.startswith("dm_") else None,
-                    text="❌ Script not found.",
-                )
-                return
-
-            try:
-                if isinstance(script_data, str):
-                    script_data = json.loads(script_data)
-                elif not isinstance(script_data, dict):
-                    script_data = str(script_data)
-            except json.JSONDecodeError as e:
-                logger.error(f"Error parsing script JSON: {e}")
-                script_data = str(script_data)
-
-            viewed_blocks = [
+            change_blocks = [
                 {
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "*📝 Script Viewed*\n_The complete script has been displayed below._",
+                        "text": "*🔄 Changes Requested*\n_Please describe what changes you'd like to make to the script._",
                     },
-                },
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {"type": "plain_text", "text": "✅ Approve Script"},
-                            "style": "primary",
-                            "action_id": "approve_script",
-                            "value": thread_key,
-                        }
-                    ],
-                },
+                }
             ]
-
             try:
                 client.chat_update(
                     channel=body["channel"]["id"],
                     ts=body["message"]["ts"],
-                    blocks=viewed_blocks,
-                    text="📝 Script Viewed",
+                    blocks=change_blocks,
+                    text="Changes Requested",
                 )
             except Exception as e:
-                logger.error(f"Error updating view script message: {e}")
-
-            script_chunks = format_script_for_slack(script_data)
-
-            for i, chunk in enumerate(script_chunks):
-                if i == 0:
-                    text = f"📝 *Complete Script:*\n\n{chunk}"
-                else:
-                    text = f"📝 *Script (continued {i + 1}/{len(script_chunks)}):*\n\n{chunk}"
-
-                client.chat_postMessage(
-                    channel=body["channel"]["id"],
-                    thread_ts=thread_key if not thread_key.startswith("dm_") else None,
-                    text=text,
-                )
-
-            logger.info(f"Sent script in {len(script_chunks)} chunks to {thread_key}")
-
-        except Exception as e:
-            logger.error(f"Error in view_script: {e}")
+                print(f"Error updating script message: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
-                text="❌ Error retrieving script.",
+                text="What specific changes would you like me to make to the script? For example:\n• Adjust the tone or style\n• Add more detail on certain topics\n• Change the dialogue flow\n• Modify the structure",
             )
+        except Exception as e:
+            print(f"Error in request_script_changes: {e}")
 
-    executor.submit(process_view)
+    executor.submit(process_request)
 
 
 @app.action("approve_script")
 def handle_approve_script(ack, body, client):
-    """Handle approve script button click"""
     ack()
 
     def process_approval():
         try:
             thread_key = body["actions"][0]["value"]
-
             approval_blocks = [
                 {
                     "type": "section",
@@ -1035,7 +904,6 @@ def handle_approve_script(ack, body, client):
                     ],
                 },
             ]
-
             try:
                 client.chat_update(
                     channel=body["channel"]["id"],
@@ -1044,31 +912,26 @@ def handle_approve_script(ack, body, client):
                     text="✅ Script Approved",
                 )
             except Exception as e:
-                logger.error(f"Error updating script message: {e}")
-
+                print(f"Error updating script message: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
                 text="🔄 Script approved! Generating banner images...",
             )
-
             asyncio.run(process_approval_action(body, "I approve this script. It looks good!"))
-
         except Exception as e:
-            logger.error(f"Error in approve_script: {e}")
+            print(f"Error in approve_script: {e}")
 
     executor.submit(process_approval)
 
 
 @app.action("approve_banner")
 def handle_approve_banner(ack, body, client):
-    """Handle approve banner button click"""
     ack()
 
     def process_approval():
         try:
             thread_key = body["actions"][0]["value"]
-
             approval_blocks = [
                 {
                     "type": "section",
@@ -1087,7 +950,6 @@ def handle_approve_banner(ack, body, client):
                     ],
                 },
             ]
-
             try:
                 client.chat_update(
                     channel=body["channel"]["id"],
@@ -1096,31 +958,26 @@ def handle_approve_banner(ack, body, client):
                     text="✅ Banner Approved",
                 )
             except Exception as e:
-                logger.error(f"Error updating banner message: {e}")
-
+                print(f"Error updating banner message: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
                 text="🔄 Banner approved! Generating podcast audio...",
             )
-
             asyncio.run(process_approval_action(body, "I approve this banner. It looks good!"))
-
         except Exception as e:
-            logger.error(f"Error in approve_banner: {e}")
+            print(f"Error in approve_banner: {e}")
 
     executor.submit(process_approval)
 
 
 @app.action("approve_audio")
 def handle_approve_audio(ack, body, client):
-    """Handle approve audio button click"""
     ack()
 
     def process_approval():
         try:
             thread_key = body["actions"][0]["value"]
-
             approval_blocks = [
                 {
                     "type": "section",
@@ -1139,7 +996,6 @@ def handle_approve_audio(ack, body, client):
                     ],
                 },
             ]
-
             try:
                 client.chat_update(
                     channel=body["channel"]["id"],
@@ -1148,25 +1004,21 @@ def handle_approve_audio(ack, body, client):
                     text="✅ Audio Approved",
                 )
             except Exception as e:
-                logger.error(f"Error updating audio message: {e}")
-
+                print(f"Error updating audio message: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 thread_ts=thread_key if not thread_key.startswith("dm_") else None,
                 text="🔄 Audio approved! Finalizing your podcast...",
             )
-
             asyncio.run(process_approval_action(body, "The audio sounds great! I'm happy with the final podcast."))
-
         except Exception as e:
-            logger.error(f"Error in approve_audio: {e}")
+            print(f"Error in approve_audio: {e}")
 
     executor.submit(process_approval)
 
 
 @app.action("new_podcast")
 def handle_new_podcast(ack, body, client):
-    """Handle new podcast button click"""
     ack()
 
     def start_new():
@@ -1174,20 +1026,16 @@ def handle_new_podcast(ack, body, client):
             old_thread_key = body["actions"][0]["value"]
             channel_id = body["channel"]["id"]
             user_id = body["user"]["id"]
-
             import time
 
             new_thread_key = f"new_{channel_id}_{user_id}_{int(time.time())}"
-
             client.chat_postMessage(
                 channel=channel_id,
                 text="🎙️ *Welcome to AI Podcast Studio!*\n\nI'll help you create a professional podcast from your trusted sources. What topic would you like to create a podcast about?",
             )
-
-            logger.info(f"Started new podcast conversation: {new_thread_key}")
-
+            print(f"Started new podcast conversation: {new_thread_key}")
         except Exception as e:
-            logger.error(f"Error starting new podcast: {e}")
+            print(f"Error starting new podcast: {e}")
             client.chat_postMessage(
                 channel=body["channel"]["id"],
                 text="❌ Error starting new podcast. Please try sending a new message.",
@@ -1197,43 +1045,34 @@ def handle_new_podcast(ack, body, client):
 
 
 async def process_approval_action(body, approval_message: str):
-    """Process approval actions (script, banner, audio)"""
     try:
         thread_key = body["actions"][0]["value"]
-
         app.client.chat_postMessage(
             channel=body["channel"]["id"],
             thread_ts=thread_key if not thread_key.startswith("dm_") else None,
             text=f"✅ {approval_message}\n🔄 Processing next step...",
         )
-
         session_info = get_session_info(thread_key)
         if not session_info:
             await send_slack_message(thread_key, "❌ Session not found.")
             return
-
         session_id = session_info[0]
-
         chat_response = await api_client.chat(session_id, approval_message)
-
         if chat_response.get("is_processing"):
             task_id = chat_response.get("task_id")
             start_background_polling(session_id, thread_key, task_id)
         else:
             response_text = chat_response.get("response", "Approved! Processing next step...")
             await send_slack_message(thread_key, response_text)
-
     except Exception as e:
-        logger.error(f"Error processing approval: {e}")
+        print(f"Error processing approval: {e}")
         await send_slack_message(thread_key, "❌ Error processing approval. Please try again.")
 
 
 @app.event("app_mention")
 def handle_app_mention(event, say, client):
-    """Handle when someone mentions the bot"""
     bot_info = client.auth_test()
     bot_id = bot_info["user_id"]
-
     user_input = clean_text(event["text"], bot_id)
     thread_key = event["ts"]
     channel_id = event["channel"]
@@ -1249,16 +1088,13 @@ def handle_app_mention(event, say, client):
 def handle_message(message, say, client):
     if message.get("bot_id"):
         return
-
     if message.get("text", "").startswith("<@"):
         return
-
     user_input = message["text"]
     channel_type = message.get("channel_type", "")
     is_dm = channel_type == "im"
     channel_id = message["channel"]
     user_id = message["user"]
-
     thread_key = get_thread_key(message, is_dm)
 
     def handle_async():
@@ -1276,22 +1112,85 @@ async def handle_user_message(
     is_mention=False,
     is_dm=False,
 ):
-    """Main message handler"""
     try:
         session_id = await get_or_create_session(thread_key, channel_id, user_id)
-
-        logger.info(f"Processing message for session {session_id}: {user_input[:50]}...")
-
+        session_state = get_session_state(session_id)
+        if session_state.get("podcast_generated") and session_state.get("stage") == "complete":
+            script = session_state.get("generated_script", {})
+            podcast_title = script.get("title") if isinstance(script, dict) else "Your Podcast"
+            podcast_id = session_state.get("podcast_id", "")
+            completion_queries = ["download", "script", "audio", "banner", "share", "link", "asset", "file"]
+            is_asset_query = any(query in user_input.lower() for query in completion_queries)
+            if is_asset_query:
+                completion_message = (
+                    f"🎉 *'{podcast_title}' is complete!*\n\n"
+                    "💡 *Looking for your podcast assets?*\n"
+                    "All download links and assets were provided in the completion message above. "
+                    "Please scroll up to find:\n"
+                    "• Audio download link\n"
+                    "• Banner images\n"
+                    "• Complete script\n"
+                    f"• Podcast ID: `{podcast_id}`\n\n"
+                    "To create a **new podcast**, please start a fresh chat with me. 🎙️"
+                )
+            else:
+                completion_message = (
+                    f"🎉 *'{podcast_title}' is complete!*\n\n"
+                    "This podcast session has finished successfully. To create a new podcast:\n\n"
+                    "• **Start a new chat** with me\n"
+                    "• Each podcast needs a fresh conversation\n"
+                    "• Your completed podcast assets remain available above\n\n"
+                    "Ready to create another amazing podcast? 🎙️✨"
+                )
+            if not is_dm and not is_mention:
+                say(text=completion_message, thread_ts=thread_key)
+            else:
+                say(text=completion_message)
+            print(f"Session {session_id} is complete - prevented API call for: {user_input[:50]}...")
+            return
+        if session_id in active_sessions:
+            active_session = active_sessions[session_id]
+            start_time = active_session.get("start_time", datetime.now())
+            elapsed_minutes = (datetime.now() - start_time).total_seconds() / 60
+            current_stage = session_state.get("stage", "unknown")
+            process_type = active_session.get("process_type", "your request")
+            stage_messages = {
+                "search": "🔍 Searching for relevant sources",
+                "scraping": "📰 Gathering full content from sources",
+                "script": "📝 Generating podcast script",
+                "banner": "🎨 Creating banner images",
+                "image": "🎨 Creating banner images",
+                "audio": "🎵 Generating podcast audio",
+            }
+            stage_message = stage_messages.get(current_stage, f"🔄 Processing {process_type}")
+            progress_message = (
+                f"⏳ *Still working on your podcast...*\n\n"
+                f"{stage_message}\n"
+                f"⏱️ Running for {elapsed_minutes:.1f} minutes\n\n"
+                f"_Please wait while I complete this step. This can take several minutes for high-quality results._"
+            )
+            if current_stage == "search":
+                progress_message += "\n\n💡 *Currently:* Finding the best sources across multiple platforms"
+            elif current_stage == "script":
+                progress_message += "\n\n💡 *Currently:* Crafting engaging dialogue and content structure"
+            elif current_stage in ["banner", "image"]:
+                progress_message += "\n\n💡 *Currently:* Generating professional banner designs"
+            elif current_stage == "audio":
+                progress_message += "\n\n💡 *Currently:* Creating high-quality voice narration"
+            if not is_dm and not is_mention:
+                say(text=progress_message, thread_ts=thread_key)
+            else:
+                say(text=progress_message)
+            print(f"Session {session_id} already processing ({current_stage}) - prevented API call for: {user_input[:50]}...")
+            return
+        print(f"Processing message for session {session_id}: {user_input[:50]}...")
         chat_response = await api_client.chat(session_id, user_input)
-
         if chat_response.get("response"):
             response_text = chat_response["response"]
-
             if not is_dm and not is_mention:
                 say(text=response_text, thread_ts=thread_key)
             else:
                 say(text=response_text)
-
         if chat_response.get("is_processing"):
             task_id = chat_response.get("task_id")
             start_background_polling(session_id, thread_key, task_id)
@@ -1300,10 +1199,16 @@ async def handle_user_message(
                 say(text=processing_msg, thread_ts=thread_key)
             else:
                 say(text=processing_msg)
-
+        else:
+            await send_completion_message(thread_key, chat_response)
     except Exception as e:
-        logger.error(f"Error handling message: {e}")
-        error_msg = "❌ Sorry, I encountered an error processing your request. Please try again."
+        print(f"Error handling message: {e}")
+        if "timeout" in str(e).lower():
+            error_msg = "⏱️ Request timed out. The system might be busy. Please try again in a moment."
+        elif "connection" in str(e).lower():
+            error_msg = "🔌 Connection issue. Please check your connection and try again."
+        else:
+            error_msg = "❌ Sorry, I encountered an error processing your request. Please try again."
         if not is_dm and not is_mention:
             say(text=error_msg, thread_ts=thread_key)
         else:
@@ -1314,6 +1219,6 @@ init_db()
 
 if __name__ == "__main__":
     handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
-    logger.info("⚡️ Podcast Bot is running! Press Ctrl+C to stop.")
-    logger.info(f"🎙️ Connected to API at: {API_BASE_URL}")
+    print("⚡️ Podcast Bot is running! Press Ctrl+C to stop.")
+    print(f"🎙️ Connected to API at: {API_BASE_URL}")
     handler.start()
