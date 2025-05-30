@@ -6,7 +6,7 @@ Beifong manages your trusted articles and social media platform sources. It gene
 
 ▶️ [Watch demo video HD](https://www.canva.com/design/DAGoUfv8ICM/Oj-vJ19AvZYDa2SwJrCWKw/watch?utm_content=D[…]hare&utm_medium=link2&utm_source=uniquelinks&utlId=h2508379667)
 
-▶️ [Watch the demo on YouTube](https://youtu.be/B7r8G-9OKi4)
+▶️ [Watch the demo on YouTube](https://youtu.be/dB8FZY3x9EY)
 
 ## Table of Contents
 
