@@ -527,11 +527,6 @@ python -m integrations.slack.chat
 - Each mention creates a new thread for context continuity
 - Example: `@BeifongAI Can you help me analyze the latest news about AI developments?`
 
-**In Direct Messages:**
-- Send messages directly to BeifongAI
-- All messages in a DM conversation maintain context
-- Example: `Generate a podcast about renewable energy trends`
-
 **Reference Documentation:**
 - [Slack Socket Mode API](https://api.slack.com/apis/socket-mode)
 
