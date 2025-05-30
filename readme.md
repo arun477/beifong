@@ -38,6 +38,12 @@ Beifong manages your trusted articles and social media platform sources. It gene
 - [Audio and Voice Generation](#audio-and-voice-generation)
   - [Supported TTS Engines](#supported-tts-engines)
   - [Adding New Voice Engines](#adding-new-voice-engines)
+- [Integrations](#integrations)
+  - [Slack Integration](#slack-integration)
+  - [Setting Up Slack App](#setting-up-slack-app)
+  - [Required Slack Permissions](#required-slack-permissions)
+  - [Environment Configuration](#environment-configuration-1)
+  - [Running Slack Integration](#running-slack-integration)
 - [Data Storage and File Management](#data-storage-and-file-management)
   - [Database Storage](#database-storage)
   - [Media Asset Storage](#media-asset-storage)
@@ -400,6 +406,134 @@ The TTS system supports integration of additional engines:
 - **[Orpheus-TTS](https://github.com/canopyai/Orpheus-TTS)** 
 
 Add custom TTS engines through the tts_selector engine interface in the **utils** directory.
+
+## Integrations
+
+Beifong can be integrated with other platforms.
+
+### Slack Integration
+
+Beifong's Slack integration enables you to interact with the AI agent directly from your Slack workspace. Each conversation with Beifong creates a dedicated Slack thread, maintaining conversation context and allowing for natural, ongoing discussions.
+
+**Key Features:**
+- Direct messaging with BeifongAI in Slack channels and DMs
+- Threaded conversations that maintain context
+- File sharing and processing capabilities
+- Real-time responses using Slack's Socket Mode
+- Full access to Beifong's AI capabilities through chat interface
+
+### Setting Up Slack App
+
+To integrate Beifong with your Slack workspace, you need to create a Slack app in Socket Mode:
+
+#### Step 1: Create Slack App
+
+1. Visit [Slack API Apps](https://api.slack.com/apps) and click "Create New App"
+2. Choose "From scratch" and provide:
+   - **App Name**: BeifongAI (or your preferred name)
+   - **Workspace**: Select your target Slack workspace
+3. **Enable Socket Mode**:
+   - Navigate to "Socket Mode" in the left sidebar
+   - Toggle "Enable Socket Mode" to ON
+   - Generate an App-Level Token with `connections:write` scope
+   - Save the **App-Level Token** (this is your `SLACK_APP_TOKEN`)
+
+#### Step 2: Configure Bot User
+
+1. Navigate to "OAuth & Permissions" in the left sidebar
+2. Scroll to "Bot Token Scopes" and add the required permissions (see next section)
+3. Click "Install to Workspace" and authorize the app
+4. Copy the **Bot User OAuth Token** (this is your `SLACK_BOT_TOKEN`)
+
+#### Step 3: Enable Event Subscriptions
+
+1. Navigate to "Event Subscriptions" in the left sidebar
+2. Toggle "Enable Events" to ON
+3. Add the required bot events (see permissions section below)
+
+### Required Slack Permissions
+
+Your Slack app requires specific permissions to function properly with Beifong:
+
+#### OAuth & Permissions - Bot Token Scopes
+
+Add the following scopes under "OAuth & Permissions" → "Bot Token Scopes":
+
+- **`app_mentions:read`** - View messages that directly mention @BeifongAI in conversations that the app is in
+- **`assistant:write`** - Allow BeifongAI to act as an App Agent
+- **`channels:history`** - View messages and other content in public channels that BeifongAI has been added to
+- **`channels:read`** - View basic information about public channels in a workspace
+- **`chat:write`** - Send messages as @BeifongAI
+- **`files:read`** - View files shared in channels and conversations that BeifongAI has been added to
+- **`files:write`** - Upload, edit, and delete files as @BeifongAI
+- **`im:read`** - View basic information about direct messages that BeifongAI has been added to
+- **`im:write`** - Start direct messages with people
+
+#### Event Subscriptions - Bot Events
+
+Under "Event Subscriptions" → "Subscribe to bot events", add:
+
+- **`app_mention`** - Subscribe to only the message events that mention your app or bot
+  - *Required Scope: `app_mentions:read`*
+- **`message.channels`** - A message was posted to a channel
+  - *Required Scope: `channels:history`*
+
+### Environment Configuration
+
+Add your Slack tokens to the `.env` file in the `/beifong` directory:
+
+```env
+# Existing environment variables...
+OPENAI_API_KEY=your_openai_api_key
+ELEVENSLAB_API_KEY=your_elevenlabs_api_key  # Optional
+
+# Slack Integration
+SLACK_BOT_TOKEN=xoxb-your-bot-user-oauth-token
+SLACK_APP_TOKEN=xapp-your-app-level-token
+
+# Redis configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+```
+
+### Running Slack Integration
+
+Once you've configured your Slack app and environment variables:
+
+#### Step 1: Install App in Workspace
+
+1. Ensure your Slack app is installed in your workspace
+2. Add BeifongAI to the channels where you want to use it
+3. You can also send direct messages to BeifongAI
+
+#### Step 2: Start Slack Integration
+
+```bash
+# Navigate to beifong directory
+cd beifong
+
+# Ensure your environment is activated
+source venv/bin/activate
+
+# Run the Slack integration script
+python -m integrations.slack.chat
+```
+
+#### Step 3: Interact with BeifongAI
+
+**In Slack Channels:**
+- Mention @BeifongAI to start a conversation
+- Each mention creates a new thread for context continuity
+- Example: `@BeifongAI Can you help me analyze the latest news about AI developments?`
+
+**In Direct Messages:**
+- Send messages directly to BeifongAI
+- All messages in a DM conversation maintain context
+- Example: `Generate a podcast about renewable energy trends`
+
+**Reference Documentation:**
+- [Slack Socket Mode API](https://api.slack.com/apis/socket-mode)
 
 ## Data Storage and File Management
 
