@@ -413,14 +413,10 @@ Beifong can be integrated with other platforms.
 
 ### Slack Integration
 
-Beifong's Slack integration enables you to interact with the AI agent directly from your Slack workspace. Each conversation with Beifong creates a dedicated Slack thread, maintaining conversation context and allowing for natural, ongoing discussions.
+Beifong's Slack integration enables you to interact with the AI agent directly from your Slack workspace. Each conversation with Beifong creates a dedicated Slack thread for the session.
 
-**Key Features:**
-- Direct messaging with BeifongAI in Slack channels and DMs
-- Threaded conversations that maintain context
-- File sharing and processing capabilities
-- Real-time responses using Slack's Socket Mode
-- Full access to Beifong's AI capabilities through chat interface
+**Key Feature:**
+- Direct messaging with BeifongAI in Slack channels
 
 ### Setting Up Slack App
 
