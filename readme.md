@@ -8,6 +8,8 @@ Beifong manages your trusted articles and social media platform sources. It gene
 
 ▶️ [Watch the demo on YouTube](https://youtu.be/dB8FZY3x9EY)
 
+🔗 [Blog](https://arun477.github.io/posts/beifong_podcast_generator/)
+
 ## Table of Contents
 
 - [Getting Started](#getting-started)
