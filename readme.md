@@ -128,11 +128,11 @@ python main.py
 
 # Terminal 2: Start the scheduler
 cd beifong
-python -m beifong.scheduler
+python -m scheduler
 
 # Terminal 3: Start the chat workers
 cd beifong
-python -m beifong.celery_worker
+python -m celery_worker
 
 # Verify Redis is running
 redis-cli ping
